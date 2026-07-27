@@ -15,10 +15,9 @@ interface SetupState {
 
 interface Props {
   onComplete: () => void
-  initialName: string
 }
 
-export function ProfileSetup({ onComplete, initialName: _initialName }: Props) {
+export function ProfileSetup({ onComplete }: Props) {
   const [stepIdx, setStepIdx] = useState(0)
   const [form, setForm] = useState<SetupState>(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -36,14 +35,18 @@ export function ProfileSetup({ onComplete, initialName: _initialName }: Props) {
 
   const finish = async () => {
     setSaving(true)
-    await api.profile.update({
-      age: Number(form.age),
-      gender: form.gender,
-      looking_for: form.looking_for,
-      bio: form.bio || null,
-    })
-    localStorage.removeItem(STORAGE_KEY)
-    onComplete()
+    try {
+      await api.profile.update({
+        age: Number(form.age),
+        gender: form.gender,
+        looking_for: form.looking_for,
+        bio: form.bio || null,
+      })
+      localStorage.removeItem(STORAGE_KEY)
+      onComplete()
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

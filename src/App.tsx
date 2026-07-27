@@ -45,7 +45,6 @@ export function App() {
   if (screen === 'setup') {
     return (
       <ProfileSetup
-        initialName={user?.name ?? ''}
         onComplete={async () => {
           const profile = await api.profile.get()
           setUser(profile)

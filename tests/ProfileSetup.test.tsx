@@ -18,7 +18,7 @@ describe('ProfileSetup', () => {
   it('shows age step after name step', async () => {
     vi.mocked(api.profile.update).mockResolvedValue({} as any)
 
-    render(<ProfileSetup onComplete={vi.fn()} initialName="Ali" />)
+    render(<ProfileSetup onComplete={vi.fn()}  />)
 
     expect(screen.getByText(/چند سالته/i)).toBeInTheDocument()
   })
@@ -27,7 +27,7 @@ describe('ProfileSetup', () => {
     vi.mocked(api.profile.update).mockResolvedValue({} as any)
     const onComplete = vi.fn()
 
-    render(<ProfileSetup onComplete={onComplete} initialName="Ali" />)
+    render(<ProfileSetup onComplete={onComplete}  />)
 
     // Fill age
     fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '25' } })
