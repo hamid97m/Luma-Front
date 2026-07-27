@@ -13,7 +13,9 @@ type Screen = 'loading' | 'onboarding' | 'setup' | 'main'
 type Tab = 'discovery' | 'matches' | 'profile'
 
 export function App() {
-  const initDataRaw = useRawInitData()
+  const rawFromSdk = useRawInitData()
+  // Fall back to window.Telegram.WebApp.initData when running in a regular browser
+  const initDataRaw = rawFromSdk ?? window.Telegram?.WebApp?.initData ?? null
   const { user, setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('loading')
   const [tab, setTab] = useState<Tab>('discovery')

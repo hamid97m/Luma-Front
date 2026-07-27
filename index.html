@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>دیتگرام</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+      // Browser dev mock — ignored when running inside real Telegram
+      if (!window.Telegram?.WebApp?.initData) {
+        window.Telegram = {
+          WebApp: {
+            initData: 'dev_mode',
+            initDataUnsafe: { user: { id: 999999, first_name: 'Dev', username: 'devuser' } },
+            ready: function() {},
+            expand: function() {},
+            close: function() {},
+          }
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
