@@ -17,7 +17,7 @@ Object.assign(window, {
 })
 
 vi.mock('@telegram-apps/sdk-react', () => ({
-  useRawLaunchParams: () => 'mock_init_data',
+  useRawInitData: () => 'mock_init_data',
   useLaunchParams: () => ({
     tgWebAppData: undefined,
     tgWebAppPlatform: 'tdesktop',

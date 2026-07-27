@@ -1,24 +1,29 @@
 import { useEffect, useState } from 'react'
-import { useRawLaunchParams } from '@telegram-apps/sdk-react'
+import { useRawInitData } from '@telegram-apps/sdk-react'
 import { api } from './api.js'
 import { useAuthStore } from './store.js'
 
 type Screen = 'loading' | 'onboarding' | 'setup' | 'main'
 
 export function App() {
-  const initDataRaw = useRawLaunchParams()
+  const initDataRaw = useRawInitData()
   const { setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('loading')
 
   useEffect(() => {
     if (!initDataRaw) return
     setInitDataRaw(initDataRaw)
-    window.Telegram?.WebApp?.expand()
+    window.Telegram?.WebApp?.expand?.()
 
     api.auth.verify(initDataRaw)
-      .then(({ user }) => {
-        setUser(user as any)
-        setScreen(user.setupComplete ? 'main' : 'onboarding')
+      .then(async ({ user: partialUser }) => {
+        if (partialUser.setupComplete) {
+          const fullProfile = await api.profile.get()
+          setUser(fullProfile)
+          setScreen('main')
+        } else {
+          setScreen('onboarding')
+        }
       })
       .catch(() => setScreen('onboarding'))
   }, [initDataRaw])
