@@ -46,6 +46,9 @@ export const t = {
     editProfile: 'ویرایش پروفایل',
     photos: 'عکس‌ها',
     addPhoto: '+ عکس',
+    nameLabel: 'اسم',
+    ageLabel: 'سن',
+    bioLabel: 'درباره من',
   },
   nav: {
     discovery: 'کشف',

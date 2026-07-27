@@ -60,15 +60,15 @@ export function MyProfile() {
         {/* Profile info */}
         <div className="space-y-3">
           <div className="p-4 rounded-2xl bg-gray-50">
-            <p className="text-sm opacity-60">اسم</p>
+            <p className="text-sm opacity-60">{t.profile.nameLabel}</p>
             <p className="font-semibold">{profile.name}</p>
           </div>
           <div className="p-4 rounded-2xl bg-gray-50">
-            <p className="text-sm opacity-60">سن</p>
+            <p className="text-sm opacity-60">{t.profile.ageLabel}</p>
             <p className="font-semibold">{profile.age}</p>
           </div>
           <div className="p-4 rounded-2xl bg-gray-50">
-            <p className="text-sm opacity-60">درباره من</p>
+            <p className="text-sm opacity-60">{t.profile.bioLabel}</p>
             <p className="font-semibold">{profile.bio ?? '—'}</p>
           </div>
         </div>
