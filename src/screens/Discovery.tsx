@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { t } from '../i18n.js'
 import { api } from '../api.js'
-import { ProfileCard } from '../components/ProfileCard.js'
+import { CardStack } from '../components/CardStack.js'
 import type { DiscoveryProfile, SwipeResult } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
@@ -19,7 +19,7 @@ export function Discovery({ onMatch }: Props) {
   const fetchBatch = useCallback(async () => {
     const { profiles, exhausted: done } = await api.discovery.feed()
     setQueue((q) => [...q, ...profiles])
-    setExhausted(done && profiles.length === 0)
+    setExhausted(done)
     setLoading(false)
   }, [])
 
@@ -59,33 +59,11 @@ export function Discovery({ onMatch }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full p-4 gap-4">
-      {/* Card area */}
-      <div className="relative flex-1">
-        {queue.slice(0, 2).map((profile, i) => (
-          <ProfileCard key={profile.id} profile={profile} isTop={i === 0} />
-        ))}
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex gap-4 justify-center pb-2">
-        <button
-          onClick={() => swipe('pass')}
-          disabled={swiping || queue.length === 0}
-          className="flex-1 py-4 rounded-2xl text-lg font-semibold border-2 border-red-300 text-red-500 disabled:opacity-40"
-          aria-label={t.discovery.pass}
-        >
-          ✕ {t.discovery.pass}
-        </button>
-        <button
-          onClick={() => swipe('like')}
-          disabled={swiping || queue.length === 0}
-          className="flex-1 py-4 rounded-2xl text-lg font-semibold border-2 border-green-300 text-green-600 disabled:opacity-40"
-          aria-label={t.discovery.like}
-        >
-          ❤️ {t.discovery.like}
-        </button>
-      </div>
-    </div>
+    <CardStack
+      profiles={queue}
+      onLike={() => swipe('like')}
+      onPass={() => swipe('pass')}
+      disabled={swiping}
+    />
   )
 }
