@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { t } from '../i18n.js'
 import { api } from '../api.js'
 import { CardStack } from '../components/CardStack.js'
+import { MatchPopup } from '../components/MatchPopup.js'
 import type { DiscoveryProfile, SwipeResult } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
@@ -15,6 +16,7 @@ export function Discovery({ onMatch }: Props) {
   const [exhausted, setExhausted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [swiping, setSwiping] = useState(false)
+  const [activeMatch, setActiveMatch] = useState<NonNullable<SwipeResult['match']> | null>(null)
 
   const fetchBatch = useCallback(async () => {
     const { profiles, exhausted: done } = await api.discovery.feed()
@@ -35,7 +37,7 @@ export function Discovery({ onMatch }: Props) {
     const result = await api.swipes.swipe(current.id, direction)
     if (result.matched && result.match) {
       // Small delay so card animation can finish before popup
-      setTimeout(() => onMatch(result.match!), 400)
+      setTimeout(() => setActiveMatch(result.match!), 400)
     }
 
     // Prefetch next batch when queue runs low
@@ -59,11 +61,19 @@ export function Discovery({ onMatch }: Props) {
   }
 
   return (
-    <CardStack
-      profiles={queue}
-      onLike={() => swipe('like')}
-      onPass={() => swipe('pass')}
-      disabled={swiping}
-    />
+    <>
+      <CardStack
+        profiles={queue}
+        onLike={() => swipe('like')}
+        onPass={() => swipe('pass')}
+        disabled={swiping}
+      />
+      {activeMatch && (
+        <MatchPopup
+          match={activeMatch}
+          onClose={() => setActiveMatch(null)}
+        />
+      )}
+    </>
   )
 }
