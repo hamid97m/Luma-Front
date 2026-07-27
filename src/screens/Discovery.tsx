@@ -7,11 +7,7 @@ import type { DiscoveryProfile, SwipeResult } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
 
-interface Props {
-  onMatch: (result: NonNullable<SwipeResult['match']>) => void
-}
-
-export function Discovery({ onMatch }: Props) {
+export function Discovery() {
   const [queue, setQueue] = useState<DiscoveryProfile[]>([])
   const [exhausted, setExhausted] = useState(false)
   const [loading, setLoading] = useState(true)
