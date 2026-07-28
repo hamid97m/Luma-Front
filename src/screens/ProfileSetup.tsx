@@ -42,8 +42,13 @@ export function ProfileSetup({ onComplete }: Props) {
         looking_for: form.looking_for,
         bio: form.bio || null,
       })
+
       localStorage.removeItem(STORAGE_KEY)
       onComplete()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      window.Telegram?.WebApp?.showAlert?.(`Error: ${msg}`)
+      console.error('finish error:', err)
     } finally {
       setSaving(false)
     }

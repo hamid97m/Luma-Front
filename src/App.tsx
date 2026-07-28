@@ -34,7 +34,10 @@ export function App() {
           setScreen('onboarding')
         }
       })
-      .catch(() => setScreen('onboarding'))
+      .catch((err) => {
+        console.error('auth error:', err)
+        setScreen('onboarding')
+      })
   }, [initDataRaw])
 
   if (screen === 'loading') {

@@ -11,6 +11,7 @@ interface TelegramWebApp {
   ready: () => void
   expand: () => void
   close: () => void
+  showAlert: (message: string, callback?: () => void) => void
 }
 
 interface Window {
