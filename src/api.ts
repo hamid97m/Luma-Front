@@ -35,14 +35,9 @@ export const api = {
   },
   photos: {
     getUploadUrl: (contentType: string) =>
-      request<{ uploadUrl: string; photoId: string }>(
+      request<{ uploadUrl: string; photoId: string; publicUrl: string }>(
         '/profile/me/photos/upload-url',
         { method: 'POST', body: JSON.stringify({ contentType }) }
-      ),
-    confirm: (photoId: string) =>
-      request<{ photo: { id: string; url: string; position: number } }>(
-        '/profile/me/photos/confirm',
-        { method: 'POST', body: JSON.stringify({ photoId }) }
       ),
     delete: (photoId: string) =>
       request<{ ok: boolean }>(`/profile/me/photos/${photoId}`, { method: 'DELETE' }),
@@ -52,24 +47,18 @@ export const api = {
         body: JSON.stringify({ order }),
       }),
     upload: async (file: File): Promise<{ id: string; url: string; position: number }> => {
-      console.log('[upload] step 1: compressing', file.name, file.type, file.size)
       const blob = await compressImage(file)
-      console.log('[upload] step 2: compressed to', blob.size, 'bytes')
-      const { uploadUrl, photoId } = await api.photos.getUploadUrl('image/jpeg')
-      console.log('[upload] step 3: got uploadUrl, photoId=', photoId)
+      const { uploadUrl, photoId, publicUrl } = await api.photos.getUploadUrl('image/jpeg')
       const putRes = await fetch(uploadUrl, {
         method: 'PUT',
         body: blob,
         headers: { 'Content-Type': 'image/jpeg' },
       })
-      console.log('[upload] step 4: PUT status', putRes.status, putRes.ok)
-      if (!putRes.ok) {
-        const putErr = await putRes.text()
-        throw new Error(`storage PUT failed ${putRes.status}: ${putErr}`)
-      }
-      const { photo } = await api.photos.confirm(photoId)
-      console.log('[upload] step 5: confirmed', photo)
-      return photo
+      if (!putRes.ok) throw new Error(`storage_put_failed: ${putRes.status}`)
+      // Backend pre-inserts the row on getUploadUrl; fetch real position from profile
+      const profile = await api.profile.get()
+      const photo = profile.photos.find(p => p.id === photoId)
+      return photo ?? { id: photoId, url: publicUrl, position: 0 }
     },
   },
   discovery: {
