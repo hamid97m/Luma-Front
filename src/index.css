@@ -1,33 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --tg-theme-bg-color: #ffffff;
-  --tg-theme-text-color: #000000;
-  --tg-theme-hint-color: #999999;
-  --tg-theme-link-color: #2481cc;
-  --tg-theme-button-color: #2481cc;
-  --tg-theme-button-text-color: #ffffff;
-  --tg-theme-secondary-bg-color: #f1f1f1;
+  --accent:   #ec4067;
+  --accent-r: #f43f5e;
+  --purple:   #a855f7;
+  --app-bg:   #0b0b12;
 }
 
-body {
-  background-color: var(--tg-theme-bg-color);
-  color: var(--tg-theme-text-color);
-  font-family: system-ui, sans-serif;
-  direction: rtl;
+@layer base {
+  body {
+    background-color: var(--app-bg);
+    color: #ffffff;
+    font-family: 'Manrope', sans-serif;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  input, textarea, select {
+    background: transparent;
+    color: inherit;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+    opacity: 1;
+  }
 }
 
-input:not([type='file']),
-textarea,
-select {
-  background-color: var(--tg-theme-secondary-bg-color);
-  color: var(--tg-theme-text-color);
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+  .glass-dark {
+    background: rgba(10, 10, 18, 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .grad-accent {
+    background: linear-gradient(90deg, #f43f5e, #ec4067, #a855f7);
+  }
+  .grad-tg {
+    background: linear-gradient(135deg, #2ea6ff, #0088cc);
+  }
+  .btn-primary {
+    @apply w-full h-14 rounded-2xl text-white font-extrabold text-[18px] transition-opacity disabled:opacity-40;
+    background: linear-gradient(90deg, #f43f5e, #ec4067, #a855f7);
+  }
 }
 
-input:not([type='file'])::placeholder,
-textarea::placeholder {
-  color: var(--tg-theme-hint-color);
-  opacity: 1;
+/* Photo grid layout for profile screen */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  grid-template-areas: "p p a" "p p b" "c d e";
+  gap: 10px;
+  aspect-ratio: 1;
+}
+.slot-p { grid-area: p; }
+.slot-a { grid-area: a; }
+.slot-b { grid-area: b; }
+.slot-c { grid-area: c; }
+.slot-d { grid-area: d; }
+.slot-e { grid-area: e; }
+
+/* Animations */
+@keyframes pulse-heart {
+  0%, 100% { transform: scale(1);     opacity: 0.7; }
+  50%       { transform: scale(1.14); opacity: 1;   }
+}
+.animate-pulse-heart {
+  animation: pulse-heart 1.2s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.animate-fade-up {
+  animation: fade-up 0.5s ease forwards;
 }

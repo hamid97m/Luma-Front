@@ -2,9 +2,13 @@ export interface UserProfile {
   id: string
   name: string
   age: number
-  gender: 'man' | 'woman'
-  looking_for: 'men' | 'women' | 'both'
+  gender: 'man' | 'woman' | 'nonbinary'
+  looking_for: 'men' | 'women' | 'everyone'
   bio: string | null
+  interests: string[]
+  location: string | null
+  icebreaker_prompt: string | null
+  icebreaker_answer: string | null
   photos: Array<{ id: string; url: string; position: number }>
   setupComplete: boolean
 }
@@ -16,6 +20,8 @@ export interface DiscoveryProfile {
   bio: string | null
   telegramId: number
   photos: string[]
+  interests: string[]
+  location: string | null
 }
 
 export interface Match {

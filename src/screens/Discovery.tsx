@@ -16,7 +16,10 @@ export function Discovery() {
 
   const fetchBatch = useCallback(async () => {
     const { profiles, exhausted: done } = await api.discovery.feed()
-    setQueue((q) => [...q, ...profiles])
+    setQueue((q) => {
+      const seen = new Set(q.map((p) => p.id))
+      return [...q, ...profiles.filter((p) => !seen.has(p.id))]
+    })
     setExhausted(done)
     setLoading(false)
   }, [])

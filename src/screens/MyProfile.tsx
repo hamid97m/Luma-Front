@@ -1,77 +1,283 @@
 import { useEffect, useState } from 'react'
-import { t } from '../i18n.js'
 import { api } from '../api.js'
 import { useAuthStore } from '../store.js'
-import { PhotoGrid } from '../components/PhotoGrid.js'
-import type { Photo } from '../components/PhotoGrid.js'
 import type { UserProfile } from '../types.js'
+
+const ALL_TAGS = [
+  '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
+  '📚 Reading', '🥾 Hiking', '🍳 Cooking', '🎬 Film',
+  '🐕 Dogs', '🏄 Surfing', '💃 Dancing', '🎸 Guitar',
+  '🍷 Wine', '🧘 Yoga', '📷 Photography', '🎮 Gaming',
+]
+
+const PROMPTS = [
+  'My ideal Sunday…',
+  'Two truths and a lie…',
+  'The way to win me over is…',
+  'I geek out about…',
+  'A perfect first date…',
+  'My most controversial opinion…',
+]
+
+const SLOT_IDS = ['p', 'a', 'b', 'c', 'd', 'e'] as const
+
+const VerifiedSVG = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ea6ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline ml-1">
+    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </svg>
+)
+
+function InfoCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="glass border border-white/12 rounded-[24px] p-4">
+      {children}
+    </div>
+  )
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest mb-1">{children}</p>
+  )
+}
 
 export function MyProfile() {
   const { user: storeUser, setUser } = useAuthStore()
   const [profile, setProfile] = useState<UserProfile | null>(storeUser)
 
+  // Editable field states
+  const [name, setName] = useState(storeUser?.name ?? '')
+  const [age, setAge] = useState(String(storeUser?.age ?? ''))
+  const [location, setLocation] = useState(storeUser?.location ?? '')
+  const [bio, setBio] = useState(storeUser?.bio ?? '')
+  const [tags, setTags] = useState<string[]>(storeUser?.interests ?? [])
+  const [tagPicker, setTagPicker] = useState(false)
+  const [prompt, setPrompt] = useState(storeUser?.icebreaker_prompt ?? PROMPTS[0])
+  const [answer, setAnswer] = useState(storeUser?.icebreaker_answer ?? '')
+
   useEffect(() => {
-    api.profile.get().then((p) => { setProfile(p); setUser(p) })
+    api.profile.get().then((p) => {
+      setProfile(p)
+      setUser(p)
+      setName(p.name)
+      setAge(String(p.age))
+      setLocation(p.location ?? '')
+      setBio(p.bio ?? '')
+      setTags(p.interests)
+      setPrompt(p.icebreaker_prompt ?? PROMPTS[0])
+      setAnswer(p.icebreaker_answer ?? '')
+    })
   }, [])
 
-  const refresh = async () => {
+  const save = (updates: Partial<Parameters<typeof api.profile.update>[0]>) =>
+    api.profile.update(updates).catch(() => {})
+
+  const removeTag = (tag: string) => {
+    const next = tags.filter((t) => t !== tag)
+    setTags(next)
+    save({ interests: next })
+  }
+
+  const addTag = (tag: string) => {
+    if (tags.includes(tag)) return
+    const next = [...tags, tag]
+    setTags(next)
+    save({ interests: next })
+  }
+
+  const handlePhotoUpload = async (file: File) => {
+    await api.photos.upload(file)
     const p = await api.profile.get()
     setProfile(p)
     setUser(p)
   }
 
-  const handleUpload = async (file: File) => {
-    await api.photos.upload(file)
-    await refresh()
-  }
-
-  const handleDelete = async (photoId: string) => {
+  const handlePhotoDelete = async (photoId: string) => {
     await api.photos.delete(photoId)
-    await refresh()
+    const p = await api.profile.get()
+    setProfile(p)
+    setUser(p)
   }
 
-  const handleReorder = async (orderedIds: string[]) => {
-    await api.photos.reorder(orderedIds)
-    await refresh()
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-pulse text-3xl">👤</div>
+      </div>
+    )
   }
 
-  if (!profile) return (
-    <div className="flex items-center justify-center h-full">
-      <div className="animate-pulse text-3xl">👤</div>
-    </div>
-  )
-
-  const photos: Photo[] = profile.photos
+  const photos = profile.photos.sort((a, b) => a.position - b.position)
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <h1 className="text-xl font-bold p-4 border-b">{t.profile.title}</h1>
+    <div className="flex flex-col h-full overflow-y-auto pb-6">
+      <h1 className="text-2xl font-extrabold px-5 pt-12 pb-5 text-white">My Profile 👤</h1>
 
-      <div className="p-4">
-        <h2 className="font-semibold mb-3">{t.profile.photos}</h2>
-        <div className="mb-6">
-          <PhotoGrid
-            photos={photos}
-            onUpload={handleUpload}
-            onDelete={handleDelete}
-            onReorder={handleReorder}
+      <div className="flex flex-col gap-4 px-4">
+
+        {/* Photo grid */}
+        <div className="photo-grid">
+          {SLOT_IDS.map((slotId, i) => {
+            const photo = photos[i]
+            return (
+              <div key={slotId} className={`slot-${slotId} relative rounded-2xl overflow-hidden`}>
+                {photo ? (
+                  <>
+                    <img
+                      src={photo.url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                    {slotId === 'p' && (
+                      <span className="absolute bottom-2 left-2 glass-dark text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        Primary
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handlePhotoDelete(photo.id)}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  </>
+                ) : (
+                  <label className="w-full h-full border-2 border-dashed border-white/25 rounded-2xl flex items-center justify-center cursor-pointer">
+                    <span className="text-2xl text-white/40">＋</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f) }}
+                    />
+                  </label>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Name */}
+        <InfoCard>
+          <FieldLabel>NAME <VerifiedSVG /></FieldLabel>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => save({ name })}
+            className="w-full text-[20px] font-bold border-b border-white/20 focus:border-[#ec4067] outline-none pb-1 transition-colors"
           />
+        </InfoCard>
+
+        {/* Age + Location */}
+        <InfoCard>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <FieldLabel>AGE</FieldLabel>
+              <input
+                type="number"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                onBlur={() => { const n = Number(age); if (n >= 18 && n <= 99) save({ age: n }) }}
+                className="w-full text-[20px] font-bold border-b border-white/20 focus:border-[#ec4067] outline-none pb-1 transition-colors"
+              />
+            </div>
+            <div className="flex-1">
+              <FieldLabel>LOCATION</FieldLabel>
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                onBlur={() => save({ location: location || null })}
+                placeholder="City"
+                className="w-full text-[20px] font-bold border-b border-white/20 focus:border-[#ec4067] outline-none pb-1 transition-colors"
+              />
+            </div>
+          </div>
+        </InfoCard>
+
+        {/* Interests */}
+        <InfoCard>
+          <FieldLabel>INTERESTS</FieldLabel>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {tags.map((tag) => (
+              <span key={tag} className="glass border border-white/20 rounded-full px-4 py-2 text-sm flex items-center gap-1 text-white/90">
+                {tag}
+                <button
+                  onClick={() => removeTag(tag)}
+                  className="text-white/40 hover:text-white ml-1 leading-none"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+            {tagPicker && ALL_TAGS.filter((t) => !tags.includes(t)).map((tag) => (
+              <button
+                key={tag}
+                onClick={() => addTag(tag)}
+                className="border-2 border-dashed border-white/25 rounded-full px-4 py-2 text-sm text-white/50 transition-all hover:border-white/50"
+              >
+                {tag}
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                if (tagPicker) save({ interests: tags })
+                setTagPicker((v) => !v)
+              }}
+              className="border-2 border-dashed border-white/30 rounded-full px-4 py-2 text-sm text-white/60"
+            >
+              {tagPicker ? '− Done' : '+ Add'}
+            </button>
+          </div>
+        </InfoCard>
+
+        {/* About me */}
+        <InfoCard>
+          <FieldLabel>ABOUT ME</FieldLabel>
+          <textarea
+            rows={4}
+            maxLength={200}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            onBlur={() => save({ bio: bio.trim() || null })}
+            placeholder="Tell people about yourself…"
+            className="w-full resize-none outline-none text-[15px] text-white/90 mt-1"
+          />
+          <p className="text-right text-[11px] text-white/35 mt-1">{bio.length}/200</p>
+        </InfoCard>
+
+        {/* Icebreaker */}
+        <div
+          className="rounded-[24px] p-4 border border-[#ec4067]/40"
+          style={{ background: 'rgba(236,64,103,.08)' }}
+        >
+          {/* Gradient strip */}
+          <div
+            className="h-1 rounded-full mb-4 -mx-4 -mt-4"
+            style={{ background: 'linear-gradient(90deg,#f43f5e,#ec4067,#a855f7)' }}
+          />
+          <FieldLabel>ICEBREAKER</FieldLabel>
+          <select
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onBlur={() => save({ icebreaker_prompt: prompt })}
+            className="w-full text-[15px] font-semibold text-white mt-1 mb-3 outline-none cursor-pointer"
+            style={{ background: 'transparent' }}
+          >
+            {PROMPTS.map((p) => (
+              <option key={p} value={p} style={{ background: '#1a1024', color: 'white' }}>{p}</option>
+            ))}
+          </select>
+          <textarea
+            rows={3}
+            maxLength={140}
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            onBlur={() => save({ icebreaker_answer: answer.trim() || null })}
+            placeholder="Your answer…"
+            className="w-full resize-none outline-none text-[14px] text-white/80 border-t border-white/15 pt-3"
+          />
+          <p className="text-right text-[11px] text-white/35 mt-1">{answer.length}/140</p>
         </div>
 
-        <div className="space-y-3">
-          <div className="p-4 rounded-2xl bg-gray-50">
-            <p className="text-sm opacity-60">{t.profile.nameLabel}</p>
-            <p className="font-semibold">{profile.name}</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-gray-50">
-            <p className="text-sm opacity-60">{t.profile.ageLabel}</p>
-            <p className="font-semibold">{profile.age}</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-gray-50">
-            <p className="text-sm opacity-60">{t.profile.bioLabel}</p>
-            <p className="font-semibold">{profile.bio ?? '—'}</p>
-          </div>
-        </div>
       </div>
     </div>
   )

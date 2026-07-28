@@ -1,54 +1,105 @@
 import { useEffect, useState } from 'react'
-import { t } from '../i18n.js'
 import { api } from '../api.js'
 import type { Match } from '../types.js'
+
+const PaperPlaneSVG = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+  </svg>
+)
+
+function formatDate(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const days = Math.floor(diff / 86400000)
+  if (days === 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days < 7) return `${days} days ago`
+  return new Date(iso).toLocaleDateString()
+}
+
+function isNewMatch(iso: string): boolean {
+  return Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000
+}
 
 export function Matches() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.matches.list().then(({ matches }) => {
-      setMatches(matches)
+    api.matches.list().then(({ matches: m }) => {
+      setMatches(m)
       setLoading(false)
     })
   }, [])
 
-  if (loading) return <div className="flex items-center justify-center h-full"><div className="animate-pulse text-3xl">💬</div></div>
-
-  if (matches.length === 0) {
+  if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
-        <div className="text-5xl">💔</div>
-        <h2 className="text-xl font-bold">{t.matches.empty}</h2>
-        <p className="opacity-60">{t.matches.emptyHint}</p>
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-pulse text-3xl">💬</div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <h1 className="text-xl font-bold p-4 border-b">{t.matches.title}</h1>
-      <div className="flex-1 overflow-y-auto">
-        {matches.map((match) => (
-          <div key={match.id} className="flex items-center gap-4 p-4 border-b">
+    <div className="flex flex-col h-full overflow-y-auto">
+      <h1 className="text-2xl font-extrabold px-5 pt-12 pb-5 text-white">
+        Matches 💬
+      </h1>
+
+      {matches.length === 0 ? (
+        <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center p-8">
+          <div className="text-[72px]">💫</div>
+          <h2 className="text-xl font-extrabold text-white">No matches yet</h2>
+          <p className="text-[15px] text-white/50">Keep swiping to find your match!</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 px-4 pb-6">
+          {matches.map((match) => (
             <div
-              className="w-14 h-14 rounded-full bg-gray-200 bg-cover bg-center flex-shrink-0"
-              style={match.user.photos[0] ? { backgroundImage: `url(${match.user.photos[0]})` } : {}}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold">{match.user.name}</p>
-            </div>
-            <a
-              href={`tg://user?id=${match.user.telegramId}`}
-              className="px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)' }}
+              key={match.id}
+              className="glass border border-white/12 rounded-[24px] shadow-2xl flex items-center gap-4 p-4"
             >
-              {t.matches.message}
-            </a>
-          </div>
-        ))}
-      </div>
+              {/* Avatar */}
+              <div className="relative flex-shrink-0">
+                {match.user.photos[0]
+                  ? <img
+                      src={match.user.photos[0]}
+                      alt={match.user.name}
+                      className="w-16 h-16 rounded-full object-cover ring-2 ring-white/20"
+                    />
+                  : <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl ring-2 ring-white/20">
+                      👤
+                    </div>
+                }
+                {isNewMatch(match.matchedAt) && (
+                  <span
+                    className="absolute -top-1 -right-1 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full"
+                    style={{ background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
+                  >
+                    NEW
+                  </span>
+                )}
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[18px] text-white truncate">{match.user.name}</p>
+                <p className="text-[14px] text-white/55">Matched {formatDate(match.matchedAt)}</p>
+              </div>
+
+              {/* Chat button */}
+              <a
+                href={`tg://user?id=${match.user.telegramId}`}
+                className="grad-tg text-white text-[14px] font-bold px-4 py-2 rounded-[16px] flex items-center gap-2 flex-shrink-0"
+                style={{ boxShadow: '0 8px 22px rgba(0,136,204,.45)' }}
+              >
+                <PaperPlaneSVG />
+                Chat
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

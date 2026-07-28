@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { Discovery } from '../src/screens/Discovery.js'
 import { api } from '../src/api.js'
@@ -15,8 +15,8 @@ vi.mock('../src/api.js', () => ({
 }))
 
 const MOCK_PROFILES = [
-  { id: 'p1', name: 'Sara', age: 24, bio: 'سلام', telegramId: 99, photos: ['https://img1'] },
-  { id: 'p2', name: 'Mona', age: 26, bio: null, telegramId: 88, photos: [] },
+  { id: 'p1', name: 'Sara', age: 24, bio: 'Hello', telegramId: 99, photos: ['https://img1'], interests: [], location: null },
+  { id: 'p2', name: 'Mona', age: 26, bio: null,    telegramId: 88, photos: [],               interests: [], location: null },
 ]
 
 describe('Discovery', () => {
@@ -37,11 +37,11 @@ describe('Discovery', () => {
     render(<Discovery />)
 
     await waitFor(() => {
-      expect(screen.getByText(/فعلاً کسی نیست/)).toBeInTheDocument()
+      expect(screen.getByText(/You've seen everyone/)).toBeInTheDocument()
     })
   })
 
-  it('calls swipe like and advances to next card', async () => {
+  it('calls swipe like when Like button is clicked', async () => {
     vi.mocked(api.discovery.feed).mockResolvedValue({ profiles: MOCK_PROFILES, exhausted: false })
     vi.mocked(api.swipes.swipe).mockResolvedValue({ matched: false })
 
@@ -49,7 +49,7 @@ describe('Discovery', () => {
 
     await waitFor(() => screen.getByText('Sara'))
 
-    fireEvent.click(screen.getByRole('button', { name: /پسندیدم/ }))
+    screen.getByRole('button', { name: /Like/ }).click()
 
     await waitFor(() => {
       expect(api.swipes.swipe).toHaveBeenCalledWith('p1', 'like')
