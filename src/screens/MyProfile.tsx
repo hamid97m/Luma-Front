@@ -39,7 +39,7 @@ export function MyProfile() {
         <h2 className="font-semibold mb-3">{t.profile.photos}</h2>
         <div className="grid grid-cols-3 gap-2 mb-6">
           {profile.photos.map((photo) => (
-            <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+            <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden" style={{ background: 'var(--tg-theme-secondary-bg-color)' }}>
               <img src={photo.url} alt="" className="w-full h-full object-cover" />
               <button
                 onClick={() => handleDeletePhoto(photo.id)}
@@ -59,15 +59,15 @@ export function MyProfile() {
 
         {/* Profile info */}
         <div className="space-y-3">
-          <div className="p-4 rounded-2xl bg-gray-50">
+          <div className="p-4 rounded-2xl" style={{ background: 'var(--tg-theme-secondary-bg-color)' }}>
             <p className="text-sm opacity-60">{t.profile.nameLabel}</p>
             <p className="font-semibold">{profile.name}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-gray-50">
+          <div className="p-4 rounded-2xl" style={{ background: 'var(--tg-theme-secondary-bg-color)' }}>
             <p className="text-sm opacity-60">{t.profile.ageLabel}</p>
             <p className="font-semibold">{profile.age}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-gray-50">
+          <div className="p-4 rounded-2xl" style={{ background: 'var(--tg-theme-secondary-bg-color)' }}>
             <p className="text-sm opacity-60">{t.profile.bioLabel}</p>
             <p className="font-semibold">{profile.bio ?? '—'}</p>
           </div>

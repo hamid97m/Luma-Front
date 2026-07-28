@@ -11,6 +11,20 @@ import { BottomNav } from './components/BottomNav.js'
 type Screen = 'loading' | 'onboarding' | 'setup' | 'main'
 type Tab = 'discovery' | 'matches' | 'profile'
 
+function applyTelegramTheme() {
+  const params = window.Telegram?.WebApp?.themeParams
+  if (!params) return
+  const s = document.documentElement.style
+  const set = (name: string, val?: string) => { if (val) s.setProperty(name, val) }
+  set('--tg-theme-bg-color', params.bg_color)
+  set('--tg-theme-text-color', params.text_color)
+  set('--tg-theme-hint-color', params.hint_color)
+  set('--tg-theme-link-color', params.link_color)
+  set('--tg-theme-button-color', params.button_color)
+  set('--tg-theme-button-text-color', params.button_text_color)
+  set('--tg-theme-secondary-bg-color', params.secondary_bg_color ?? params.bg_color)
+}
+
 export function App() {
   // window.Telegram.WebApp.initData is set by Telegram in production
   // and by our browser mock in index.html for local dev
@@ -18,6 +32,12 @@ export function App() {
   const { user, setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('loading')
   const [tab, setTab] = useState<Tab>('discovery')
+
+  useEffect(() => {
+    applyTelegramTheme()
+    window.Telegram?.WebApp?.onEvent?.('themeChanged', applyTelegramTheme)
+    return () => { window.Telegram?.WebApp?.offEvent?.('themeChanged', applyTelegramTheme) }
+  }, [])
 
   useEffect(() => {
     if (!initDataRaw) return
@@ -35,7 +55,8 @@ export function App() {
         }
       })
       .catch((err) => {
-        console.error('auth error:', err)
+        const msg = err instanceof Error ? err.message : String(err)
+        window.Telegram?.WebApp?.showAlert?.(`Auth failed: ${msg}`)
         setScreen('onboarding')
       })
   }, [initDataRaw])
