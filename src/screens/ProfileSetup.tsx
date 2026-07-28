@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { t } from '../i18n.js'
 import { api } from '../api.js'
+import { PhotoGrid } from '../components/PhotoGrid.js'
+import type { Photo } from '../components/PhotoGrid.js'
 
 type Step = 'age' | 'gender' | 'lookingFor' | 'photos' | 'bio'
 const STEPS: Step[] = ['age', 'gender', 'lookingFor', 'photos', 'bio']
@@ -23,6 +25,7 @@ export function ProfileSetup({ onComplete }: Props) {
     const saved = localStorage.getItem(STORAGE_KEY)
     return saved ? JSON.parse(saved) : { age: '', gender: 'man', looking_for: 'women', bio: '' }
   })
+  const [photos, setPhotos] = useState<Photo[]>([])
   const [saving, setSaving] = useState(false)
 
   const step = STEPS[stepIdx]
@@ -33,6 +36,24 @@ export function ProfileSetup({ onComplete }: Props) {
 
   const next = () => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))
 
+  const handleUpload = async (file: File) => {
+    const photo = await api.photos.upload(file)
+    setPhotos((prev) => [...prev, photo])
+  }
+
+  const handleDelete = async (photoId: string) => {
+    await api.photos.delete(photoId)
+    setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+  }
+
+  const handleReorder = async (orderedIds: string[]) => {
+    await api.photos.reorder(orderedIds)
+    setPhotos((prev) => {
+      const byId = Object.fromEntries(prev.map((p) => [p.id, p]))
+      return orderedIds.map((id, i) => ({ ...byId[id], position: i }))
+    })
+  }
+
   const finish = async () => {
     setSaving(true)
     try {
@@ -42,7 +63,6 @@ export function ProfileSetup({ onComplete }: Props) {
         looking_for: form.looking_for,
         bio: form.bio || null,
       })
-
       localStorage.removeItem(STORAGE_KEY)
       onComplete()
     } catch (err) {
@@ -56,7 +76,6 @@ export function ProfileSetup({ onComplete }: Props) {
 
   return (
     <div className="flex flex-col h-screen p-6">
-      {/* Progress bar */}
       <div className="flex gap-1 mb-8">
         {STEPS.map((_, i) => (
           <div
@@ -72,9 +91,7 @@ export function ProfileSetup({ onComplete }: Props) {
           <div className="flex flex-col gap-4">
             <h2 className="text-2xl font-bold">{t.setup.yourAge}</h2>
             <input
-              type="number"
-              min={18}
-              max={99}
+              type="number" min={18} max={99}
               value={form.age}
               onChange={(e) => setForm((f) => ({ ...f, age: e.target.value }))}
               className="w-full p-4 text-xl border-2 rounded-2xl text-center"
@@ -139,27 +156,19 @@ export function ProfileSetup({ onComplete }: Props) {
           <div className="flex flex-col gap-4">
             <h2 className="text-2xl font-bold">{t.setup.addPhotos}</h2>
             <p className="opacity-60">{t.setup.photosHint}</p>
-            <label className="w-full py-12 rounded-2xl border-2 border-dashed text-center cursor-pointer text-4xl">
-              📷
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0]
-                  if (file) await api.photos.uploadFile(file)
-                }}
-              />
-            </label>
+            <PhotoGrid
+              photos={photos}
+              onUpload={handleUpload}
+              onDelete={handleDelete}
+              onReorder={handleReorder}
+            />
             <button
               onClick={next}
-              className="w-full py-4 rounded-2xl font-semibold"
+              disabled={photos.length === 0}
+              className="w-full py-4 rounded-2xl font-semibold disabled:opacity-40"
               style={{ background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)' }}
             >
               {t.next}
-            </button>
-            <button onClick={next} className="w-full py-3 opacity-60">
-              {t.skip}
             </button>
           </div>
         )}
