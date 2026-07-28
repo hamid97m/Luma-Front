@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useRawInitData } from '@telegram-apps/sdk-react'
 import { api } from './api.js'
 import { useAuthStore } from './store.js'
 import { Onboarding } from './screens/Onboarding.js'
@@ -13,9 +12,9 @@ type Screen = 'loading' | 'onboarding' | 'setup' | 'main'
 type Tab = 'discovery' | 'matches' | 'profile'
 
 export function App() {
-  const rawFromSdk = useRawInitData()
-  // Fall back to window.Telegram.WebApp.initData when running in a regular browser
-  const initDataRaw = rawFromSdk ?? window.Telegram?.WebApp?.initData ?? null
+  // window.Telegram.WebApp.initData is set by Telegram in production
+  // and by our browser mock in index.html for local dev
+  const initDataRaw = window.Telegram?.WebApp?.initData ?? null
   const { user, setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('loading')
   const [tab, setTab] = useState<Tab>('discovery')
