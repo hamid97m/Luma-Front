@@ -1,4 +1,5 @@
 import type { UserProfile, DiscoveryProfile, Match, SwipeResult } from './types.js'
+import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
 
@@ -34,9 +35,14 @@ export const api = {
   },
   photos: {
     getUploadUrl: (contentType: string) =>
-      request<{ uploadUrl: string; publicUrl: string; photoId: string }>(
+      request<{ uploadUrl: string; photoId: string }>(
         '/profile/me/photos/upload-url',
         { method: 'POST', body: JSON.stringify({ contentType }) }
+      ),
+    confirm: (photoId: string) =>
+      request<{ photo: { id: string; url: string; position: number } }>(
+        '/profile/me/photos/confirm',
+        { method: 'POST', body: JSON.stringify({ photoId }) }
       ),
     delete: (photoId: string) =>
       request<{ ok: boolean }>(`/profile/me/photos/${photoId}`, { method: 'DELETE' }),
@@ -45,10 +51,16 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ order }),
       }),
-    uploadFile: async (file: File): Promise<string> => {
-      const { uploadUrl, publicUrl } = await api.photos.getUploadUrl(file.type)
-      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-      return publicUrl
+    upload: async (file: File): Promise<{ id: string; url: string; position: number }> => {
+      const blob = await compressImage(file)
+      const { uploadUrl, photoId } = await api.photos.getUploadUrl('image/jpeg')
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        body: blob,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+      const { photo } = await api.photos.confirm(photoId)
+      return photo
     },
   },
   discovery: {
