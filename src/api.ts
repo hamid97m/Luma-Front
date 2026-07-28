@@ -52,14 +52,23 @@ export const api = {
         body: JSON.stringify({ order }),
       }),
     upload: async (file: File): Promise<{ id: string; url: string; position: number }> => {
+      console.log('[upload] step 1: compressing', file.name, file.type, file.size)
       const blob = await compressImage(file)
+      console.log('[upload] step 2: compressed to', blob.size, 'bytes')
       const { uploadUrl, photoId } = await api.photos.getUploadUrl('image/jpeg')
-      await fetch(uploadUrl, {
+      console.log('[upload] step 3: got uploadUrl, photoId=', photoId)
+      const putRes = await fetch(uploadUrl, {
         method: 'PUT',
         body: blob,
         headers: { 'Content-Type': 'image/jpeg' },
       })
+      console.log('[upload] step 4: PUT status', putRes.status, putRes.ok)
+      if (!putRes.ok) {
+        const putErr = await putRes.text()
+        throw new Error(`storage PUT failed ${putRes.status}: ${putErr}`)
+      }
       const { photo } = await api.photos.confirm(photoId)
+      console.log('[upload] step 5: confirmed', photo)
       return photo
     },
   },

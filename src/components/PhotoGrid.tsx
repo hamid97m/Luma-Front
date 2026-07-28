@@ -42,8 +42,10 @@ export function PhotoGrid({
     setUploading(true)
     try {
       await onUpload(file)
-    } catch {
-      setError('Upload failed — please try again')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[PhotoGrid] upload error:', msg)
+      setError(`Upload failed: ${msg}`)
     } finally {
       setUploading(false)
     }
