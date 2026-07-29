@@ -105,6 +105,26 @@ export function MyProfile() {
     setUser(p)
   }
 
+  const setPrimaryPhoto = async (photoId: string) => {
+    if (!profile) return
+    const order = [...profile.photos].sort((a, b) => a.position - b.position).map((p) => p.id)
+    if (order[0] === photoId) return
+    const nextOrder = [photoId, ...order.filter((id) => id !== photoId)]
+
+    const byId = new Map(profile.photos.map((p) => [p.id, p]))
+    const reordered = { ...profile, photos: nextOrder.map((id, i) => ({ ...byId.get(id)!, position: i })) }
+    setProfile(reordered)
+    setUser(reordered)
+
+    try {
+      await api.photos.reorder(nextOrder)
+    } catch {
+      const p = await api.profile.get()
+      setProfile(p)
+      setUser(p)
+    }
+  }
+
   if (!profile) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -132,7 +152,8 @@ export function MyProfile() {
                     <img
                       src={photo.url}
                       alt=""
-                      className="w-full h-full object-cover"
+                      onClick={() => setPrimaryPhoto(photo.id)}
+                      className="w-full h-full object-cover cursor-pointer"
                     />
                     {slotId === 'p' && (
                       <span className="absolute bottom-2 left-2 glass-dark text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
