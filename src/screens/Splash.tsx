@@ -15,7 +15,11 @@ export function Splash({ onDone }: Props) {
       className="flex flex-col items-center justify-center h-screen gap-3 relative overflow-hidden"
       style={{ background: 'radial-gradient(120% 90% at 50% 10%, #f43f5e 0%, #ec4067 34%, #a855f7 100%)' }}
     >
-      <div className="text-[96px] animate-pulse-heart select-none">💖</div>
+      <img
+        src="/luma-icon.png"
+        alt=""
+        className="w-24 h-24 rounded-[28px] shadow-2xl animate-pulse-heart select-none"
+      />
       <h1 className="text-[36px] font-extrabold text-white tracking-tight">Luma</h1>
       <p className="text-[14px] text-white/80">Find your person</p>
       <div className="absolute bottom-16 flex gap-2">

@@ -35,9 +35,14 @@ export const api = {
   },
   photos: {
     getUploadUrl: (contentType: string) =>
-      request<{ uploadUrl: string; photoId: string; publicUrl: string }>(
+      request<{ uploadUrl: string; photoId: string }>(
         '/profile/me/photos/upload-url',
         { method: 'POST', body: JSON.stringify({ contentType }) }
+      ),
+    confirm: (photoId: string) =>
+      request<{ photo: { id: string; url: string; position: number } }>(
+        '/profile/me/photos/confirm',
+        { method: 'POST', body: JSON.stringify({ photoId }) }
       ),
     delete: (photoId: string) =>
       request<{ ok: boolean }>(`/profile/me/photos/${photoId}`, { method: 'DELETE' }),
@@ -48,17 +53,15 @@ export const api = {
       }),
     upload: async (file: File): Promise<{ id: string; url: string; position: number }> => {
       const blob = await compressImage(file)
-      const { uploadUrl, photoId, publicUrl } = await api.photos.getUploadUrl('image/jpeg')
+      const { uploadUrl, photoId } = await api.photos.getUploadUrl('image/jpeg')
       const putRes = await fetch(uploadUrl, {
         method: 'PUT',
         body: blob,
         headers: { 'Content-Type': 'image/jpeg' },
       })
       if (!putRes.ok) throw new Error(`storage_put_failed: ${putRes.status}`)
-      // Backend pre-inserts the row on getUploadUrl; fetch real position from profile
-      const profile = await api.profile.get()
-      const photo = profile.photos.find(p => p.id === photoId)
-      return photo ?? { id: photoId, url: publicUrl, position: 0 }
+      const { photo } = await api.photos.confirm(photoId)
+      return photo
     },
   },
   discovery: {
