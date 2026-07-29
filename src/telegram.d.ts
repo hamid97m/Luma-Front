@@ -32,6 +32,8 @@ interface TelegramWebApp {
   showAlert: (message: string, callback?: () => void) => void
   onEvent: (event: string, callback: () => void) => void
   offEvent: (event: string, callback: () => void) => void
+  openTelegramLink: (url: string) => void
+  openLink: (url: string, options?: { try_instant_view?: boolean }) => void
 }
 
 interface Window {

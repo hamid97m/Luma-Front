@@ -32,6 +32,7 @@ export interface Match {
     name: string
     photos: string[]
     telegramId: number
+    username: string | null
   }
 }
 
@@ -39,6 +40,6 @@ export interface SwipeResult {
   matched: boolean
   match?: {
     id: string
-    user: { id: string; name: string; telegramId: number }
+    user: { id: string; name: string; telegramId: number; username: string | null }
   }
 }

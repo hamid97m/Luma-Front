@@ -1,9 +1,11 @@
 import { t } from '../i18n.js'
+import { openChat } from '../utils/telegram.js'
 
 interface MatchUser {
   id: string
   name: string
   telegramId: number
+  username: string | null
   photos?: string[]
 }
 
@@ -14,7 +16,6 @@ interface Props {
 
 export function MatchPopup({ match, onClose }: Props) {
   const photo = match.user.photos?.[0]
-  const dmUrl = `tg://user?id=${match.user.telegramId}`
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
@@ -27,13 +28,12 @@ export function MatchPopup({ match, onClose }: Props) {
         <h2 className="text-2xl font-extrabold text-white mb-2">{t.match.title}</h2>
         <p className="text-white/60 mb-6 text-[15px]">{t.match.message(match.user.name)}</p>
 
-        <a
-          href={dmUrl}
-          className="btn-primary flex items-center justify-center mb-3 no-underline"
-          style={{ display: 'flex', textDecoration: 'none' }}
+        <button
+          onClick={() => openChat(match.user)}
+          className="btn-primary flex items-center justify-center mb-3 no-underline w-full"
         >
           {t.match.send(match.user.name)}
-        </a>
+        </button>
 
         <button
           onClick={onClose}

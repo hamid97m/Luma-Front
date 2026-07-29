@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import type { Match } from '../types.js'
+import { openChat } from '../utils/telegram.js'
 
 const PaperPlaneSVG = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -88,14 +89,14 @@ export function Matches() {
               </div>
 
               {/* Chat button */}
-              <a
-                href={`tg://user?id=${match.user.telegramId}`}
+              <button
+                onClick={() => openChat(match.user)}
                 className="grad-tg text-white text-[14px] font-bold px-4 py-2 rounded-[16px] flex items-center gap-2 flex-shrink-0"
                 style={{ boxShadow: '0 8px 22px rgba(0,136,204,.45)' }}
               >
                 <PaperPlaneSVG />
                 Chat
-              </a>
+              </button>
             </div>
           ))}
         </div>
