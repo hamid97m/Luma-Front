@@ -16,7 +16,7 @@ export function Splash({ onDone }: Props) {
       style={{ background: 'radial-gradient(120% 90% at 50% 10%, #f43f5e 0%, #ec4067 34%, #a855f7 100%)' }}
     >
       <div className="text-[96px] animate-pulse-heart select-none">💖</div>
-      <h1 className="text-[36px] font-extrabold text-white tracking-tight">Spark</h1>
+      <h1 className="text-[36px] font-extrabold text-white tracking-tight">Luma</h1>
       <p className="text-[14px] text-white/80">Find your person</p>
       <div className="absolute bottom-16 flex gap-2">
         {[0, 1, 2].map((i) => (

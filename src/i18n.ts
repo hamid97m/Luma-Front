@@ -1,5 +1,5 @@
 export const t = {
-  appName: 'Spark',
+  appName: 'Luma',
   welcomeSubtitle: 'Find your person',
   next: 'Continue',
   save: 'Save',
@@ -13,7 +13,7 @@ export const t = {
     interestsHint: 'Choose 3 to 5',
     photoAndBio: 'Add a photo & bio',
     bioPlaceholder: 'Write a short bio…',
-    done: 'Enter Spark',
+    done: 'Enter Luma',
     man: 'Man 👨',
     woman: 'Woman 👩',
     nonbinary: 'Non-binary 🧑',

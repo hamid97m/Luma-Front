@@ -288,7 +288,7 @@ export function Onboarding({ onComplete }: Props) {
       {/* Sticky bottom button */}
       <div className="relative z-10 px-5 pb-8 pt-4">
         <button onClick={next} disabled={!valid || saving} className="btn-primary">
-          {saving ? '…' : step === TOTAL_STEPS - 1 ? 'Enter Spark' : 'Continue'}
+          {saving ? '…' : step === TOTAL_STEPS - 1 ? 'Enter Luma' : 'Continue'}
         </button>
       </div>
     </div>
