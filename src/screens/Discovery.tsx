@@ -50,7 +50,11 @@ export function Discovery() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-full"><div className="animate-pulse text-4xl">💘</div></div>
+    return (
+      <div className="flex items-center justify-center h-full">
+        <img src="/luma-icon.png" alt="" className="w-14 h-14 rounded-2xl animate-pulse-heart select-none" />
+      </div>
+    )
   }
 
   if (exhausted && queue.length === 0) {

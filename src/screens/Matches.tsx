@@ -35,7 +35,7 @@ export function Matches() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-pulse text-3xl">💬</div>
+        <img src="/luma-icon.png" alt="" className="w-14 h-14 rounded-2xl animate-pulse-heart select-none" />
       </div>
     )
   }

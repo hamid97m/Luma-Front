@@ -54,6 +54,7 @@ export function MyProfile() {
   const [tagPicker, setTagPicker] = useState(false)
   const [prompt, setPrompt] = useState(storeUser?.icebreaker_prompt ?? PROMPTS[0])
   const [answer, setAnswer] = useState(storeUser?.icebreaker_answer ?? '')
+  const [uploading, setUploading] = useState<{ slotId: string; progress: number } | null>(null)
 
   useEffect(() => {
     api.profile.get().then((p) => {
@@ -85,11 +86,16 @@ export function MyProfile() {
     save({ interests: next })
   }
 
-  const handlePhotoUpload = async (file: File) => {
-    await api.photos.upload(file)
-    const p = await api.profile.get()
-    setProfile(p)
-    setUser(p)
+  const handlePhotoUpload = async (file: File, slotId: string) => {
+    setUploading({ slotId, progress: 0 })
+    try {
+      await api.photos.upload(file, (progress) => setUploading({ slotId, progress }))
+      const p = await api.profile.get()
+      setProfile(p)
+      setUser(p)
+    } finally {
+      setUploading(null)
+    }
   }
 
   const handlePhotoDelete = async (photoId: string) => {
@@ -102,7 +108,7 @@ export function MyProfile() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-pulse text-3xl">👤</div>
+        <img src="/luma-icon.png" alt="" className="w-14 h-14 rounded-2xl animate-pulse-heart select-none" />
       </div>
     )
   }
@@ -140,14 +146,25 @@ export function MyProfile() {
                       ✕
                     </button>
                   </>
+                ) : uploading?.slotId === slotId ? (
+                  <div className="w-full h-full border-2 border-dashed border-white/25 rounded-2xl flex flex-col items-center justify-center gap-2 px-4">
+                    <div className="w-full h-1.5 rounded-full bg-white/15 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-[width]"
+                        style={{ width: `${uploading.progress}%`, background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
+                      />
+                    </div>
+                    <span className="text-[11px] text-white/50">{uploading.progress}%</span>
+                  </div>
                 ) : (
-                  <label className="w-full h-full border-2 border-dashed border-white/25 rounded-2xl flex items-center justify-center cursor-pointer">
+                  <label className={`w-full h-full border-2 border-dashed border-white/25 rounded-2xl flex items-center justify-center ${uploading ? 'opacity-40' : 'cursor-pointer'}`}>
                     <span className="text-2xl text-white/40">＋</span>
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={!!uploading}
                       className="sr-only"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f) }}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, slotId) }}
                     />
                   </label>
                 )}

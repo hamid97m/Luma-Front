@@ -20,6 +20,23 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+function putWithProgress(url: string, blob: Blob, onProgress?: (pct: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', url)
+    xhr.setRequestHeader('Content-Type', 'image/jpeg')
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100))
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve()
+      else reject(new Error(`storage_put_failed: ${xhr.status}`))
+    }
+    xhr.onerror = () => reject(new Error('storage_put_failed'))
+    xhr.send(blob)
+  })
+}
+
 export const api = {
   auth: {
     verify: (initData: string) =>
@@ -51,15 +68,13 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ order }),
       }),
-    upload: async (file: File): Promise<{ id: string; url: string; position: number }> => {
+    upload: async (
+      file: File,
+      onProgress?: (pct: number) => void
+    ): Promise<{ id: string; url: string; position: number }> => {
       const blob = await compressImage(file)
       const { uploadUrl, photoId } = await api.photos.getUploadUrl('image/jpeg')
-      const putRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: { 'Content-Type': 'image/jpeg' },
-      })
-      if (!putRes.ok) throw new Error(`storage_put_failed: ${putRes.status}`)
+      await putWithProgress(uploadUrl, blob, onProgress)
       const { photo } = await api.photos.confirm(photoId)
       return photo
     },
