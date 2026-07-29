@@ -18,6 +18,17 @@ export function App() {
   const [splashDone, setSplashDone] = useState(false)
   const [authResult, setAuthResult] = useState<'onboarding' | 'main' | null>(null)
   const [tab, setTab] = useState<Tab>('discovery')
+  // Once a tab has been visited, keep it mounted (hidden via CSS) instead of
+  // unmounting — avoids refetching and a loading flash on every tab switch.
+  const [visited, setVisited] = useState<Record<Tab, boolean>>({
+    discovery: true,
+    matches: false,
+    profile: false,
+  })
+
+  useEffect(() => {
+    setVisited((v) => (v[tab] ? v : { ...v, [tab]: true }))
+  }, [tab])
 
   // Advance only when both the splash timer has fired and auth has resolved
   useEffect(() => {
@@ -65,9 +76,9 @@ export function App() {
   return (
     <div className="flex flex-col h-screen bg-[#0b0b12]">
       <div className="flex-1 overflow-hidden">
-        {tab === 'discovery' && <Discovery />}
-        {tab === 'matches' && <Matches />}
-        {tab === 'profile' && <MyProfile />}
+        {visited.discovery && <div className={`h-full ${tab === 'discovery' ? '' : 'hidden'}`}><Discovery /></div>}
+        {visited.matches && <div className={`h-full ${tab === 'matches' ? '' : 'hidden'}`}><Matches /></div>}
+        {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile /></div>}
       </div>
       <BottomNav active={tab} onChange={setTab} />
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { t } from '../i18n.js'
 import { api } from '../api.js'
 import { CardStack } from '../components/CardStack.js'
@@ -13,12 +13,15 @@ export function Discovery() {
   const [loading, setLoading] = useState(true)
   const [swiping, setSwiping] = useState(false)
   const [activeMatch, setActiveMatch] = useState<NonNullable<SwipeResult['match']> | null>(null)
+  // Every id swiped this session — outlives the queue, so a prefetch response
+  // started before a swipe (and thus unaware of it) can't re-add that profile.
+  const swipedIds = useRef<Set<string>>(new Set())
 
   const fetchBatch = useCallback(async () => {
     const { profiles, exhausted: done } = await api.discovery.feed()
     setQueue((q) => {
       const seen = new Set(q.map((p) => p.id))
-      return [...q, ...profiles.filter((p) => !seen.has(p.id))]
+      return [...q, ...profiles.filter((p) => !seen.has(p.id) && !swipedIds.current.has(p.id))]
     })
     setExhausted(done)
     setLoading(false)
@@ -30,6 +33,7 @@ export function Discovery() {
     const [current, ...rest] = queue
     if (!current || swiping) return
 
+    swipedIds.current.add(current.id)
     setSwiping(true)
     setQueue(rest)
 
