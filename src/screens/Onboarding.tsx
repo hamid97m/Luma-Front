@@ -40,6 +40,7 @@ export function Onboarding({ onComplete }: Props) {
   })
   const [photoUploaded, setPhotoUploaded] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [uploadPhase, setUploadPhase] = useState<{ phase: 'processing' | 'uploading'; progress: number } | null>(null)
   const [saving, setSaving] = useState(false)
   const [ageError, setAgeError] = useState(false)
 
@@ -85,13 +86,16 @@ export function Onboarding({ onComplete }: Props) {
   const handlePhotoFile = async (file: File) => {
     const preview = URL.createObjectURL(file)
     setPhotoPreview(preview)
+    setUploadPhase({ phase: 'processing', progress: 0 })
     try {
-      await api.photos.upload(file)
+      await api.photos.upload(file, (progress) => setUploadPhase({ phase: 'uploading', progress }))
       setPhotoUploaded(true)
     } catch (err) {
       setPhotoPreview(null)
       const msg = err instanceof Error ? err.message : 'Upload failed'
       window.Telegram?.WebApp?.showAlert?.(msg)
+    } finally {
+      setUploadPhase(null)
     }
   }
 
@@ -253,13 +257,30 @@ export function Onboarding({ onComplete }: Props) {
                     className="sr-only"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoFile(f) }}
                   />
-                  <div className={`w-32 h-32 rounded-2xl flex flex-col items-center justify-center overflow-hidden ${
+                  <div className={`relative w-32 h-32 rounded-2xl flex flex-col items-center justify-center overflow-hidden ${
                     photoPreview ? '' : 'border-2 border-dashed border-white/30'
                   }`}>
                     {photoPreview
                       ? <img src={photoPreview} alt="preview" className="w-full h-full object-cover rounded-2xl" />
                       : <span className="text-3xl text-white/40">＋</span>
                     }
+                    {uploadPhase && (
+                      <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-1.5 px-3">
+                        {uploadPhase.phase === 'processing' ? (
+                          <span className="text-[11px] text-white/80 animate-pulse">Resizing…</span>
+                        ) : (
+                          <>
+                            <div className="w-full h-1.5 rounded-full bg-white/20 overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-[width]"
+                                style={{ width: `${uploadPhase.progress}%`, background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-white/70">{uploadPhase.progress}%</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {photoUploaded && (
                     <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
