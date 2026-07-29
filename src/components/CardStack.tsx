@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ProfileCard } from './ProfileCard.js'
 import type { DiscoveryProfile } from '../types.js'
 
@@ -32,6 +32,15 @@ export function CardStack({ profiles, onLike, onPass, disabled }: Props) {
 
   const profile = profiles[0]
   const nextProfile = profiles[1]
+
+  // Preload photos for the current + upcoming cards so swiping never shows a blank/loading image.
+  useEffect(() => {
+    const urls = profiles.slice(0, 3).flatMap((p) => p.photos)
+    urls.forEach((url) => {
+      const img = new Image()
+      img.src = url
+    })
+  }, [profiles])
 
   const likeOpacity = Math.min(1, Math.max(0, offset / THRESHOLD))
   const nopeOpacity = Math.min(1, Math.max(0, -offset / THRESHOLD))
