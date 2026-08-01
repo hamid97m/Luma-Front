@@ -2,21 +2,37 @@ import { useEffect, useState } from 'react'
 import { api } from './api.js'
 import { useAuthStore } from './store.js'
 import { Splash } from './screens/Splash.js'
+import { Reconnect } from './screens/Reconnect.js'
 import { Onboarding } from './screens/Onboarding.js'
 import { Discovery } from './screens/Discovery.js'
 import { Matches } from './screens/Matches.js'
 import { MyProfile } from './screens/MyProfile.js'
 import { BottomNav } from './components/BottomNav.js'
 
-type Screen = 'splash' | 'onboarding' | 'main'
+type Screen = 'splash' | 'onboarding' | 'main' | 'reconnect'
 type Tab = 'discovery' | 'matches' | 'profile'
+
+// Once a Telegram ID has completed setup, never send it through onboarding
+// again — a later 401/network failure (e.g. stale initData) should show a
+// retry screen instead, not the signup flow.
+const RETURNING_USER_KEY = 'luma_setup_complete_tg_id'
+
+function isReturningUser(): boolean {
+  const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+  return tgId != null && localStorage.getItem(RETURNING_USER_KEY) === String(tgId)
+}
+
+function markReturningUser(): void {
+  const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+  if (tgId != null) localStorage.setItem(RETURNING_USER_KEY, String(tgId))
+}
 
 export function App() {
   const initDataRaw = window.Telegram?.WebApp?.initData ?? null
   const { setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('splash')
   const [splashDone, setSplashDone] = useState(false)
-  const [authResult, setAuthResult] = useState<'onboarding' | 'main' | null>(null)
+  const [authResult, setAuthResult] = useState<'onboarding' | 'main' | 'reconnect' | null>(null)
   const [tab, setTab] = useState<Tab>('discovery')
   // Once a tab has been visited, keep it mounted (hidden via CSS) instead of
   // unmounting — avoids refetching and a loading flash on every tab switch.
@@ -47,6 +63,7 @@ export function App() {
     api.auth.verify(initDataRaw)
       .then(async ({ user: partial }) => {
         if (partial.setupComplete) {
+          markReturningUser()
           const full = await api.profile.get()
           setUser(full)
           setAuthResult('main')
@@ -54,17 +71,22 @@ export function App() {
           setAuthResult('onboarding')
         }
       })
-      .catch(() => setAuthResult('onboarding'))
+      .catch(() => setAuthResult(isReturningUser() ? 'reconnect' : 'onboarding'))
   }, [initDataRaw])
 
   if (screen === 'splash') {
     return <Splash onDone={() => setSplashDone(true)} />
   }
 
+  if (screen === 'reconnect') {
+    return <Reconnect onRetry={() => window.location.reload()} />
+  }
+
   if (screen === 'onboarding') {
     return (
       <Onboarding
         onComplete={async () => {
+          markReturningUser()
           const p = await api.profile.get()
           setUser(p)
           setScreen('main')
