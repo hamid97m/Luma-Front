@@ -78,12 +78,15 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
               </p>
             </button>
 
-            <div className="rounded-2xl p-4 border border-rose-500/40" style={{ background: 'rgba(244,63,94,.08)' }}>
+            <button
+              type="button"
+              onClick={() => setView('confirmDelete')}
+              className="w-full text-left rounded-2xl p-4 border border-rose-500/40"
+              style={{ background: 'rgba(244,63,94,.08)' }}
+            >
               <p className="text-rose-300 font-bold text-[13px] uppercase tracking-widest mb-2">Danger zone</p>
-              <button onClick={() => setView('confirmDelete')} className="text-rose-400 font-semibold">
-                Delete my account
-              </button>
-            </div>
+              <span className="text-rose-400 font-semibold">Delete my account</span>
+            </button>
           </>
         ) : (
           <>
