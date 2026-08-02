@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import type { Match } from '../types.js'
-import { openChat } from '../utils/telegram.js'
 
 const PaperPlaneSVG = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -22,7 +21,12 @@ function isNewMatch(iso: string): boolean {
   return Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000
 }
 
-export function Matches() {
+interface Props {
+  onOpenChat: (match: Match) => void
+  refreshKey: number
+}
+
+export function Matches({ onOpenChat, refreshKey }: Props) {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -31,7 +35,7 @@ export function Matches() {
       setMatches(m)
       setLoading(false)
     })
-  }, [])
+  }, [refreshKey])
 
   if (loading) {
     return (
@@ -85,12 +89,29 @@ export function Matches() {
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-[18px] text-white truncate">{match.user.name}</p>
-                <p className="text-[14px] text-white/55">Matched {formatDate(match.matchedAt)}</p>
+                <p className="text-[14px] text-white/55 truncate">
+                  {match.lastMessage ? match.lastMessage.body : 'Say hi! 👋'}
+                </p>
+              </div>
+
+              {/* Time + unread */}
+              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                <p className="text-[11px] text-white/40">
+                  {formatDate(match.lastMessage ? match.lastMessage.createdAt : match.matchedAt)}
+                </p>
+                {match.unreadCount > 0 && (
+                  <span
+                    className="text-white text-[11px] font-extrabold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center"
+                    style={{ background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
+                  >
+                    {match.unreadCount}
+                  </span>
+                )}
               </div>
 
               {/* Chat button */}
               <button
-                onClick={() => openChat(match.user)}
+                onClick={() => onOpenChat(match)}
                 className="grad-tg text-white text-[14px] font-bold px-4 py-2 rounded-[16px] flex items-center gap-2 flex-shrink-0"
                 style={{ boxShadow: '0 8px 22px rgba(0,136,204,.45)' }}
               >
