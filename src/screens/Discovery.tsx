@@ -3,11 +3,15 @@ import { t } from '../i18n.js'
 import { api } from '../api.js'
 import { CardStack } from '../components/CardStack.js'
 import { MatchPopup } from '../components/MatchPopup.js'
-import type { DiscoveryProfile, SwipeResult } from '../types.js'
+import type { DiscoveryProfile, SwipeResult, Match } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
 
-export function Discovery() {
+interface Props {
+  onOpenChat: (match: Match) => void
+}
+
+export function Discovery({ onOpenChat }: Props) {
   const [queue, setQueue] = useState<DiscoveryProfile[]>([])
   const [exhausted, setExhausted] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -49,6 +53,21 @@ export function Discovery() {
     setSwiping(false)
   }
 
+  // The swipe response only carries a minimal match shape (id + counterpart
+  // identity, no photos/timestamps) — synthesize the fields Chat needs with
+  // safe defaults for a match that (by definition) has no messages yet.
+  const openMatchChat = () => {
+    if (!activeMatch) return
+    onOpenChat({
+      id: activeMatch.id,
+      matchedAt: new Date().toISOString(),
+      user: { ...activeMatch.user, photos: [] },
+      lastMessage: null,
+      unreadCount: 0,
+    })
+    setActiveMatch(null)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -79,6 +98,7 @@ export function Discovery() {
         <MatchPopup
           match={activeMatch}
           onClose={() => setActiveMatch(null)}
+          onMessage={openMatchChat}
         />
       )}
     </>

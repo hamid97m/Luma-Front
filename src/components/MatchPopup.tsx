@@ -1,5 +1,4 @@
 import { t } from '../i18n.js'
-import { openChat } from '../utils/telegram.js'
 
 interface MatchUser {
   id: string
@@ -12,9 +11,10 @@ interface MatchUser {
 interface Props {
   match: { id: string; user: MatchUser }
   onClose: () => void
+  onMessage: () => void
 }
 
-export function MatchPopup({ match, onClose }: Props) {
+export function MatchPopup({ match, onClose, onMessage }: Props) {
   const photo = match.user.photos?.[0]
 
   return (
@@ -29,7 +29,7 @@ export function MatchPopup({ match, onClose }: Props) {
         <p className="text-white/60 mb-6 text-[15px]">{t.match.message(match.user.name)}</p>
 
         <button
-          onClick={() => openChat(match.user)}
+          onClick={onMessage}
           className="btn-primary flex items-center justify-center mb-3 no-underline w-full"
         >
           {t.match.send(match.user.name)}
