@@ -1,6 +1,32 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Make window.location.reload configurable for testing
+try {
+  Object.defineProperty(window.location, 'reload', {
+    configurable: true,
+    writable: true,
+    value: vi.fn(),
+  })
+} catch (e) {
+  // If that fails, try replacing the entire location object
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: {
+      reload: vi.fn(),
+      href: '',
+      origin: 'http://localhost',
+      protocol: 'http:',
+      host: 'localhost',
+      hostname: 'localhost',
+      port: '',
+      pathname: '/',
+      search: '',
+      hash: '',
+    },
+  })
+}
+
 // Mock Telegram WebApp global
 Object.assign(window, {
   Telegram: {
