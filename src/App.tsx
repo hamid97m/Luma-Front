@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
 import { useAuthStore } from './store.js'
+import { isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
 import { Reconnect } from './screens/Reconnect.js'
 import { Onboarding } from './screens/Onboarding.js'
@@ -11,21 +12,6 @@ import { BottomNav } from './components/BottomNav.js'
 
 type Screen = 'splash' | 'onboarding' | 'main' | 'reconnect'
 type Tab = 'discovery' | 'matches' | 'profile'
-
-// Once a Telegram ID has completed setup, never send it through onboarding
-// again — a later 401/network failure (e.g. stale initData) should show a
-// retry screen instead, not the signup flow.
-const RETURNING_USER_KEY = 'luma_setup_complete_tg_id'
-
-function isReturningUser(): boolean {
-  const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
-  return tgId != null && localStorage.getItem(RETURNING_USER_KEY) === String(tgId)
-}
-
-function markReturningUser(): void {
-  const tgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
-  if (tgId != null) localStorage.setItem(RETURNING_USER_KEY, String(tgId))
-}
 
 export function App() {
   const initDataRaw = window.Telegram?.WebApp?.initData ?? null
