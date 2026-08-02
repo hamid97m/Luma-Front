@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, SwipeResult } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult } from './types.js'
 import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
@@ -94,5 +94,13 @@ export const api = {
   },
   matches: {
     list: () => request<{ matches: Match[] }>('/matches'),
+  },
+  messages: {
+    list: (matchId: string) => request<{ messages: Message[] }>(`/matches/${matchId}/messages`),
+    send: (matchId: string, body: string) =>
+      request<{ message: Message }>(`/matches/${matchId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ body }),
+      }),
   },
 }

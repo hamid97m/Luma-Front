@@ -35,6 +35,15 @@ export interface Match {
     telegramId: number
     username: string | null
   }
+  lastMessage: { body: string; createdAt: string; senderId: string } | null
+  unreadCount: number
+}
+
+export interface Message {
+  id: string
+  senderId: string
+  body: string
+  createdAt: string
 }
 
 export interface SwipeResult {

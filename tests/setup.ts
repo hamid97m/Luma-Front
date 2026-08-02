@@ -34,5 +34,6 @@ vi.mock('../src/api.ts', () => ({
     discovery: { feed: vi.fn() },
     swipes: { swipe: vi.fn() },
     matches: { list: vi.fn() },
+    messages: { list: vi.fn(), send: vi.fn() },
   },
 }))
