@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useAuthStore } from '../store.js'
 import type { UserProfile } from '../types.js'
+import { SettingsSheet } from '../components/SettingsSheet.js'
 
 const ALL_TAGS = [
   '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
@@ -55,6 +56,7 @@ export function MyProfile() {
   const [prompt, setPrompt] = useState(storeUser?.icebreaker_prompt ?? PROMPTS[0])
   const [answer, setAnswer] = useState(storeUser?.icebreaker_answer ?? '')
   const [uploading, setUploading] = useState<{ slotId: string; phase: 'processing' | 'uploading'; progress: number } | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     api.profile.get().then((p) => {
@@ -125,6 +127,13 @@ export function MyProfile() {
     }
   }
 
+  const handlePauseChange = (nextIsActive: boolean) => {
+    if (!profile) return
+    const updated = { ...profile, is_active: nextIsActive }
+    setProfile(updated)
+    setUser(updated)
+  }
+
   if (!profile) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -137,7 +146,16 @@ export function MyProfile() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto pb-6">
-      <h1 className="text-2xl font-extrabold px-5 pt-12 pb-5 text-white">My Profile 👤</h1>
+      <div className="flex items-center justify-between px-5 pt-12 pb-5">
+        <h1 className="text-2xl font-extrabold text-white">My Profile 👤</h1>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Settings"
+          className="text-2xl text-white/60"
+        >
+          ⚙️
+        </button>
+      </div>
 
       <div className="flex flex-col gap-4 px-4">
 
@@ -323,6 +341,14 @@ export function MyProfile() {
         </div>
 
       </div>
+
+      {settingsOpen && (
+        <SettingsSheet
+          isActive={profile.is_active}
+          onPauseChange={handlePauseChange}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </div>
   )
 }

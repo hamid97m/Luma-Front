@@ -301,6 +301,9 @@ export function Onboarding({ onComplete }: Props) {
                   <p className="text-right text-[11px] text-white/35">{state.bio.length}/150</p>
                 </div>
               </div>
+              <p className="text-white/40 text-[12px] text-center">
+                You can pause or delete your account anytime from Settings.
+              </p>
             </>
           )}
         </div>
