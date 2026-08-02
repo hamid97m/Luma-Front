@@ -35,7 +35,7 @@ describe('Chat', () => {
       ],
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
+    render(<Chat match={MATCH} myUserId="me-1" />)
 
     await waitFor(() => screen.getByText('hey'))
     expect(screen.getByText('hi there')).toBeInTheDocument()
@@ -47,7 +47,7 @@ describe('Chat', () => {
       message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z' },
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
+    render(<Chat match={MATCH} myUserId="me-1" />)
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
@@ -61,7 +61,7 @@ describe('Chat', () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
     vi.mocked(api.messages.send).mockRejectedValue(new Error('network'))
 
-    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
+    render(<Chat match={MATCH} myUserId="me-1" />)
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
@@ -74,18 +74,8 @@ describe('Chat', () => {
   it('shows an unavailable state when the match can no longer be loaded', async () => {
     vi.mocked(api.messages.list).mockRejectedValue(new Error('not found'))
 
-    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
+    render(<Chat match={MATCH} myUserId="me-1" />)
 
     await waitFor(() => screen.getByText('This match is no longer available.'))
-  })
-
-  it('calls onBack when the back button is clicked', async () => {
-    vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
-    const onBack = vi.fn()
-    render(<Chat match={MATCH} myUserId="me-1" onBack={onBack} />)
-
-    await waitFor(() => screen.getByPlaceholderText('Type a message…'))
-    fireEvent.click(screen.getByLabelText('Back'))
-    expect(onBack).toHaveBeenCalled()
   })
 })

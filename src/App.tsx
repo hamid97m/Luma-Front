@@ -115,10 +115,6 @@ export function App() {
       <Chat
         match={activeChatMatch}
         myUserId={useAuthStore.getState().user!.id}
-        onBack={() => {
-          setActiveChatMatch(null)
-          setMatchesRefreshKey((k) => k + 1)
-        }}
       />
     )
   }

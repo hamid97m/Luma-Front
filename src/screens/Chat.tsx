@@ -5,14 +5,13 @@ import type { Match, Message } from '../types.js'
 interface Props {
   match: Match
   myUserId: string
-  onBack: () => void
 }
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-export function Chat({ match, myUserId, onBack }: Props) {
+export function Chat({ match, myUserId }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [unavailable, setUnavailable] = useState(false)
@@ -57,7 +56,6 @@ export function Chat({ match, myUserId, onBack }: Props) {
   return (
     <div className="flex flex-col h-full bg-[#0b0b12]">
       <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-white/10">
-        <button onClick={onBack} aria-label="Back" className="text-white text-2xl leading-none">←</button>
         {match.user.photos[0]
           ? <img src={match.user.photos[0]} alt={match.user.name} className="w-10 h-10 rounded-full object-cover" />
           : <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-lg">👤</div>
