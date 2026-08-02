@@ -9,6 +9,7 @@ export interface UserProfile {
   location: string | null
   icebreaker_prompt: string | null
   icebreaker_answer: string | null
+  is_active: boolean
   photos: Array<{ id: string; url: string; position: number }>
   setupComplete: boolean
 }

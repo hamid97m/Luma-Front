@@ -49,6 +49,7 @@ export const api = {
     get: () => request<UserProfile>('/profile/me'),
     update: (data: Partial<Omit<UserProfile, 'id' | 'photos' | 'setupComplete'>>) =>
       request<UserProfile>('/profile/me', { method: 'PUT', body: JSON.stringify(data) }),
+    delete: () => request<{ ok: boolean }>('/profile/me', { method: 'DELETE' }),
   },
   photos: {
     getUploadUrl: (contentType: string) =>
