@@ -24,6 +24,7 @@ export function App() {
   const [tab, setTab] = useState<Tab>('discovery')
   const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null)
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0)
+  const [matchesBadge, setMatchesBadge] = useState(0)
   // Once a tab has been visited, keep it mounted (hidden via CSS) instead of
   // unmounting — avoids refetching and a loading flash on every tab switch.
   const [visited, setVisited] = useState<Record<Tab, boolean>>({
@@ -35,6 +36,11 @@ export function App() {
   useEffect(() => {
     setVisited((v) => (v[tab] ? v : { ...v, [tab]: true }))
   }, [tab])
+
+  useEffect(() => {
+    if (screen !== 'main') return
+    api.matches.unreadCount().then(({ count }) => setMatchesBadge(count))
+  }, [screen, matchesRefreshKey])
 
   // Advance only when both the splash timer has fired and auth has resolved
   useEffect(() => {
@@ -113,7 +119,7 @@ export function App() {
         )}
         {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile /></div>}
       </div>
-      <BottomNav active={tab} onChange={setTab} />
+      <BottomNav active={tab} onChange={setTab} matchesBadge={matchesBadge} />
     </div>
   )
 }

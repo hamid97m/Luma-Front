@@ -5,6 +5,7 @@ type Tab = 'discovery' | 'matches' | 'profile'
 interface Props {
   active: Tab
   onChange: (tab: Tab) => void
+  matchesBadge?: number
 }
 
 const TABS: Array<{ id: Tab; icon: string; label: string }> = [
@@ -13,7 +14,7 @@ const TABS: Array<{ id: Tab; icon: string; label: string }> = [
   { id: 'profile',   icon: '👤', label: t.nav.profile   },
 ]
 
-export function BottomNav({ active, onChange }: Props) {
+export function BottomNav({ active, onChange, matchesBadge }: Props) {
   return (
     <nav
       className="glass-dark border-t border-white/10 flex"
@@ -23,11 +24,19 @@ export function BottomNav({ active, onChange }: Props) {
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`flex-1 flex flex-col items-center py-3 gap-0.5 transition-all duration-200 ${
+          className={`relative flex-1 flex flex-col items-center py-3 gap-0.5 transition-all duration-200 ${
             active === tab.id ? 'opacity-100 scale-[1.08]' : 'opacity-40'
           }`}
         >
           <span className="text-2xl">{tab.icon}</span>
+          {tab.id === 'matches' && !!matchesBadge && matchesBadge > 0 && (
+            <span
+              className="absolute top-1 right-[calc(50%-20px)] text-white text-[11px] font-extrabold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center"
+              style={{ background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
+            >
+              {matchesBadge}
+            </span>
+          )}
           <span
             className="text-[11px] font-bold"
             style={{ color: active === tab.id ? '#ec4067' : 'white' }}

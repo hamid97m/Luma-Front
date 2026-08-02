@@ -94,6 +94,7 @@ export const api = {
   },
   matches: {
     list: () => request<{ matches: Match[] }>('/matches'),
+    unreadCount: () => request<{ count: number }>('/matches/unread-count'),
   },
   messages: {
     list: (matchId: string) => request<{ messages: Message[] }>(`/matches/${matchId}/messages`),

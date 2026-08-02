@@ -36,7 +36,7 @@ vi.mock('../src/api.ts', () => ({
     photos: { getUploadUrl: vi.fn(), delete: vi.fn(), reorder: vi.fn(), uploadFile: vi.fn() },
     discovery: { feed: vi.fn() },
     swipes: { swipe: vi.fn() },
-    matches: { list: vi.fn() },
+    matches: { list: vi.fn(), unreadCount: vi.fn() },
     messages: { list: vi.fn(), send: vi.fn() },
   },
 }))
