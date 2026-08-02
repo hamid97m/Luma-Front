@@ -67,7 +67,11 @@ describe('SettingsSheet', () => {
   it('deletes the account, clears the returning-user flag, and reloads on confirm', async () => {
     vi.mocked(api.profile.delete).mockResolvedValue({ ok: true })
     localStorage.setItem('luma_setup_complete_tg_id', '123')
-    const reloadSpy = vi.spyOn(window.location, 'reload').mockImplementation(() => {})
+    const reloadMock = vi.fn()
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: reloadMock },
+    })
 
     render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
 
@@ -77,9 +81,7 @@ describe('SettingsSheet', () => {
     await waitFor(() => {
       expect(api.profile.delete).toHaveBeenCalled()
       expect(localStorage.getItem('luma_setup_complete_tg_id')).toBeNull()
-      expect(reloadSpy).toHaveBeenCalled()
+      expect(reloadMock).toHaveBeenCalled()
     })
-
-    reloadSpy.mockRestore()
   })
 })
