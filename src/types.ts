@@ -44,6 +44,7 @@ export interface Message {
   senderId: string
   body: string
   createdAt: string
+  readAt: string | null
 }
 
 export interface SwipeResult {

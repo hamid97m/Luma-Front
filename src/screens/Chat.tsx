@@ -11,6 +11,21 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+function SeenTicks({ seen }: { seen: boolean }) {
+  return (
+    <span role="img" aria-label={seen ? 'Seen' : 'Sent'} className="inline-flex text-white/60">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className={seen ? '-mr-1.5' : ''}>
+        <path d="M2 8.5L6 12L14 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      {seen && (
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <path d="M2 8.5L6 12L14 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </span>
+  )
+}
+
 export function Chat({ match, myUserId }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,6 +60,8 @@ export function Chat({ match, myUserId }: Props) {
       .finally(() => setSending(false))
   }
 
+  const lastMineId = [...messages].reverse().find((m) => m.senderId === myUserId)?.id ?? null
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-[#0b0b12]">
@@ -78,7 +95,10 @@ export function Chat({ match, myUserId }: Props) {
                 }`}
               >
                 <p>{m.body}</p>
-                <p className="text-[10px] opacity-60 mt-0.5">{formatTime(m.createdAt)}</p>
+                <p className="text-[10px] opacity-60 mt-0.5 flex items-center gap-1">
+                  {formatTime(m.createdAt)}
+                  {m.id === lastMineId && <SeenTicks seen={!!m.readAt} />}
+                </p>
               </div>
             ))}
             <div ref={bottomRef} />

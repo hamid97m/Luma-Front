@@ -30,8 +30,8 @@ describe('Chat', () => {
   it('loads and renders messages from both participants', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({
       messages: [
-        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z' },
-        { id: 'm2', senderId: 'other-1', body: 'hi there', createdAt: '2026-01-01T10:01:00Z' },
+        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null },
+        { id: 'm2', senderId: 'other-1', body: 'hi there', createdAt: '2026-01-01T10:01:00Z', readAt: null },
       ],
     })
 
@@ -44,7 +44,7 @@ describe('Chat', () => {
   it('sends a message, appends it, and clears the input', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
     vi.mocked(api.messages.send).mockResolvedValue({
-      message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z' },
+      message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null },
     })
 
     render(<Chat match={MATCH} myUserId="me-1" />)
@@ -77,5 +77,49 @@ describe('Chat', () => {
     render(<Chat match={MATCH} myUserId="me-1" />)
 
     await waitFor(() => screen.getByText('This match is no longer available.'))
+  })
+
+  it('shows a single tick under the last message you sent when it has not been read', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({
+      messages: [
+        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null },
+      ],
+    })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+
+    await waitFor(() => screen.getByText('hey'))
+    expect(screen.getByRole('img', { name: 'Sent' })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Seen' })).not.toBeInTheDocument()
+  })
+
+  it('shows a double tick under the last message you sent once it is read', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({
+      messages: [
+        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: '2026-01-01T10:05:00Z' },
+      ],
+    })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+
+    await waitFor(() => screen.getByText('hey'))
+    expect(screen.getByRole('img', { name: 'Seen' })).toBeInTheDocument()
+  })
+
+  it('does not show a tick on the other participant\'s messages or on earlier messages you sent', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({
+      messages: [
+        { id: 'm1', senderId: 'me-1', body: 'first', createdAt: '2026-01-01T10:00:00Z', readAt: '2026-01-01T10:05:00Z' },
+        { id: 'm2', senderId: 'other-1', body: 'reply', createdAt: '2026-01-01T10:01:00Z', readAt: null },
+        { id: 'm3', senderId: 'me-1', body: 'second', createdAt: '2026-01-01T10:02:00Z', readAt: null },
+      ],
+    })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+
+    await waitFor(() => screen.getByText('second'))
+    // Only the last message I sent ("second") gets a tick — one "Sent" icon total.
+    expect(screen.getAllByRole('img', { name: 'Sent' })).toHaveLength(1)
+    expect(screen.queryByRole('img', { name: 'Seen' })).not.toBeInTheDocument()
   })
 })
