@@ -53,6 +53,36 @@ describe('SettingsSheet', () => {
     })
   })
 
+  it('reflects the correct aria-checked state (checked means active/enabled, not paused)', () => {
+    const { rerender } = render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true')
+
+    rerender(<SettingsSheet isActive={false} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('shows a loading spinner while the pause toggle is in flight', async () => {
+    let resolveUpdate: (value?: unknown) => void = () => {}
+    vi.mocked(api.profile.update).mockReturnValue(
+      new Promise((resolve) => { resolveUpdate = resolve }) as any
+    )
+    const { container } = render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('switch'))
+
+    await waitFor(() => {
+      expect(container.querySelector('.animate-spin')).toBeInTheDocument()
+      expect(screen.getByRole('switch')).toBeDisabled()
+    })
+
+    resolveUpdate({})
+
+    await waitFor(() => {
+      expect(container.querySelector('.animate-spin')).not.toBeInTheDocument()
+      expect(screen.getByRole('switch')).not.toBeDisabled()
+    })
+  })
+
   it('shows a confirmation view before deleting, and cancel does not call delete', () => {
     render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
 
