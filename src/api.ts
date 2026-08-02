@@ -7,6 +7,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const initData = window.Telegram?.WebApp?.initData ?? ''
   const res = await fetch(`${BASE}${path}`, {
     ...options,
+    keepalive: true,
     headers: {
       'Content-Type': 'application/json',
       Authorization: initData,
