@@ -22,6 +22,7 @@ export function PhotoGrid({
   const [uploading, setUploading] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,7 +50,17 @@ export function PhotoGrid({
     }
   }
 
+  const handleDelete = async (photoId: string) => {
+    setDeletingId(photoId)
+    try {
+      await onDelete(photoId)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const handlePhotoTap = async (photo: Photo) => {
+    if (deletingId) return
     if (selected === null) {
       setSelected(photo.id)
       return
@@ -81,11 +92,17 @@ export function PhotoGrid({
           >
             <img src={photo.url} alt={`Photo ${photo.id}`} className="w-full h-full object-cover" />
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete(photo.id) }}
+              onClick={(e) => { e.stopPropagation(); handleDelete(photo.id) }}
+              disabled={deletingId === photo.id}
               className="absolute top-1 left-1 bg-black/50 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center"
             >
-              ✕
+              {deletingId === photo.id
+                ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                : '✕'}
             </button>
+            {deletingId === photo.id && (
+              <div className="absolute inset-0 bg-black/30" />
+            )}
           </div>
         ))}
 

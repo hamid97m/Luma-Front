@@ -43,6 +43,23 @@ describe('PhotoGrid', () => {
     await waitFor(() => expect(onDelete).toHaveBeenCalledWith('p1'))
   })
 
+  it('shows a spinner and disables the button on the photo being deleted', async () => {
+    let resolveDelete: () => void
+    const onDelete = vi.fn(() => new Promise<void>((resolve) => { resolveDelete = resolve }))
+    render(
+      <PhotoGrid photos={PHOTOS} onUpload={vi.fn()} onDelete={onDelete} onReorder={vi.fn()} />
+    )
+    const deleteButtons = screen.getAllByRole('button')
+    fireEvent.click(deleteButtons[0])
+
+    await waitFor(() => expect(deleteButtons[0]).toBeDisabled())
+    expect(screen.getAllByText('✕')).toHaveLength(1) // only p2's button still shows ✕
+
+    resolveDelete!()
+    await waitFor(() => expect(deleteButtons[0]).not.toBeDisabled())
+    expect(screen.getAllByText('✕')).toHaveLength(2)
+  })
+
   it('shows error banner for non-image file type', async () => {
     const onUpload = vi.fn()
     render(
