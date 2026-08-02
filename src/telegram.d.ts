@@ -15,6 +15,14 @@ interface TelegramThemeParams {
   destructive_text_color?: string
 }
 
+interface TelegramBackButton {
+  isVisible: boolean
+  show: () => void
+  hide: () => void
+  onClick: (callback: () => void) => void
+  offClick: (callback: () => void) => void
+}
+
 interface TelegramWebApp {
   initData: string
   initDataUnsafe: {
@@ -26,6 +34,7 @@ interface TelegramWebApp {
   }
   colorScheme: 'light' | 'dark'
   themeParams: TelegramThemeParams
+  BackButton: TelegramBackButton
   ready: () => void
   expand: () => void
   close: () => void

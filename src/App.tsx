@@ -38,6 +38,25 @@ export function App() {
   }, [tab])
 
   useEffect(() => {
+    const backButton = window.Telegram?.WebApp?.BackButton
+    if (!backButton) return
+    if (!activeChatMatch) {
+      backButton.hide()
+      return
+    }
+    const handleClick = () => {
+      setActiveChatMatch(null)
+      setMatchesRefreshKey((k) => k + 1)
+    }
+    backButton.onClick(handleClick)
+    backButton.show()
+    return () => {
+      backButton.offClick(handleClick)
+      backButton.hide()
+    }
+  }, [activeChatMatch])
+
+  useEffect(() => {
     if (screen !== 'main') return
     api.matches.unreadCount().then(({ count }) => setMatchesBadge(count))
   }, [screen, matchesRefreshKey])
