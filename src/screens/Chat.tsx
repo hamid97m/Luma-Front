@@ -86,7 +86,7 @@ export function Chat({ match, myUserId }: Props) {
 
           <div
             className="p-4 border-t border-white/10 flex flex-col gap-1"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
           >
             {sendError && <p role="alert" className="text-[12px] text-red-400">Couldn't send. Try again.</p>}
             <div className="flex gap-2">
