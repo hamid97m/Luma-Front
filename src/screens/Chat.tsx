@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
-import { haptic, mainButtonSupported, useMainButton } from '../telegram.js'
+import { haptic, useMainButton } from '../telegram.js'
 import { buildChatItems } from '../utils/chatFormat.js'
 import { MessageBubble } from '../components/chat/MessageBubble.js'
+import { ChatInputBar } from '../components/chat/ChatInputBar.js'
 import { t } from '../i18n.js'
 import type { LocalMessage, Match } from '../types.js'
 
@@ -157,29 +158,7 @@ export function Chat({ match, myUserId }: Props) {
             <div ref={bottomRef} />
           </div>
 
-          <div
-            className="p-4 border-t border-white/10 flex flex-col gap-1"
-            style={{ paddingBottom: 'calc(max(var(--tg-safe-bottom), env(safe-area-inset-bottom)) + 16px)' }}
-          >
-            <div className="flex gap-2">
-              <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') send() }}
-                placeholder={t.chat.placeholder}
-                className="flex-1 bg-white/10 rounded-[16px] px-4 py-2 text-white text-[15px] outline-none"
-              />
-              {!mainButtonSupported() && (
-                <button
-                  onClick={send}
-                  disabled={!draft.trim()}
-                  className="grad-tg text-white font-bold px-4 py-2 rounded-[16px] disabled:opacity-40"
-                >
-                  Send
-                </button>
-              )}
-            </div>
-          </div>
+          <ChatInputBar draft={draft} onDraftChange={setDraft} onSend={send} />
         </>
       )}
     </div>

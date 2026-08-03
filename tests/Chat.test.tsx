@@ -61,7 +61,7 @@ describe('Chat', () => {
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
-    fireEvent.click(screen.getByText('Send'))
+    fireEvent.click(screen.getByLabelText('Send'))
 
     await waitFor(() => expect(screen.getByText('yo')).toBeInTheDocument())
     expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('')
@@ -76,7 +76,7 @@ describe('Chat', () => {
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
-    fireEvent.click(screen.getByText('Send'))
+    fireEvent.click(screen.getByLabelText('Send'))
 
     // Visible immediately, marked as sending, input already cleared.
     expect(screen.getByText('yo')).toBeInTheDocument()
@@ -96,7 +96,7 @@ describe('Chat', () => {
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
-    fireEvent.click(screen.getByText('Send'))
+    fireEvent.click(screen.getByLabelText('Send'))
 
     await waitFor(() => screen.getByText('Failed — tap to retry'))
     expect(screen.getByText('yo')).toBeInTheDocument()
