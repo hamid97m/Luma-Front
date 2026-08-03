@@ -207,4 +207,14 @@ describe('Chat', () => {
     await waitFor(() => screen.getByText('im back'))
     expect(api.messages.list).toHaveBeenCalledTimes(2)
   })
+
+  it('shows the empty state for a fresh match and prefills the input from a chip', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('You matched with Sara'))
+
+    fireEvent.click(screen.getByText("Hey! How's your week going? 😊"))
+    expect(screen.getByPlaceholderText('Type a message…')).toHaveValue("Hey! How's your week going? 😊")
+  })
 })

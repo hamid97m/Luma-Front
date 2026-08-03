@@ -4,6 +4,7 @@ import { haptic, useMainButton } from '../telegram.js'
 import { buildChatItems } from '../utils/chatFormat.js'
 import { MessageBubble } from '../components/chat/MessageBubble.js'
 import { ChatInputBar } from '../components/chat/ChatInputBar.js'
+import { ChatEmptyState } from '../components/chat/ChatEmptyState.js'
 import { t } from '../i18n.js'
 import type { LocalMessage, Match } from '../types.js'
 
@@ -137,26 +138,30 @@ export function Chat({ match, myUserId }: Props) {
         </div>
       ) : (
         <>
-          <div role="log" aria-label="Messages" className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-[2px]">
-            {buildChatItems(messages).map((item) =>
-              item.kind === 'date' ? (
-                <div key={item.id} className="self-center glass-dark text-white/60 text-[11px] font-semibold px-3 py-1 rounded-full my-2">
-                  {item.label}
-                </div>
-              ) : (
-                <MessageBubble
-                  key={item.message.id}
-                  message={item.message}
-                  mine={item.message.senderId === myUserId}
-                  first={item.first}
-                  last={item.last}
-                  showTicks={item.message.id === lastMineId}
-                  onRetry={retry}
-                />
-              )
-            )}
-            <div ref={bottomRef} />
-          </div>
+          {messages.length === 0 ? (
+            <ChatEmptyState match={match} onPrefill={setDraft} />
+          ) : (
+            <div role="log" aria-label="Messages" className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-[2px]">
+              {buildChatItems(messages).map((item) =>
+                item.kind === 'date' ? (
+                  <div key={item.id} className="self-center glass-dark text-white/60 text-[11px] font-semibold px-3 py-1 rounded-full my-2">
+                    {item.label}
+                  </div>
+                ) : (
+                  <MessageBubble
+                    key={item.message.id}
+                    message={item.message}
+                    mine={item.message.senderId === myUserId}
+                    first={item.first}
+                    last={item.last}
+                    showTicks={item.message.id === lastMineId}
+                    onRetry={retry}
+                  />
+                )
+              )}
+              <div ref={bottomRef} />
+            </div>
+          )}
 
           <ChatInputBar draft={draft} onDraftChange={setDraft} onSend={send} />
         </>
