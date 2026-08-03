@@ -46,4 +46,23 @@ describe('MessageBubble', () => {
     fireEvent.click(screen.getByText('Failed — tap to retry'))
     expect(onRetry).toHaveBeenCalledWith('m1')
   })
+
+  it('calls onRetry when failed bubble is activated via keyboard (Enter)', () => {
+    const onRetry = vi.fn()
+    render(
+      <MessageBubble message={{ ...BASE, status: 'failed' }} mine first last showTicks={false} onRetry={onRetry} />
+    )
+    fireEvent.keyDown(screen.getByRole('button'), { key: 'Enter' })
+    expect(onRetry).toHaveBeenCalledWith('m1')
+  })
+
+  it('calls onRetry when failed bubble is activated via keyboard (Space)', () => {
+    const onRetry = vi.fn()
+    render(
+      <MessageBubble message={{ ...BASE, status: 'failed' }} mine first last showTicks={false} onRetry={onRetry} />
+    )
+    const bubble = screen.getByRole('button')
+    fireEvent.keyDown(bubble, { key: ' ' })
+    expect(onRetry).toHaveBeenCalledWith('m1')
+  })
 })

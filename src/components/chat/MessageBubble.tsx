@@ -43,10 +43,19 @@ export function MessageBubble({ message, mine, first, last, showTicks, onRetry }
     ? `${first ? '' : 'rounded-tr-[6px] '}${last ? '' : 'rounded-br-[6px]'}`
     : `${first ? '' : 'rounded-tl-[6px] '}${last ? '' : 'rounded-bl-[6px]'}`
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (failed && onRetry && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      onRetry(message.id)
+    }
+  }
+
   return (
     <div
       role={failed ? 'button' : undefined}
+      tabIndex={failed ? 0 : undefined}
       onClick={failed && onRetry ? () => onRetry(message.id) : undefined}
+      onKeyDown={handleKeyDown}
       className={`max-w-[75%] px-4 py-2 rounded-[18px] text-[15px] ${corners} ${
         mine ? 'self-end grad-tg text-white' : 'self-start bg-white/10 text-white'
       } ${failed ? 'opacity-70' : ''} ${last ? 'mb-2' : ''}`}
