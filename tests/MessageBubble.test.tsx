@@ -94,7 +94,7 @@ describe('MessageBubble', () => {
     render(<MessageBubble message={BASE} mine first last showTicks={false} onLongPress={onLongPress} />)
 
     const bubble = screen.getByText('hello there')
-    fireEvent.pointerDown(bubble, { clientX: 10, clientY: 10 })
+    fireEvent(bubble, new MouseEvent('pointerdown', { clientX: 10, clientY: 10, bubbles: true }))
     act(() => { vi.advanceTimersByTime(500) })
     expect(onLongPress).toHaveBeenCalledWith('m1')
     vi.useRealTimers()
@@ -106,14 +106,14 @@ describe('MessageBubble', () => {
     render(<MessageBubble message={BASE} mine first last showTicks={false} onLongPress={onLongPress} />)
 
     const bubble = screen.getByText('hello there')
-    fireEvent.pointerDown(bubble, { clientX: 10, clientY: 10 })
+    fireEvent(bubble, new MouseEvent('pointerdown', { clientX: 10, clientY: 10, bubbles: true }))
     act(() => { vi.advanceTimersByTime(200) })
     fireEvent.pointerUp(bubble)
     act(() => { vi.advanceTimersByTime(500) })
     expect(onLongPress).not.toHaveBeenCalled()
 
-    fireEvent.pointerDown(bubble, { clientX: 10, clientY: 10 })
-    fireEvent.pointerMove(bubble, { clientX: 10, clientY: 40 }) // scrolled away
+    fireEvent(bubble, new MouseEvent('pointerdown', { clientX: 10, clientY: 10, bubbles: true }))
+    fireEvent(bubble, new MouseEvent('pointermove', { clientX: 10, clientY: 40, bubbles: true })) // scrolled away
     act(() => { vi.advanceTimersByTime(500) })
     expect(onLongPress).not.toHaveBeenCalled()
     vi.useRealTimers()
