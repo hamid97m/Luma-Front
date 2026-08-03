@@ -233,4 +233,27 @@ describe('Chat', () => {
     fireEvent.click(screen.getByLabelText('Close'))
     expect(screen.queryByText('Coffee person')).not.toBeInTheDocument()
   })
+
+  it('shows a jump-to-latest chip only when scrolled away from the bottom', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({
+      messages: [{ id: 'm1', senderId: 'other-1', body: 'hi', createdAt: '2026-01-01T10:00:00Z', readAt: null }],
+    })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hi'))
+
+    expect(screen.queryByLabelText('Scroll to latest')).not.toBeInTheDocument()
+
+    const list = screen.getByRole('log')
+    Object.defineProperty(list, 'scrollHeight', { value: 1000, configurable: true })
+    Object.defineProperty(list, 'clientHeight', { value: 400, configurable: true })
+    Object.defineProperty(list, 'scrollTop', { value: 0, writable: true, configurable: true })
+    fireEvent.scroll(list)
+
+    expect(screen.getByLabelText('Scroll to latest')).toBeInTheDocument()
+
+    list.scrollTop = 600 // back at the bottom: 1000 - 600 - 400 = 0
+    fireEvent.scroll(list)
+    expect(screen.queryByLabelText('Scroll to latest')).not.toBeInTheDocument()
+  })
 })

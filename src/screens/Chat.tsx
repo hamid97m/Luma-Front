@@ -24,6 +24,10 @@ export function Chat({ match, myUserId }: Props) {
   const [draft, setDraft] = useState('')
   const [peeking, setPeeking] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const nearBottomRef = useRef(true)
+  const didInitialScroll = useRef(false)
+  const [showJump, setShowJump] = useState(false)
 
   const load = useCallback(() => {
     api.messages.list(match.id)
@@ -54,8 +58,22 @@ export function Chat({ match, myUserId }: Props) {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [load])
 
+  const onScroll = () => {
+    const el = listRef.current
+    if (!el) return
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    nearBottomRef.current = nearBottom
+    setShowJump(!nearBottom)
+  }
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: 'end' })
+    if (!didInitialScroll.current) {
+      if (messages.length === 0) return
+      bottomRef.current?.scrollIntoView({ block: 'end' })
+      didInitialScroll.current = true
+    } else if (nearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+    }
   }, [messages])
 
   const sendBody = (body: string, existingId?: string) => {
@@ -86,6 +104,8 @@ export function Chat({ match, myUserId }: Props) {
     const body = draft.trim()
     if (!body) return
     setDraft('')
+    nearBottomRef.current = true
+    setShowJump(false)
     sendBody(body)
   }
 
@@ -151,25 +171,36 @@ export function Chat({ match, myUserId }: Props) {
           {messages.length === 0 ? (
             <ChatEmptyState match={match} onPrefill={setDraft} />
           ) : (
-            <div role="log" aria-label="Messages" className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-[2px]">
-              {buildChatItems(messages).map((item) =>
-                item.kind === 'date' ? (
-                  <div key={item.id} className="self-center glass-dark text-white/60 text-[11px] font-semibold px-3 py-1 rounded-full my-2">
-                    {item.label}
-                  </div>
-                ) : (
-                  <MessageBubble
-                    key={item.message.id}
-                    message={item.message}
-                    mine={item.message.senderId === myUserId}
-                    first={item.first}
-                    last={item.last}
-                    showTicks={item.message.id === lastMineId}
-                    onRetry={retry}
-                  />
-                )
+            <div className="relative flex-1 flex flex-col overflow-hidden">
+              <div ref={listRef} onScroll={onScroll} role="log" aria-label="Messages" className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-[2px]">
+                {buildChatItems(messages).map((item) =>
+                  item.kind === 'date' ? (
+                    <div key={item.id} className="self-center glass-dark text-white/60 text-[11px] font-semibold px-3 py-1 rounded-full my-2">
+                      {item.label}
+                    </div>
+                  ) : (
+                    <MessageBubble
+                      key={item.message.id}
+                      message={item.message}
+                      mine={item.message.senderId === myUserId}
+                      first={item.first}
+                      last={item.last}
+                      showTicks={item.message.id === lastMineId}
+                      onRetry={retry}
+                    />
+                  )
+                )}
+                <div ref={bottomRef} />
+              </div>
+              {showJump && (
+                <button
+                  aria-label={t.chat.scrollToLatest}
+                  onClick={() => bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })}
+                  className="absolute bottom-3 right-4 w-10 h-10 rounded-full glass border border-white/15 text-white text-lg flex items-center justify-center"
+                >
+                  ↓
+                </button>
               )}
-              <div ref={bottomRef} />
             </div>
           )}
 
