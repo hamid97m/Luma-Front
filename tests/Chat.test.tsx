@@ -217,4 +217,20 @@ describe('Chat', () => {
     fireEvent.click(screen.getByText("Hey! How's your week going? 😊"))
     expect(screen.getByPlaceholderText('Type a message…')).toHaveValue("Hey! How's your week going? 😊")
   })
+
+  it('opens a profile peek from the header and closes it again', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({
+      messages: [{ id: 'm1', senderId: 'other-1', body: 'hi', createdAt: '2026-01-01T10:00:00Z', readAt: null }],
+    })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hi'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'View profile' }))
+    expect(screen.getByText('Coffee person')).toBeInTheDocument()
+    expect(screen.getByText('My perfect Sunday')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Close'))
+    expect(screen.queryByText('Coffee person')).not.toBeInTheDocument()
+  })
 })

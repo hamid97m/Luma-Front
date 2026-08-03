@@ -5,6 +5,7 @@ import { buildChatItems } from '../utils/chatFormat.js'
 import { MessageBubble } from '../components/chat/MessageBubble.js'
 import { ChatInputBar } from '../components/chat/ChatInputBar.js'
 import { ChatEmptyState } from '../components/chat/ChatEmptyState.js'
+import { ProfilePeekSheet } from '../components/chat/ProfilePeekSheet.js'
 import { t } from '../i18n.js'
 import type { LocalMessage, Match } from '../types.js'
 
@@ -21,6 +22,7 @@ export function Chat({ match, myUserId }: Props) {
   const [messages, setMessages] = useState<LocalMessage[]>([])
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [draft, setDraft] = useState('')
+  const [peeking, setPeeking] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const load = useCallback(() => {
@@ -114,13 +116,21 @@ export function Chat({ match, myUserId }: Props) {
 
   return (
     <div className="flex flex-col h-full bg-[#0b0b12]" style={{ paddingTop: 'var(--tg-safe-top)' }}>
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-white/10">
+      <button
+        type="button"
+        aria-label={t.chat.viewProfile}
+        onClick={() => setPeeking(true)}
+        className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-white/10 text-left w-full"
+      >
         {match.user.photos[0]
           ? <img src={match.user.photos[0]} alt={match.user.name} className="w-10 h-10 rounded-full object-cover" />
           : <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-lg">👤</div>
         }
-        <p className="font-bold text-white text-[17px]">{match.user.name}</p>
-      </div>
+        <p className="font-bold text-white text-[17px]">
+          {match.user.name}
+          {match.user.age != null && <span className="text-white/50 font-semibold">, {match.user.age}</span>}
+        </p>
+      </button>
 
       {loadState === 'unavailable' ? (
         <div className="flex-1 flex items-center justify-center p-8 text-center text-white/50 text-[15px]">
@@ -166,6 +176,8 @@ export function Chat({ match, myUserId }: Props) {
           <ChatInputBar draft={draft} onDraftChange={setDraft} onSend={send} />
         </>
       )}
+
+      {peeking && <ProfilePeekSheet user={match.user} onClose={() => setPeeking(false)} />}
     </div>
   )
 }
