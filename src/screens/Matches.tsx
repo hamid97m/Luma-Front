@@ -31,10 +31,11 @@ export function Matches({ onOpenChat, refreshKey }: Props) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.matches.list().then(({ matches: m }) => {
-      setMatches(m)
-      setLoading(false)
-    })
+    // On silent refreshes (refreshKey bump) a failure just keeps the stale list.
+    api.matches.list()
+      .then(({ matches: m }) => setMatches(m))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [refreshKey])
 
   if (loading) {

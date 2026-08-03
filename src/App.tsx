@@ -121,32 +121,39 @@ export function App() {
     )
   }
 
-  if (activeChatMatch) {
-    return (
-      <Chat
-        match={activeChatMatch}
-        myUserId={useAuthStore.getState().user!.id}
-      />
-    )
-  }
-
+  // Chat renders alongside the main layout (hidden via CSS) instead of
+  // replacing it, so the tabs stay mounted while chatting. Coming back shows
+  // their content instantly; the back-button's refreshKey bump then refetches
+  // matches silently instead of remounting into a loading screen.
   return (
-    <div className="flex flex-col h-screen bg-[#0b0b12]" style={{ paddingTop: 'var(--tg-safe-top)' }}>
-      <div className="flex-1 overflow-hidden">
-        {visited.discovery && (
-          <div className={`h-full ${tab === 'discovery' ? '' : 'hidden'}`}>
-            <Discovery onOpenChat={setActiveChatMatch} />
-          </div>
-        )}
-        {visited.matches && (
-          <div className={`h-full ${tab === 'matches' ? '' : 'hidden'}`}>
-            <Matches onOpenChat={setActiveChatMatch} refreshKey={matchesRefreshKey} />
-          </div>
-        )}
-        {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile /></div>}
+    <>
+      {activeChatMatch && (
+        <Chat
+          key={activeChatMatch.id}
+          match={activeChatMatch}
+          myUserId={useAuthStore.getState().user!.id}
+        />
+      )}
+      <div
+        className={`flex-col h-screen bg-[#0b0b12] ${activeChatMatch ? 'hidden' : 'flex'}`}
+        style={{ paddingTop: 'var(--tg-safe-top)' }}
+      >
+        <div className="flex-1 overflow-hidden">
+          {visited.discovery && (
+            <div className={`h-full ${tab === 'discovery' ? '' : 'hidden'}`}>
+              <Discovery onOpenChat={setActiveChatMatch} />
+            </div>
+          )}
+          {visited.matches && (
+            <div className={`h-full ${tab === 'matches' ? '' : 'hidden'}`}>
+              <Matches onOpenChat={setActiveChatMatch} refreshKey={matchesRefreshKey} />
+            </div>
+          )}
+          {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile /></div>}
+        </div>
+        <BottomNav active={tab} onChange={setTab} matchesBadge={matchesBadge} />
+        {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}
       </div>
-      <BottomNav active={tab} onChange={setTab} matchesBadge={matchesBadge} />
-      {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}
-    </div>
+    </>
   )
 }
