@@ -16,7 +16,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(text)
+    throw Object.assign(new Error(text), { status: res.status })
   }
   return res.json() as Promise<T>
 }

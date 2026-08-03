@@ -64,7 +64,7 @@ export function Discovery({ onOpenChat }: Props) {
     onOpenChat({
       id: activeMatch.id,
       matchedAt: new Date().toISOString(),
-      user: { ...activeMatch.user, photos: [] },
+      user: { ...activeMatch.user, photos: [], age: null, bio: null, icebreakerPrompt: null, icebreakerAnswer: null },
       lastMessage: null,
       unreadCount: 0,
     })

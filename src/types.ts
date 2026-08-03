@@ -34,6 +34,10 @@ export interface Match {
     photos: string[]
     telegramId: number
     username: string | null
+    age: number | null
+    bio: string | null
+    icebreakerPrompt: string | null
+    icebreakerAnswer: string | null
   }
   lastMessage: { body: string; createdAt: string; senderId: string } | null
   unreadCount: number
@@ -45,6 +49,11 @@ export interface Message {
   body: string
   createdAt: string
   readAt: string | null
+}
+
+/** A chat message plus optional client-only delivery state for optimistic send. */
+export interface LocalMessage extends Message {
+  status?: 'sending' | 'failed'
 }
 
 export interface SwipeResult {

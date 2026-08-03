@@ -6,7 +6,17 @@ import { api } from '../src/api.js'
 const BASE_MATCH = {
   id: 'match-1',
   matchedAt: '2026-01-01T00:00:00Z',
-  user: { id: 'other-1', name: 'Sara', photos: [], telegramId: 99, username: 'sara' },
+  user: {
+    id: 'other-1',
+    name: 'Sara',
+    photos: [],
+    telegramId: 99,
+    username: 'sara',
+    age: 24,
+    bio: 'Coffee person',
+    icebreakerPrompt: 'My perfect Sunday',
+    icebreakerAnswer: 'Hiking then pancakes',
+  },
 }
 
 describe('Matches', () => {

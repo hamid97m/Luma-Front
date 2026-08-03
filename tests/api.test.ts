@@ -48,4 +48,14 @@ describe('api request', () => {
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ body: 'hi' }) })
     )
   })
+
+  it('attaches the HTTP status to thrown errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: () => Promise.resolve('match_not_found'),
+    }))
+
+    await expect(api.matches.list()).rejects.toMatchObject({ status: 404 })
+  })
 })
