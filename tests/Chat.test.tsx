@@ -423,4 +423,51 @@ describe('Chat', () => {
     await waitFor(() => screen.getByText('You matched with Sara')) // back to empty state
     expect(api.messages.delete).not.toHaveBeenCalled()
   })
+
+  it('exits edit mode without a request when saving an emptied draft', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE] })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'wip draft' } })
+    fireEvent.contextMenu(screen.getByText('hey'))
+    fireEvent.click(screen.getByText('Edit'))
+    expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('hey')
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: '' } })
+    fireEvent.keyDown(screen.getByPlaceholderText('Type a message…'), { key: 'Enter' })
+
+    expect(screen.queryByText('Editing message')).not.toBeInTheDocument()
+    expect(api.messages.edit).not.toHaveBeenCalled()
+    expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('wip draft')
+  })
+
+  it('does not duplicate a bubble when a visibility refresh lands while an edit is in flight', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE] })
+    let resolveEdit!: (v: { message: typeof MINE & { editedAt: string } }) => void
+    vi.mocked(api.messages.edit).mockReturnValue(new Promise((r) => { resolveEdit = r }))
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.contextMenu(screen.getByText('hey'))
+    fireEvent.click(screen.getByText('Edit'))
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'hey fixed' } })
+    fireEvent.click(screen.getByLabelText('Save'))
+
+    expect(screen.getByText('hey fixed')).toBeInTheDocument()
+
+    // A visibility refresh lands mid-flight and returns the stale (pre-edit) body.
+    vi.mocked(api.messages.list).mockResolvedValueOnce({ messages: [MINE] })
+    fireEvent(document, new Event('visibilitychange'))
+    await waitFor(() => expect(api.messages.list).toHaveBeenCalledTimes(2))
+
+    expect(screen.getAllByText('hey fixed')).toHaveLength(1)
+    expect(screen.queryByText('hey')).not.toBeInTheDocument()
+
+    resolveEdit({ message: { ...MINE, body: 'hey fixed', editedAt: '2026-01-02T09:00:00Z' } })
+    await waitFor(() => expect(screen.getByText('edited')).toBeInTheDocument())
+    expect(screen.getAllByText('hey fixed')).toHaveLength(1)
+  })
 })

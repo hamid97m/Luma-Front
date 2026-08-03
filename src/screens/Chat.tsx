@@ -40,7 +40,10 @@ export function Chat({ match, myUserId }: Props) {
       .then(({ messages: server }) => {
         setMessages((prev) => {
           const unconfirmed = prev.filter((m) => m.status)
-          return [...server, ...unconfirmed]
+          const byId = new Map(unconfirmed.map((m) => [m.id, m]))
+          const merged = server.map((m) => byId.get(m.id) ?? m)
+          const extras = unconfirmed.filter((m) => !server.some((s) => s.id === m.id))
+          return [...merged, ...extras]
         })
         setLoadState('ready')
       })
@@ -146,7 +149,7 @@ export function Chat({ match, myUserId }: Props) {
     const id = editingId
     if (!id) return
     const body = draft.trim()
-    if (!body) return
+    if (!body) { cancelEdit(); return } // empty save exits edit mode, no request
     const original = messagesRef.current.find((m) => m.id === id)
     cancelEdit()
     if (!original || body === original.body) return
