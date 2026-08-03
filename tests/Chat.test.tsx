@@ -110,12 +110,29 @@ describe('Chat', () => {
     expect(screen.getByText('yo')).toBeInTheDocument()
   })
 
-  it('shows an unavailable state when the match can no longer be loaded', async () => {
-    vi.mocked(api.messages.list).mockRejectedValue(new Error('not found'))
+  it('shows the unavailable state only for a 404 load failure', async () => {
+    vi.mocked(api.messages.list).mockRejectedValue(
+      Object.assign(new Error('match_not_found'), { status: 404 })
+    )
 
     render(<Chat match={MATCH} myUserId="me-1" />)
 
     await waitFor(() => screen.getByText('This match is no longer available.'))
+  })
+
+  it('shows a retry button on a network load failure and recovers on retry', async () => {
+    vi.mocked(api.messages.list).mockRejectedValueOnce(new Error('network down'))
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+
+    await waitFor(() => screen.getByText("Couldn't load this chat."))
+
+    vi.mocked(api.messages.list).mockResolvedValueOnce({
+      messages: [{ id: 'm1', senderId: 'other-1', body: 'hi again', createdAt: '2026-01-01T10:00:00Z', readAt: null }],
+    })
+    fireEvent.click(screen.getByText('Try again'))
+
+    await waitFor(() => screen.getByText('hi again'))
   })
 
   it('shows a single tick under the last message you sent when it has not been read', async () => {

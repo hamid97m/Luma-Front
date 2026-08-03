@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { haptic, mainButtonSupported, useMainButton } from '../telegram.js'
 import { buildChatItems } from '../utils/chatFormat.js'
 import { MessageBubble } from '../components/chat/MessageBubble.js'
+import { t } from '../i18n.js'
 import type { LocalMessage, Match } from '../types.js'
 
 interface Props {
@@ -10,21 +11,34 @@ interface Props {
   myUserId: string
 }
 
+type LoadState = 'loading' | 'ready' | 'unavailable' | 'error'
+
 let localSeq = 0
 
 export function Chat({ match, myUserId }: Props) {
   const [messages, setMessages] = useState<LocalMessage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [unavailable, setUnavailable] = useState(false)
+  const [loadState, setLoadState] = useState<LoadState>('loading')
   const [draft, setDraft] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api.messages.list(match.id)
-      .then(({ messages }) => setMessages(messages))
-      .catch(() => setUnavailable(true))
-      .finally(() => setLoading(false))
+      .then(({ messages: server }) => {
+        setMessages((prev) => {
+          const unconfirmed = prev.filter((m) => m.status)
+          return [...server, ...unconfirmed]
+        })
+        setLoadState('ready')
+      })
+      .catch((err: unknown) => {
+        setLoadState((s) => {
+          if (s === 'ready') return s // a background refresh failing is not fatal
+          return (err as { status?: number } | null)?.status === 404 ? 'unavailable' : 'error'
+        })
+      })
   }, [match.id])
+
+  useEffect(() => { load() }, [load])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' })
@@ -71,14 +85,14 @@ export function Chat({ match, myUserId }: Props) {
   // fallback when Telegram provides no MainButton (browser/dev/tests).
   useMainButton({
     text: 'Send',
-    visible: !loading && !unavailable && !!draft.trim(),
+    visible: loadState === 'ready' && !!draft.trim(),
     enabled: !!draft.trim(),
     onClick: send,
   })
 
   const lastMineId = [...messages].reverse().find((m) => m.senderId === myUserId && !m.status)?.id ?? null
 
-  if (loading) {
+  if (loadState === 'loading') {
     return (
       <div className="flex items-center justify-center h-full bg-[#0b0b12]">
         <img src="/luma-icon.png" alt="" className="w-14 h-14 rounded-2xl animate-pulse-heart select-none" />
@@ -96,9 +110,19 @@ export function Chat({ match, myUserId }: Props) {
         <p className="font-bold text-white text-[17px]">{match.user.name}</p>
       </div>
 
-      {unavailable ? (
+      {loadState === 'unavailable' ? (
         <div className="flex-1 flex items-center justify-center p-8 text-center text-white/50 text-[15px]">
-          This match is no longer available.
+          {t.chat.unavailable}
+        </div>
+      ) : loadState === 'error' ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center">
+          <p className="text-white/50 text-[15px]">{t.chat.loadError}</p>
+          <button
+            onClick={() => { setLoadState('loading'); load() }}
+            className="bg-white/10 text-white font-semibold px-5 py-2 rounded-xl"
+          >
+            {t.chat.retry}
+          </button>
         </div>
       ) : (
         <>
@@ -132,7 +156,7 @@ export function Chat({ match, myUserId }: Props) {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') send() }}
-                placeholder="Type a message…"
+                placeholder={t.chat.placeholder}
                 className="flex-1 bg-white/10 rounded-[16px] px-4 py-2 text-white text-[15px] outline-none"
               />
               {!mainButtonSupported() && (
