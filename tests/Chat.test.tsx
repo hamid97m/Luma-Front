@@ -12,7 +12,7 @@ vi.mock('../src/api.js', () => ({
     discovery: { feed: vi.fn() },
     swipes: { swipe: vi.fn() },
     matches: { list: vi.fn() },
-    messages: { list: vi.fn(), send: vi.fn() },
+    messages: { list: vi.fn(), send: vi.fn(), edit: vi.fn(), delete: vi.fn() },
   },
 }))
 
@@ -285,5 +285,142 @@ describe('Chat', () => {
     list.scrollTop = 600 // back at the bottom: 1000 - 600 - 400 = 0
     fireEvent.scroll(list)
     expect(screen.queryByLabelText('Scroll to latest')).not.toBeInTheDocument()
+  })
+
+  const MINE = { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null }
+  const THEIRS = { id: 'm2', senderId: 'other-1', body: 'hi there', createdAt: '2026-01-01T10:01:00Z', readAt: null }
+
+  it('opens the action sheet on context-menu of my own message only', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.contextMenu(screen.getByText('hi there'))
+    expect(screen.queryByRole('menu', { name: 'Message actions' })).not.toBeInTheDocument()
+
+    fireEvent.contextMenu(screen.getByText('hey'))
+    expect(screen.getByRole('menu', { name: 'Message actions' })).toBeInTheDocument()
+  })
+
+  it('edits a message optimistically through the sheet and input bar', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE] })
+    vi.mocked(api.messages.edit).mockResolvedValue({
+      message: { ...MINE, body: 'hey fixed', editedAt: '2026-01-02T09:00:00Z' },
+    })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.contextMenu(screen.getByText('hey'))
+    fireEvent.click(screen.getByText('Edit'))
+
+    // Edit mode: strip visible, input prefilled with the original body.
+    expect(screen.getByText('Editing message')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('hey')
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'hey fixed' } })
+    fireEvent.click(screen.getByLabelText('Save'))
+
+    // Optimistic body swap, then the edited label once the server confirms.
+    expect(screen.getByText('hey fixed')).toBeInTheDocument()
+    expect(screen.queryByText('Editing message')).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('edited')).toBeInTheDocument())
+    expect(api.messages.edit).toHaveBeenCalledWith('match-1', 'm1', 'hey fixed')
+  })
+
+  it('reverts an edit when the server rejects it', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE] })
+    vi.mocked(api.messages.edit).mockRejectedValue(new Error('network'))
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.contextMenu(screen.getByText('hey'))
+    fireEvent.click(screen.getByText('Edit'))
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'hey broken' } })
+    fireEvent.click(screen.getByLabelText('Save'))
+
+    await waitFor(() => expect(screen.getByText('hey')).toBeInTheDocument())
+    expect(screen.queryByText('hey broken')).not.toBeInTheDocument()
+  })
+
+  it('cancelling an edit restores the stashed draft', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE] })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'half-typed draft' } })
+    fireEvent.contextMenu(screen.getByText('hey'))
+    fireEvent.click(screen.getByText('Edit'))
+    expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('hey')
+
+    fireEvent.click(screen.getByLabelText('Cancel'))
+    expect(screen.queryByText('Editing message')).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('half-typed draft')
+  })
+
+  it('deletes a message optimistically', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
+    vi.mocked(api.messages.delete).mockResolvedValue({ ok: true })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.contextMenu(screen.getByText('hey'))
+    fireEvent.click(screen.getByText('Delete'))
+
+    expect(screen.queryByText('hey')).not.toBeInTheDocument()
+    expect(screen.getByText('hi there')).toBeInTheDocument()
+    await waitFor(() => expect(api.messages.delete).toHaveBeenCalledWith('match-1', 'm1'))
+  })
+
+  it('restores a deleted message when the server fails with a non-404', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
+    vi.mocked(api.messages.delete).mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }))
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.contextMenu(screen.getByText('hey'))
+    fireEvent.click(screen.getByText('Delete'))
+    expect(screen.queryByText('hey')).not.toBeInTheDocument()
+
+    await waitFor(() => expect(screen.getByText('hey')).toBeInTheDocument())
+  })
+
+  it('treats a 404 delete as success (already gone)', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
+    vi.mocked(api.messages.delete).mockRejectedValue(Object.assign(new Error('message_not_found'), { status: 404 }))
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.contextMenu(screen.getByText('hey'))
+    fireEvent.click(screen.getByText('Delete'))
+
+    await waitFor(() => expect(api.messages.delete).toHaveBeenCalled())
+    expect(screen.queryByText('hey')).not.toBeInTheDocument()
+  })
+
+  it('deletes a failed message locally without calling the server', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
+    vi.mocked(api.messages.send).mockRejectedValueOnce(new Error('network'))
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByPlaceholderText('Type a message…'))
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
+    fireEvent.click(screen.getByLabelText('Send'))
+    await waitFor(() => screen.getByText('Failed — tap to retry'))
+
+    fireEvent.contextMenu(screen.getByText('yo'))
+    expect(screen.getByText('Retry')).toBeInTheDocument() // failed variant, no Edit
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Delete'))
+    await waitFor(() => screen.getByText('You matched with Sara')) // back to empty state
+    expect(api.messages.delete).not.toHaveBeenCalled()
   })
 })

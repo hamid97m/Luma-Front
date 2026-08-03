@@ -6,6 +6,7 @@ import { MessageBubble } from '../components/chat/MessageBubble.js'
 import { ChatInputBar } from '../components/chat/ChatInputBar.js'
 import { ChatEmptyState } from '../components/chat/ChatEmptyState.js'
 import { ProfilePeekSheet } from '../components/chat/ProfilePeekSheet.js'
+import { MessageActionSheet } from '../components/chat/MessageActionSheet.js'
 import { t } from '../i18n.js'
 import type { LocalMessage, Match } from '../types.js'
 
@@ -23,11 +24,16 @@ export function Chat({ match, myUserId }: Props) {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [draft, setDraft] = useState('')
   const [peeking, setPeeking] = useState(false)
+  const [actionId, setActionId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const stashedDraft = useRef('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const nearBottomRef = useRef(true)
   const didInitialScroll = useRef(false)
   const [showJump, setShowJump] = useState(false)
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
 
   const load = useCallback(() => {
     api.messages.list(match.id)
@@ -111,13 +117,81 @@ export function Chat({ match, myUserId }: Props) {
     sendBody(body)
   }
 
-  const messagesRef = useRef(messages)
-  messagesRef.current = messages
-
   const retry = useCallback((id: string) => {
     const msg = messagesRef.current.find((m) => m.id === id)
     if (msg) sendBody(msg.body, id)
   }, [sendBody])
+
+  const openActions = useCallback((id: string) => {
+    haptic.impact('light')
+    setActionId(id)
+  }, [])
+
+  const beginEdit = (id: string) => {
+    setActionId(null)
+    const msg = messagesRef.current.find((m) => m.id === id)
+    if (!msg) return
+    stashedDraft.current = draft
+    setDraft(msg.body)
+    setEditingId(id)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setDraft(stashedDraft.current)
+    stashedDraft.current = ''
+  }
+
+  const saveEdit = () => {
+    const id = editingId
+    if (!id) return
+    const body = draft.trim()
+    if (!body) return
+    const original = messagesRef.current.find((m) => m.id === id)
+    cancelEdit()
+    if (!original || body === original.body) return
+
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, body, status: 'sending' as const } : m)))
+    haptic.impact('light')
+    api.messages.edit(match.id, id, body)
+      .then(({ message }) => {
+        setMessages((prev) => prev.map((m) => (m.id === id ? message : m)))
+      })
+      .catch(() => {
+        haptic.notification('error')
+        setMessages((prev) => prev.map((m) => (m.id === id ? original : m)))
+      })
+  }
+
+  const deleteMessage = (id: string) => {
+    setActionId(null)
+    if (editingId === id) cancelEdit()
+    const idx = messagesRef.current.findIndex((m) => m.id === id)
+    if (idx === -1) return
+    const removed = messagesRef.current[idx]
+    setMessages((prev) => prev.filter((m) => m.id !== id))
+    if (removed.status === 'failed') return // never reached the server — local removal is enough
+
+    api.messages.delete(match.id, id).catch((err: unknown) => {
+      if ((err as { status?: number } | null)?.status === 404) return // already gone — treat as success
+      haptic.notification('error')
+      setMessages((prev) => {
+        const next = [...prev]
+        next.splice(Math.min(idx, next.length), 0, removed)
+        return next
+      })
+    })
+  }
+
+  const retryFromSheet = (id: string) => {
+    setActionId(null)
+    retry(id)
+  }
+
+  const submit = () => {
+    if (editingId) saveEdit()
+    else send()
+  }
 
   const items = useMemo(() => buildChatItems(messages), [messages])
 
@@ -125,10 +199,10 @@ export function Chat({ match, myUserId }: Props) {
   // draft is empty or the match is gone; the in-page button below is the
   // fallback when Telegram provides no MainButton (browser/dev/tests).
   useMainButton({
-    text: 'Send',
+    text: editingId ? t.chat.save : t.chat.send,
     visible: loadState === 'ready' && !!draft.trim(),
     enabled: !!draft.trim(),
-    onClick: send,
+    onClick: submit,
   })
 
   const lastMineId = [...messages].reverse().find((m) => m.senderId === myUserId && !m.status)?.id ?? null
@@ -194,6 +268,11 @@ export function Chat({ match, myUserId }: Props) {
                       last={item.last}
                       showTicks={item.message.id === lastMineId}
                       onRetry={retry}
+                      onLongPress={
+                        item.message.senderId === myUserId && item.message.status !== 'sending'
+                          ? openActions
+                          : undefined
+                      }
                     />
                   )
                 )}
@@ -211,11 +290,30 @@ export function Chat({ match, myUserId }: Props) {
             </div>
           )}
 
-          <ChatInputBar draft={draft} onDraftChange={setDraft} onSend={send} />
+          <ChatInputBar
+            draft={draft}
+            onDraftChange={setDraft}
+            onSend={submit}
+            editingBody={editingId ? messagesRef.current.find((m) => m.id === editingId)?.body ?? null : null}
+            onCancelEdit={cancelEdit}
+          />
         </>
       )}
 
       {peeking && <ProfilePeekSheet user={match.user} onClose={() => setPeeking(false)} />}
+
+      {actionId && (() => {
+        const msg = messages.find((m) => m.id === actionId)
+        return msg ? (
+          <MessageActionSheet
+            message={msg}
+            onEdit={beginEdit}
+            onDelete={deleteMessage}
+            onRetry={retryFromSheet}
+            onClose={() => setActionId(null)}
+          />
+        ) : null
+      })()}
     </div>
   )
 }
