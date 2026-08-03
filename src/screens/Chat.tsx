@@ -1,34 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { haptic, mainButtonSupported, useMainButton } from '../telegram.js'
-import type { Match, Message } from '../types.js'
+import { buildChatItems } from '../utils/chatFormat.js'
+import { MessageBubble } from '../components/chat/MessageBubble.js'
+import type { LocalMessage, Match } from '../types.js'
 
 interface Props {
   match: Match
   myUserId: string
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-function SeenTicks({ seen }: { seen: boolean }) {
-  return (
-    <span role="img" aria-label={seen ? 'Seen' : 'Sent'} className="inline-flex text-white/60">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className={seen ? '-mr-1.5' : ''}>
-        <path d="M2 8.5L6 12L14 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      {seen && (
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-          <path d="M2 8.5L6 12L14 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
-    </span>
-  )
-}
-
 export function Chat({ match, myUserId }: Props) {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<LocalMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [unavailable, setUnavailable] = useState(false)
   const [draft, setDraft] = useState('')
@@ -76,7 +59,7 @@ export function Chat({ match, myUserId }: Props) {
     onClick: send,
   })
 
-  const lastMineId = [...messages].reverse().find((m) => m.senderId === myUserId)?.id ?? null
+  const lastMineId = [...messages].reverse().find((m) => m.senderId === myUserId && !m.status)?.id ?? null
 
   if (loading) {
     return (
@@ -102,21 +85,23 @@ export function Chat({ match, myUserId }: Props) {
         </div>
       ) : (
         <>
-          <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2">
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`max-w-[75%] px-4 py-2 rounded-[18px] text-[15px] ${
-                  m.senderId === myUserId ? 'self-end grad-tg text-white' : 'self-start bg-white/10 text-white'
-                }`}
-              >
-                <p>{m.body}</p>
-                <p className="text-[10px] opacity-60 mt-0.5 flex items-center gap-1">
-                  {formatTime(m.createdAt)}
-                  {m.id === lastMineId && <SeenTicks seen={!!m.readAt} />}
-                </p>
-              </div>
-            ))}
+          <div role="log" aria-label="Messages" className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-[2px]">
+            {buildChatItems(messages).map((item) =>
+              item.kind === 'date' ? (
+                <div key={item.id} className="self-center glass-dark text-white/60 text-[11px] font-semibold px-3 py-1 rounded-full my-2">
+                  {item.label}
+                </div>
+              ) : (
+                <MessageBubble
+                  key={item.message.id}
+                  message={item.message}
+                  mine={item.message.senderId === myUserId}
+                  first={item.first}
+                  last={item.last}
+                  showTicks={item.message.id === lastMineId}
+                />
+              )
+            )}
             <div ref={bottomRef} />
           </div>
 

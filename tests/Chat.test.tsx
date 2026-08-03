@@ -132,4 +132,18 @@ describe('Chat', () => {
     expect(screen.getAllByRole('img', { name: 'Sent' })).toHaveLength(1)
     expect(screen.queryByRole('img', { name: 'Seen' })).not.toBeInTheDocument()
   })
+
+  it('renders a date chip above the messages', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({
+      messages: [
+        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null },
+      ],
+    })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+
+    await waitFor(() => screen.getByText('hey'))
+    // 2026-01-01 is far from "today", so the chip shows a short date.
+    expect(screen.getByText(/Jan(uary)? 1/)).toBeInTheDocument()
+  })
 })
