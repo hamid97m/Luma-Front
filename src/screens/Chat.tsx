@@ -40,6 +40,16 @@ export function Chat({ match, myUserId }: Props) {
 
   useEffect(() => { load() }, [load])
 
+  // Weak-server constraint: no polling. Refresh only when the user returns
+  // to the app (e.g. after switching to another Telegram chat).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') load()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [load])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' })
   }, [messages])

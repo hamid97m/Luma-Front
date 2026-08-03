@@ -192,4 +192,19 @@ describe('Chat', () => {
     // 2026-01-01 is far from "today", so the chip shows a short date.
     expect(screen.getByText(/Jan(uary)? 1/)).toBeInTheDocument()
   })
+
+  it('refetches messages when the app becomes visible again', async () => {
+    vi.mocked(api.messages.list).mockResolvedValueOnce({ messages: [] })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByPlaceholderText('Type a message…'))
+
+    vi.mocked(api.messages.list).mockResolvedValueOnce({
+      messages: [{ id: 'm9', senderId: 'other-1', body: 'im back', createdAt: '2026-01-01T11:00:00Z', readAt: null }],
+    })
+    fireEvent(document, new Event('visibilitychange'))
+
+    await waitFor(() => screen.getByText('im back'))
+    expect(api.messages.list).toHaveBeenCalledTimes(2)
+  })
 })
