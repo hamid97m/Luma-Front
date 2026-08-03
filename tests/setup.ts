@@ -32,7 +32,7 @@ vi.mock('@telegram-apps/sdk-react', () => ({
 vi.mock('../src/api.ts', () => ({
   api: {
     auth: { verify: vi.fn() },
-    profile: { get: vi.fn(), update: vi.fn() },
+    profile: { get: vi.fn(), update: vi.fn(), setWriteAccess: vi.fn(() => Promise.resolve({ ok: true })) },
     photos: { getUploadUrl: vi.fn(), delete: vi.fn(), reorder: vi.fn(), uploadFile: vi.fn() },
     discovery: { feed: vi.fn() },
     swipes: { swipe: vi.fn() },

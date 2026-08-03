@@ -99,6 +99,71 @@ describe('initTelegram', () => {
   })
 })
 
+describe('write access', () => {
+  // These functions keep per-session module state (granted/prompted), so each
+  // test gets a freshly-loaded module instance.
+  async function freshTelegram() {
+    vi.resetModules()
+    return await import('../src/telegram.js')
+  }
+
+  it('botCanMessage reflects allows_write_to_pm from initData', async () => {
+    const tg = await freshTelegram()
+    setWebApp({ initDataUnsafe: { user: { id: 1, first_name: 'A', allows_write_to_pm: true } } })
+    expect(tg.botCanMessage()).toBe(true)
+
+    setWebApp({ initDataUnsafe: { user: { id: 1, first_name: 'A' } } })
+    expect(tg.botCanMessage()).toBe(false)
+  })
+
+  it('shouldPromptWriteAccess is true only on supporting clients without access', async () => {
+    const tg = await freshTelegram()
+
+    setWebApp({ requestWriteAccess: vi.fn(), isVersionAtLeast: () => true, initDataUnsafe: {} })
+    expect(tg.shouldPromptWriteAccess()).toBe(true)
+
+    // Already granted → no prompt
+    setWebApp({
+      requestWriteAccess: vi.fn(),
+      isVersionAtLeast: () => true,
+      initDataUnsafe: { user: { id: 1, first_name: 'A', allows_write_to_pm: true } },
+    })
+    expect(tg.shouldPromptWriteAccess()).toBe(false)
+
+    // Old client without the API → no prompt
+    setWebApp({ isVersionAtLeast: () => false, initDataUnsafe: {} })
+    expect(tg.shouldPromptWriteAccess()).toBe(false)
+  })
+
+  it('shouldPromptWriteAccess is false after markWriteAccessPrompted', async () => {
+    const tg = await freshTelegram()
+    setWebApp({ requestWriteAccess: vi.fn(), isVersionAtLeast: () => true, initDataUnsafe: {} })
+
+    expect(tg.shouldPromptWriteAccess()).toBe(true)
+    tg.markWriteAccessPrompted()
+    expect(tg.shouldPromptWriteAccess()).toBe(false)
+  })
+
+  it('requestWriteAccess resolves the grant and remembers it for the session', async () => {
+    const tg = await freshTelegram()
+    setWebApp({
+      requestWriteAccess: (cb?: (granted: boolean) => void) => cb?.(true),
+      isVersionAtLeast: () => true,
+      initDataUnsafe: { user: { id: 1, first_name: 'A' } },
+    })
+
+    expect(tg.botCanMessage()).toBe(false)
+    await expect(tg.requestWriteAccess()).resolves.toBe(true)
+    expect(tg.botCanMessage()).toBe(true)
+  })
+
+  it('requestWriteAccess resolves false on clients without the API', async () => {
+    const tg = await freshTelegram()
+    setWebApp({ isVersionAtLeast: () => false })
+    await expect(tg.requestWriteAccess()).resolves.toBe(false)
+  })
+})
+
 describe('useMainButton', () => {
   function makeMainButton() {
     return {

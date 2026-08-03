@@ -51,6 +51,11 @@ export const api = {
     update: (data: Partial<Omit<UserProfile, 'id' | 'photos' | 'setupComplete'>>) =>
       request<UserProfile>('/profile/me', { method: 'PUT', body: JSON.stringify(data) }),
     delete: () => request<{ ok: boolean }>('/profile/me', { method: 'DELETE' }),
+    setWriteAccess: (granted: boolean) =>
+      request<{ ok: boolean }>('/profile/me/write-access', {
+        method: 'POST',
+        body: JSON.stringify({ granted }),
+      }),
   },
   photos: {
     getUploadUrl: (contentType: string) =>

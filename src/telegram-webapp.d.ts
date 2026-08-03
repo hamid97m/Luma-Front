@@ -59,6 +59,7 @@ interface TelegramWebApp {
       id: number
       first_name: string
       username?: string
+      allows_write_to_pm?: boolean
     }
   }
   colorScheme: 'light' | 'dark'
@@ -74,6 +75,8 @@ interface TelegramWebApp {
   exitFullscreen: () => void
   disableVerticalSwipes: () => void
   enableVerticalSwipes: () => void
+  // Bot API 6.9+ — absent on older clients
+  requestWriteAccess?: (callback?: (granted: boolean) => void) => void
   ready: () => void
   expand: () => void
   close: () => void

@@ -34,6 +34,12 @@ export const t = {
     send: (name: string) => `Message ${name}`,
     keepSwiping: 'Keep swiping',
   },
+  notify: {
+    title: "Don't miss a match 💌",
+    body: 'Let Luma message you on Telegram when someone likes you or writes to you.',
+    enable: 'Enable notifications',
+    later: 'Not now',
+  },
   matches: {
     title: 'Matches',
     empty: 'No matches yet',

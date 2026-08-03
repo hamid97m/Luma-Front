@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
-import { initTelegram } from './telegram.js'
+import { initTelegram, shouldPromptWriteAccess } from './telegram.js'
 import { useAuthStore } from './store.js'
 import { isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
@@ -11,6 +11,7 @@ import { Matches } from './screens/Matches.js'
 import { MyProfile } from './screens/MyProfile.js'
 import { Chat } from './screens/Chat.js'
 import { BottomNav } from './components/BottomNav.js'
+import { NotifyPrompt } from './components/NotifyPrompt.js'
 import type { Match, UserProfile } from './types.js'
 
 type Screen = 'splash' | 'onboarding' | 'main' | 'reconnect'
@@ -26,6 +27,7 @@ export function App() {
   const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null)
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0)
   const [matchesBadge, setMatchesBadge] = useState(0)
+  const [showNotifyPrompt, setShowNotifyPrompt] = useState(false)
   // Once a tab has been visited, keep it mounted (hidden via CSS) instead of
   // unmounting — avoids refetching and a loading flash on every tab switch.
   const [visited, setVisited] = useState<Record<Tab, boolean>>({
@@ -107,6 +109,8 @@ export function App() {
           const p = await api.profile.get()
           setUser(p)
           setScreen('main')
+          // Fresh profile, high motivation — best moment to ask for bot DMs.
+          setShowNotifyPrompt(shouldPromptWriteAccess())
         }}
       />
     )
@@ -137,6 +141,7 @@ export function App() {
         {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile /></div>}
       </div>
       <BottomNav active={tab} onChange={setTab} matchesBadge={matchesBadge} />
+      {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}
     </div>
   )
 }

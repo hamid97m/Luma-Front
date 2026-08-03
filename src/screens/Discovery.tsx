@@ -3,6 +3,8 @@ import { t } from '../i18n.js'
 import { api } from '../api.js'
 import { CardStack } from '../components/CardStack.js'
 import { MatchPopup } from '../components/MatchPopup.js'
+import { NotifyPrompt } from '../components/NotifyPrompt.js'
+import { shouldPromptWriteAccess } from '../telegram.js'
 import type { DiscoveryProfile, SwipeResult, Match } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
@@ -17,6 +19,7 @@ export function Discovery({ onOpenChat }: Props) {
   const [loading, setLoading] = useState(true)
   const [swiping, setSwiping] = useState(false)
   const [activeMatch, setActiveMatch] = useState<NonNullable<SwipeResult['match']> | null>(null)
+  const [showNotifyPrompt, setShowNotifyPrompt] = useState(false)
   // Every id swiped this session — outlives the queue, so a prefetch response
   // started before a swipe (and thus unaware of it) can't re-add that profile.
   const swipedIds = useRef<Set<string>>(new Set())
@@ -97,10 +100,16 @@ export function Discovery({ onOpenChat }: Props) {
       {activeMatch && (
         <MatchPopup
           match={activeMatch}
-          onClose={() => setActiveMatch(null)}
+          onClose={() => {
+            setActiveMatch(null)
+            // They just matched but the bot still can't reach them — second
+            // (and last) chance this session to ask for notifications.
+            if (shouldPromptWriteAccess()) setShowNotifyPrompt(true)
+          }}
           onMessage={openMatchChat}
         />
       )}
+      {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}
     </>
   )
 }

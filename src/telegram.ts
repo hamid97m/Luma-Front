@@ -75,6 +75,52 @@ export function initTelegram() {
 }
 
 // ---------------------------------------------------------------------------
+// Bot write access — Telegram forbids bots from DMing users who never pressed
+// Start or granted write access, so match/message notifications silently fail
+// for them. requestWriteAccess() (Bot API 6.9+) shows a native one-tap
+// permission popup inside the Mini App that fixes this without a /start trip.
+// ---------------------------------------------------------------------------
+let writeAccessGrantedThisSession = false
+let writeAccessPromptedThisSession = false
+
+/** True if the bot is known to be allowed to DM this user. */
+export function botCanMessage(): boolean {
+  if (writeAccessGrantedThisSession) return true
+  return webApp()?.initDataUnsafe?.user?.allows_write_to_pm === true
+}
+
+/**
+ * True when it's worth showing the in-app notifications explainer: running in
+ * a Telegram client that has the popup, access not yet granted, and we haven't
+ * already asked this session.
+ */
+export function shouldPromptWriteAccess(): boolean {
+  if (writeAccessPromptedThisSession || botCanMessage()) return false
+  return !!webApp()?.requestWriteAccess && supports('6.9')
+}
+
+export function markWriteAccessPrompted(): void {
+  writeAccessPromptedThisSession = true
+}
+
+/** Shows Telegram's native "Allow bot to message you?" popup. */
+export function requestWriteAccess(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const wa = webApp()
+    if (!wa?.requestWriteAccess || !supports('6.9')) return resolve(false)
+    try {
+      wa.requestWriteAccess((granted) => {
+        if (granted) writeAccessGrantedThisSession = true
+        resolve(granted)
+      })
+    } catch {
+      // Another native popup already open — treat as declined for now.
+      resolve(false)
+    }
+  })
+}
+
+// ---------------------------------------------------------------------------
 // Main button — the native docked button. We only "take over" a screen's
 // primary action when Telegram actually provides a MainButton; otherwise the
 // screen keeps rendering its own in-page button (browser dev, tests).
