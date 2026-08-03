@@ -1,7 +1,10 @@
-import { memo } from 'react'
+import { memo, useRef } from 'react'
 import { t } from '../../i18n.js'
 import { formatTime } from '../../utils/chatFormat.js'
 import type { LocalMessage } from '../../types.js'
+
+const LONG_PRESS_MS = 450
+const MOVE_TOLERANCE_PX = 10
 
 interface MessageBubbleProps {
   message: LocalMessage
@@ -10,6 +13,7 @@ interface MessageBubbleProps {
   last: boolean
   showTicks: boolean
   onRetry?: (id: string) => void
+  onLongPress?: (id: string) => void
 }
 
 function SeenTicks({ seen }: { seen: boolean }) {
@@ -36,8 +40,43 @@ function ClockIcon() {
   )
 }
 
-function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry }: MessageBubbleProps) {
+function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onLongPress }: MessageBubbleProps) {
   const failed = message.status === 'failed'
+  const pressTimer = useRef<number | null>(null)
+  const pressStart = useRef<{ x: number; y: number } | null>(null)
+
+  const clearPress = () => {
+    if (pressTimer.current != null) {
+      clearTimeout(pressTimer.current)
+      pressTimer.current = null
+    }
+  }
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!onLongPress) return
+    pressStart.current = { x: e.clientX, y: e.clientY }
+    clearPress()
+    pressTimer.current = window.setTimeout(() => {
+      pressTimer.current = null
+      onLongPress(message.id)
+    }, LONG_PRESS_MS)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (pressTimer.current == null || !pressStart.current) return
+    if (
+      Math.abs(e.clientX - pressStart.current.x) > MOVE_TOLERANCE_PX ||
+      Math.abs(e.clientY - pressStart.current.y) > MOVE_TOLERANCE_PX
+    ) clearPress()
+  }
+
+  const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onLongPress) return
+    e.preventDefault()
+    clearPress()
+    onLongPress(message.id)
+  }
+
   // Telegram-style grouping: bubbles inside a group flatten the corners that
   // face their neighbors, on the sender's side.
   const corners = mine
@@ -57,19 +96,26 @@ function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry }: M
       tabIndex={failed ? 0 : undefined}
       onClick={failed && onRetry ? () => onRetry(message.id) : undefined}
       onKeyDown={handleKeyDown}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={clearPress}
+      onPointerLeave={clearPress}
+      onPointerCancel={clearPress}
+      onContextMenu={handleContextMenu}
       className={`max-w-[75%] px-4 py-2 rounded-[18px] text-[15px] ${corners} ${
         mine ? 'self-end grad-tg text-white' : 'self-start bg-white/10 text-white'
-      } ${failed ? 'opacity-70' : ''} ${last ? 'mb-2' : ''}`}
+      } ${failed ? 'opacity-70' : ''} ${last ? 'mb-2' : ''} ${onLongPress ? 'select-none' : ''}`}
     >
       <p className="whitespace-pre-wrap break-words">{message.body}</p>
       {failed ? (
         <p className="text-[10px] mt-0.5 text-red-300 font-semibold">{t.chat.failed}</p>
       ) : message.status === 'sending' ? (
         <p className="text-[10px] opacity-60 mt-0.5 flex justify-end"><ClockIcon /></p>
-      ) : last ? (
+      ) : last || message.editedAt ? (
         <p className="text-[10px] opacity-60 mt-0.5 flex items-center gap-1">
-          {formatTime(message.createdAt)}
-          {showTicks && <SeenTicks seen={!!message.readAt} />}
+          {message.editedAt && <span>{t.chat.edited}</span>}
+          {last && formatTime(message.createdAt)}
+          {last && showTicks && <SeenTicks seen={!!message.readAt} />}
         </p>
       ) : null}
     </div>
