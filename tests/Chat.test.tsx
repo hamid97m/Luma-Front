@@ -67,9 +67,10 @@ describe('Chat', () => {
     expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('')
   })
 
-  it('shows an inline error and keeps the draft when sending fails', async () => {
+  it('appends the message optimistically before the server responds', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
-    vi.mocked(api.messages.send).mockRejectedValue(new Error('network'))
+    let resolveSend!: (v: { message: { id: string; senderId: string; body: string; createdAt: string; readAt: null } }) => void
+    vi.mocked(api.messages.send).mockReturnValue(new Promise((r) => { resolveSend = r }))
 
     render(<Chat match={MATCH} myUserId="me-1" />)
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
@@ -77,8 +78,36 @@ describe('Chat', () => {
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
     fireEvent.click(screen.getByText('Send'))
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
-    expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('yo')
+    // Visible immediately, marked as sending, input already cleared.
+    expect(screen.getByText('yo')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Sending' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('')
+
+    resolveSend({ message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null } })
+    await waitFor(() => expect(screen.queryByRole('img', { name: 'Sending' })).not.toBeInTheDocument())
+    expect(screen.getByRole('img', { name: 'Sent' })).toBeInTheDocument()
+  })
+
+  it('marks a failed send and retries it on tap', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
+    vi.mocked(api.messages.send).mockRejectedValueOnce(new Error('network'))
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByPlaceholderText('Type a message…'))
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
+    fireEvent.click(screen.getByText('Send'))
+
+    await waitFor(() => screen.getByText('Failed — tap to retry'))
+    expect(screen.getByText('yo')).toBeInTheDocument()
+
+    vi.mocked(api.messages.send).mockResolvedValueOnce({
+      message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null },
+    })
+    fireEvent.click(screen.getByText('Failed — tap to retry'))
+
+    await waitFor(() => expect(screen.queryByText('Failed — tap to retry')).not.toBeInTheDocument())
+    expect(screen.getByText('yo')).toBeInTheDocument()
   })
 
   it('shows an unavailable state when the match can no longer be loaded', async () => {

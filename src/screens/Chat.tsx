@@ -10,13 +10,13 @@ interface Props {
   myUserId: string
 }
 
+let localSeq = 0
+
 export function Chat({ match, myUserId }: Props) {
   const [messages, setMessages] = useState<LocalMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [unavailable, setUnavailable] = useState(false)
   const [draft, setDraft] = useState('')
-  const [sending, setSending] = useState(false)
-  const [sendError, setSendError] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,22 +30,40 @@ export function Chat({ match, myUserId }: Props) {
     bottomRef.current?.scrollIntoView({ block: 'end' })
   }, [messages])
 
-  const send = () => {
-    const body = draft.trim()
-    if (!body || sending) return
-    setSending(true)
-    setSendError(false)
+  const sendBody = (body: string, existingId?: string) => {
+    const id = existingId ?? `local-${++localSeq}`
+    const optimistic: LocalMessage = {
+      id,
+      senderId: myUserId,
+      body,
+      createdAt: new Date().toISOString(),
+      readAt: null,
+      status: 'sending',
+    }
+    setMessages((prev) =>
+      existingId ? prev.map((m) => (m.id === id ? optimistic : m)) : [...prev, optimistic]
+    )
+    haptic.impact('light')
     api.messages.send(match.id, body)
       .then(({ message }) => {
-        setMessages((prev) => [...prev, message])
-        setDraft('')
-        haptic.impact('light')
+        setMessages((prev) => prev.map((m) => (m.id === id ? message : m)))
       })
       .catch(() => {
-        setSendError(true)
         haptic.notification('error')
+        setMessages((prev) => prev.map((m) => (m.id === id ? { ...optimistic, status: 'failed' } : m)))
       })
-      .finally(() => setSending(false))
+  }
+
+  const send = () => {
+    const body = draft.trim()
+    if (!body) return
+    setDraft('')
+    sendBody(body)
+  }
+
+  const retry = (id: string) => {
+    const msg = messages.find((m) => m.id === id)
+    if (msg) sendBody(msg.body, id)
   }
 
   // Native Telegram Send button — docks above the keyboard. Hidden when the
@@ -54,8 +72,7 @@ export function Chat({ match, myUserId }: Props) {
   useMainButton({
     text: 'Send',
     visible: !loading && !unavailable && !!draft.trim(),
-    enabled: !!draft.trim() && !sending,
-    loading: sending,
+    enabled: !!draft.trim(),
     onClick: send,
   })
 
@@ -99,6 +116,7 @@ export function Chat({ match, myUserId }: Props) {
                   first={item.first}
                   last={item.last}
                   showTicks={item.message.id === lastMineId}
+                  onRetry={retry}
                 />
               )
             )}
@@ -109,7 +127,6 @@ export function Chat({ match, myUserId }: Props) {
             className="p-4 border-t border-white/10 flex flex-col gap-1"
             style={{ paddingBottom: 'calc(max(var(--tg-safe-bottom), env(safe-area-inset-bottom)) + 16px)' }}
           >
-            {sendError && <p role="alert" className="text-[12px] text-red-400">Couldn't send. Try again.</p>}
             <div className="flex gap-2">
               <input
                 value={draft}
@@ -121,7 +138,7 @@ export function Chat({ match, myUserId }: Props) {
               {!mainButtonSupported() && (
                 <button
                   onClick={send}
-                  disabled={!draft.trim() || sending}
+                  disabled={!draft.trim()}
                   className="grad-tg text-white font-bold px-4 py-2 rounded-[16px] disabled:opacity-40"
                 >
                   Send
