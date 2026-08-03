@@ -10,9 +10,11 @@ interface ChatInputBarProps {
   draft: string
   onDraftChange: (value: string) => void
   onSend: () => void
+  editingBody?: string | null
+  onCancelEdit?: () => void
 }
 
-export function ChatInputBar({ draft, onDraftChange, onSend }: ChatInputBarProps) {
+export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCancelEdit }: ChatInputBarProps) {
   const boxRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-grow: runs on every draft change (typing, prefill, clear-on-send).
@@ -28,6 +30,21 @@ export function ChatInputBar({ draft, onDraftChange, onSend }: ChatInputBarProps
       className="p-4 border-t border-white/10 flex flex-col gap-1"
       style={{ paddingBottom: 'calc(max(var(--tg-safe-bottom), env(safe-area-inset-bottom)) + 16px)' }}
     >
+      {editingBody != null && (
+        <div className="flex items-center gap-2 pb-1">
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-bold text-white/80">{t.chat.editingMessage}</p>
+            <p className="text-[12px] text-white/50 truncate">{editingBody}</p>
+          </div>
+          <button
+            onClick={onCancelEdit}
+            aria-label={t.chat.cancelAction}
+            className="text-white/50 text-xl leading-none px-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {draft.length >= COUNTER_THRESHOLD && (
         <p className="text-[11px] text-white/40 text-right">{MAX_LENGTH - draft.length}</p>
       )}
@@ -49,7 +66,7 @@ export function ChatInputBar({ draft, onDraftChange, onSend }: ChatInputBarProps
         />
         {!mainButtonSupported() && !!draft.trim() && (
           <button
-            aria-label={t.chat.send}
+            aria-label={editingBody != null ? t.chat.save : t.chat.send}
             onClick={onSend}
             className="grad-tg w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
           >

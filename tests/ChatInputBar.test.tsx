@@ -32,4 +32,37 @@ describe('ChatInputBar', () => {
     rerender(<ChatInputBar draft={'a'.repeat(1850)} onDraftChange={vi.fn()} onSend={vi.fn()} />)
     expect(screen.getByText('150')).toBeInTheDocument()
   })
+
+  it('shows the editing strip with the original body and cancels on ✕', () => {
+    const onCancelEdit = vi.fn()
+    render(
+      <ChatInputBar
+        draft="fixed" onDraftChange={vi.fn()} onSend={vi.fn()}
+        editingBody="original text" onCancelEdit={onCancelEdit}
+      />
+    )
+
+    expect(screen.getByText('Editing message')).toBeInTheDocument()
+    expect(screen.getByText('original text')).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Cancel'))
+    expect(onCancelEdit).toHaveBeenCalled()
+  })
+
+  it('relabels the fallback button to Save in edit mode and hides it when empty', () => {
+    const { rerender } = render(
+      <ChatInputBar draft="fixed" onDraftChange={vi.fn()} onSend={vi.fn()} editingBody="orig" onCancelEdit={vi.fn()} />
+    )
+    expect(screen.getByLabelText('Save')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Send')).not.toBeInTheDocument()
+
+    rerender(
+      <ChatInputBar draft="   " onDraftChange={vi.fn()} onSend={vi.fn()} editingBody="orig" onCancelEdit={vi.fn()} />
+    )
+    expect(screen.queryByLabelText('Save')).not.toBeInTheDocument()
+  })
+
+  it('shows no editing strip in normal mode', () => {
+    render(<ChatInputBar draft="hi" onDraftChange={vi.fn()} onSend={vi.fn()} />)
+    expect(screen.queryByText('Editing message')).not.toBeInTheDocument()
+  })
 })
