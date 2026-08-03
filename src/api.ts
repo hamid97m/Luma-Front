@@ -41,7 +41,7 @@ function putWithProgress(url: string, blob: Blob, onProgress?: (pct: number) => 
 export const api = {
   auth: {
     verify: (initData: string) =>
-      request<{ user: Pick<UserProfile, 'id' | 'name' | 'setupComplete'> }>(
+      request<{ user: Pick<UserProfile, 'id' | 'name' | 'setupComplete'> | UserProfile }>(
         '/auth/verify',
         { method: 'POST', body: JSON.stringify({ initData }) }
       ),

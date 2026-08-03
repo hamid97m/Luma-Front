@@ -10,7 +10,7 @@ import { Matches } from './screens/Matches.js'
 import { MyProfile } from './screens/MyProfile.js'
 import { Chat } from './screens/Chat.js'
 import { BottomNav } from './components/BottomNav.js'
-import type { Match } from './types.js'
+import type { Match, UserProfile } from './types.js'
 
 type Screen = 'splash' | 'onboarding' | 'main' | 'reconnect'
 type Tab = 'discovery' | 'matches' | 'profile'
@@ -76,11 +76,10 @@ export function App() {
     window.Telegram?.WebApp?.expand?.()
 
     api.auth.verify(initDataRaw)
-      .then(async ({ user: partial }) => {
+      .then(({ user: partial }) => {
         if (partial.setupComplete) {
           markReturningUser()
-          const full = await api.profile.get()
-          setUser(full)
+          setUser(partial as UserProfile)
           setAuthResult('main')
         } else {
           setAuthResult('onboarding')
