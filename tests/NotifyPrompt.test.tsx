@@ -12,6 +12,7 @@ function setWebApp(webApp: unknown) {
 afterEach(() => {
   setWebApp(originalWebApp)
   vi.clearAllMocks()
+  localStorage.removeItem('luma_notify_dismissed_at')
 })
 
 describe('NotifyPrompt', () => {
@@ -25,6 +26,8 @@ describe('NotifyPrompt', () => {
 
     expect(onDone).toHaveBeenCalled()
     expect(requestWriteAccess).not.toHaveBeenCalled()
+    // Dismissal is remembered so the launch prompt backs off.
+    expect(localStorage.getItem('luma_notify_dismissed_at')).not.toBeNull()
   })
 
   it('shows the native popup and records a grant server-side', async () => {

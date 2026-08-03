@@ -144,6 +144,23 @@ describe('write access', () => {
     expect(tg.shouldPromptWriteAccess()).toBe(false)
   })
 
+  it('launch prompt honors the dismissal cooldown', async () => {
+    const tg = await freshTelegram()
+    localStorage.removeItem('luma_notify_dismissed_at')
+    setWebApp({ requestWriteAccess: vi.fn(), isVersionAtLeast: () => true, initDataUnsafe: {} })
+
+    expect(tg.shouldPromptWriteAccessOnLaunch()).toBe(true)
+
+    tg.markWriteAccessDismissed()
+    expect(tg.shouldPromptWriteAccessOnLaunch()).toBe(false)
+
+    // A stale dismissal no longer suppresses the prompt.
+    localStorage.setItem('luma_notify_dismissed_at', String(Date.now() - 4 * 24 * 60 * 60 * 1000))
+    expect(tg.shouldPromptWriteAccessOnLaunch()).toBe(true)
+
+    localStorage.removeItem('luma_notify_dismissed_at')
+  })
+
   it('requestWriteAccess resolves the grant and remembers it for the session', async () => {
     const tg = await freshTelegram()
     setWebApp({

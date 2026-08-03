@@ -103,6 +103,22 @@ export function markWriteAccessPrompted(): void {
   writeAccessPromptedThisSession = true
 }
 
+// Launch-time prompting is additionally rate-limited across sessions so a
+// user who tapped "Not now" isn't nagged on every app open. Match-close
+// prompting deliberately ignores this — that moment is high-intent.
+const DISMISS_KEY = 'luma_notify_dismissed_at'
+const PROMPT_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000
+
+export function shouldPromptWriteAccessOnLaunch(): boolean {
+  if (!shouldPromptWriteAccess()) return false
+  const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) ?? 0)
+  return !dismissedAt || Date.now() - dismissedAt > PROMPT_COOLDOWN_MS
+}
+
+export function markWriteAccessDismissed(): void {
+  localStorage.setItem(DISMISS_KEY, String(Date.now()))
+}
+
 /** Shows Telegram's native "Allow bot to message you?" popup. */
 export function requestWriteAccess(): Promise<boolean> {
   return new Promise((resolve) => {

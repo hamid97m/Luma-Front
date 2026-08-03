@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
-import { initTelegram, shouldPromptWriteAccess } from './telegram.js'
+import { initTelegram, shouldPromptWriteAccessOnLaunch } from './telegram.js'
 import { useAuthStore } from './store.js'
 import { isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
@@ -67,6 +67,13 @@ export function App() {
     api.matches.unreadCount().then(({ count }) => setMatchesBadge(count))
   }, [screen, matchesRefreshKey])
 
+  // Ask for bot DM permission on entering the app — covers both a fresh
+  // profile right after onboarding and returning users who never granted it.
+  // Cooldown-gated so "Not now" isn't re-asked on every launch.
+  useEffect(() => {
+    if (screen === 'main') setShowNotifyPrompt(shouldPromptWriteAccessOnLaunch())
+  }, [screen])
+
   // Advance only when both the splash timer has fired and auth has resolved
   useEffect(() => {
     if (splashDone && authResult) setScreen(authResult)
@@ -109,8 +116,6 @@ export function App() {
           const p = await api.profile.get()
           setUser(p)
           setScreen('main')
-          // Fresh profile, high motivation — best moment to ask for bot DMs.
-          setShowNotifyPrompt(shouldPromptWriteAccess())
         }}
       />
     )

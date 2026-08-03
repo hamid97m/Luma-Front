@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { t } from '../i18n.js'
 import { api } from '../api.js'
-import { haptic, markWriteAccessPrompted, requestWriteAccess } from '../telegram.js'
+import { haptic, markWriteAccessDismissed, markWriteAccessPrompted, requestWriteAccess } from '../telegram.js'
 
 interface Props {
   onDone: () => void
@@ -22,7 +22,14 @@ export function NotifyPrompt({ onDone }: Props) {
       haptic.notification('success')
       // initData only refreshes next launch — record the grant server-side now
       api.profile.setWriteAccess(true).catch(() => {})
+    } else {
+      markWriteAccessDismissed()
     }
+    onDone()
+  }
+
+  const dismiss = () => {
+    markWriteAccessDismissed()
     onDone()
   }
 
@@ -40,7 +47,7 @@ export function NotifyPrompt({ onDone }: Props) {
           {t.notify.enable}
         </button>
 
-        <button onClick={onDone} className="w-full py-3 text-white/50 font-semibold">
+        <button onClick={dismiss} className="w-full py-3 text-white/50 font-semibold">
           {t.notify.later}
         </button>
       </div>
