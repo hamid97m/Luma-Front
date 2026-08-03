@@ -108,5 +108,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ body }),
       }),
+    edit: (matchId: string, messageId: string, body: string) =>
+      request<{ message: Message }>(`/matches/${matchId}/messages/${messageId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ body }),
+      }),
+    delete: (matchId: string, messageId: string) =>
+      request<{ ok: boolean }>(`/matches/${matchId}/messages/${messageId}`, { method: 'DELETE' }),
   },
 }

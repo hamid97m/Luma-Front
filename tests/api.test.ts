@@ -49,6 +49,34 @@ describe('api request', () => {
     )
   })
 
+  it('edits a message via PATCH with the new body as JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ message: { id: 'm1', senderId: 'u1', body: 'fixed', createdAt: '2026-01-01T00:00:00Z', readAt: null, editedAt: '2026-01-02T00:00:00Z' } }),
+    }))
+
+    await api.messages.edit('match-1', 'm1', 'fixed')
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/matches/match-1/messages/m1'),
+      expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ body: 'fixed' }) })
+    )
+  })
+
+  it('deletes a message via DELETE', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ ok: true }),
+    }))
+
+    await api.messages.delete('match-1', 'm1')
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/matches/match-1/messages/m1'),
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
   it('attaches the HTTP status to thrown errors', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,

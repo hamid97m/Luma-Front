@@ -49,6 +49,8 @@ export interface Message {
   body: string
   createdAt: string
   readAt: string | null
+  /** Set when the sender edited the message; optional so pre-existing fixtures remain valid. */
+  editedAt?: string | null
 }
 
 /** A chat message plus optional client-only delivery state for optimistic send. */
