@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { t } from '../../i18n.js'
 import { formatTime } from '../../utils/chatFormat.js'
 import type { LocalMessage } from '../../types.js'
@@ -35,7 +36,7 @@ function ClockIcon() {
   )
 }
 
-export function MessageBubble({ message, mine, first, last, showTicks, onRetry }: MessageBubbleProps) {
+function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry }: MessageBubbleProps) {
   const failed = message.status === 'failed'
   // Telegram-style grouping: bubbles inside a group flatten the corners that
   // face their neighbors, on the sender's side.
@@ -74,3 +75,5 @@ export function MessageBubble({ message, mine, first, last, showTicks, onRetry }
     </div>
   )
 }
+
+export const MessageBubble = memo(MessageBubbleImpl)

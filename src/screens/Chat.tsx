@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { haptic, useMainButton } from '../telegram.js'
 import { buildChatItems } from '../utils/chatFormat.js'
@@ -76,7 +76,7 @@ export function Chat({ match, myUserId }: Props) {
     }
   }, [messages])
 
-  const sendBody = (body: string, existingId?: string) => {
+  const sendBody = useCallback((body: string, existingId?: string) => {
     const id = existingId ?? `local-${++localSeq}`
     const optimistic: LocalMessage = {
       id,
@@ -92,13 +92,15 @@ export function Chat({ match, myUserId }: Props) {
     haptic.impact('light')
     api.messages.send(match.id, body)
       .then(({ message }) => {
-        setMessages((prev) => prev.map((m) => (m.id === id ? message : m)))
+        setMessages((prev) => prev.some((m) => m.id === message.id)
+          ? prev.filter((m) => m.id !== id) // server copy already merged in via a background refresh — drop the local one
+          : prev.map((m) => (m.id === id ? message : m)))
       })
       .catch(() => {
         haptic.notification('error')
         setMessages((prev) => prev.map((m) => (m.id === id ? { ...optimistic, status: 'failed' } : m)))
       })
-  }
+  }, [match.id, myUserId])
 
   const send = () => {
     const body = draft.trim()
@@ -109,10 +111,15 @@ export function Chat({ match, myUserId }: Props) {
     sendBody(body)
   }
 
-  const retry = (id: string) => {
-    const msg = messages.find((m) => m.id === id)
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
+
+  const retry = useCallback((id: string) => {
+    const msg = messagesRef.current.find((m) => m.id === id)
     if (msg) sendBody(msg.body, id)
-  }
+  }, [sendBody])
+
+  const items = useMemo(() => buildChatItems(messages), [messages])
 
   // Native Telegram Send button — docks above the keyboard. Hidden when the
   // draft is empty or the match is gone; the in-page button below is the
@@ -173,7 +180,7 @@ export function Chat({ match, myUserId }: Props) {
           ) : (
             <div className="relative flex-1 flex flex-col overflow-hidden">
               <div ref={listRef} onScroll={onScroll} role="log" aria-label="Messages" className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-[2px]">
-                {buildChatItems(messages).map((item) =>
+                {items.map((item) =>
                   item.kind === 'date' ? (
                     <div key={item.id} className="self-center glass-dark text-white/60 text-[11px] font-semibold px-3 py-1 rounded-full my-2">
                       {item.label}

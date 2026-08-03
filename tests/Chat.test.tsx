@@ -208,6 +208,36 @@ describe('Chat', () => {
     expect(api.messages.list).toHaveBeenCalledTimes(2)
   })
 
+  it('does not duplicate a bubble when a send resolves after a visibility refresh already merged the same message', async () => {
+    vi.mocked(api.messages.list).mockResolvedValueOnce({ messages: [] })
+    let resolveSend!: (v: { message: { id: string; senderId: string; body: string; createdAt: string; readAt: null } }) => void
+    vi.mocked(api.messages.send).mockReturnValue(new Promise((r) => { resolveSend = r }))
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByPlaceholderText('Type a message…'))
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
+    fireEvent.click(screen.getByLabelText('Send'))
+
+    // Optimistic bubble appears while the send is still in flight.
+    expect(screen.getByText('yo')).toBeInTheDocument()
+
+    // App backgrounds and the server has already committed the message by the
+    // time a visibility refresh runs — the refetch merges the committed copy
+    // in alongside the still-pending optimistic local.
+    vi.mocked(api.messages.list).mockResolvedValueOnce({
+      messages: [{ id: 'm77', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null }],
+    })
+    fireEvent(document, new Event('visibilitychange'))
+    await waitFor(() => expect(api.messages.list).toHaveBeenCalledTimes(2))
+
+    // The original send promise then resolves with the same server id.
+    resolveSend({ message: { id: 'm77', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null } })
+
+    await waitFor(() => expect(screen.getAllByText('yo')).toHaveLength(1))
+    expect(screen.queryByRole('img', { name: 'Sending' })).not.toBeInTheDocument()
+  })
+
   it('shows the empty state for a fresh match and prefills the input from a chip', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
 
