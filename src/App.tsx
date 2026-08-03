@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
+import { initTelegram } from './telegram.js'
 import { useAuthStore } from './store.js'
 import { isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
@@ -32,6 +33,9 @@ export function App() {
     matches: false,
     profile: false,
   })
+
+  // One-time Telegram setup: ready/expand, fullscreen, swipe-lock, safe-area vars.
+  useEffect(() => { initTelegram() }, [])
 
   useEffect(() => {
     setVisited((v) => (v[tab] ? v : { ...v, [tab]: true }))
@@ -73,7 +77,6 @@ export function App() {
       return
     }
     setInitDataRaw(initDataRaw)
-    window.Telegram?.WebApp?.expand?.()
 
     api.auth.verify(initDataRaw)
       .then(({ user: partial }) => {
@@ -119,7 +122,7 @@ export function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#0b0b12]">
+    <div className="flex flex-col h-screen bg-[#0b0b12]" style={{ paddingTop: 'var(--tg-safe-top)' }}>
       <div className="flex-1 overflow-hidden">
         {visited.discovery && (
           <div className={`h-full ${tab === 'discovery' ? '' : 'hidden'}`}>

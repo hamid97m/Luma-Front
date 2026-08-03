@@ -23,6 +23,35 @@ interface TelegramBackButton {
   offClick: (callback: () => void) => void
 }
 
+interface TelegramMainButton {
+  text: string
+  isVisible: boolean
+  isActive: boolean
+  isProgressVisible: boolean
+  setText: (text: string) => void
+  show: () => void
+  hide: () => void
+  enable: () => void
+  disable: () => void
+  showProgress: (leaveActive?: boolean) => void
+  hideProgress: () => void
+  onClick: (callback: () => void) => void
+  offClick: (callback: () => void) => void
+}
+
+interface TelegramHapticFeedback {
+  impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void
+  notificationOccurred: (type: 'error' | 'success' | 'warning') => void
+  selectionChanged: () => void
+}
+
+interface TelegramSafeAreaInset {
+  top: number
+  bottom: number
+  left: number
+  right: number
+}
+
 interface TelegramWebApp {
   initData: string
   initDataUnsafe: {
@@ -35,6 +64,16 @@ interface TelegramWebApp {
   colorScheme: 'light' | 'dark'
   themeParams: TelegramThemeParams
   BackButton: TelegramBackButton
+  MainButton: TelegramMainButton
+  HapticFeedback: TelegramHapticFeedback
+  isVersionAtLeast: (version: string) => boolean
+  safeAreaInset?: TelegramSafeAreaInset
+  contentSafeAreaInset?: TelegramSafeAreaInset
+  isFullscreen?: boolean
+  requestFullscreen: () => void
+  exitFullscreen: () => void
+  disableVerticalSwipes: () => void
+  enableVerticalSwipes: () => void
   ready: () => void
   expand: () => void
   close: () => void

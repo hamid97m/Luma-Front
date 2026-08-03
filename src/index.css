@@ -8,6 +8,12 @@
   --accent-r: #f43f5e;
   --purple:   #a855f7;
   --app-bg:   #0b0b12;
+  /* Telegram fullscreen safe-area insets, written from JS (see telegram.ts).
+     Default to 0 so non-fullscreen / non-Telegram layouts are unchanged. */
+  --tg-safe-top:    0px;
+  --tg-safe-bottom: 0px;
+  --tg-safe-left:   0px;
+  --tg-safe-right:  0px;
 }
 
 @layer base {

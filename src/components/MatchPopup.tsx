@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { t } from '../i18n.js'
+import { haptic } from '../telegram.js'
 
 interface MatchUser {
   id: string
@@ -16,6 +18,9 @@ interface Props {
 
 export function MatchPopup({ match, onClose, onMessage }: Props) {
   const photo = match.user.photos?.[0]
+
+  // Celebrate the match with a success buzz when the popup appears.
+  useEffect(() => { haptic.notification('success') }, [])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">

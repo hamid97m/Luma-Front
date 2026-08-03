@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
+import { haptic, mainButtonSupported, useMainButton } from '../telegram.js'
 import type { Match, Message } from '../types.js'
 
 interface Props {
@@ -55,10 +56,25 @@ export function Chat({ match, myUserId }: Props) {
       .then(({ message }) => {
         setMessages((prev) => [...prev, message])
         setDraft('')
+        haptic.impact('light')
       })
-      .catch(() => setSendError(true))
+      .catch(() => {
+        setSendError(true)
+        haptic.notification('error')
+      })
       .finally(() => setSending(false))
   }
+
+  // Native Telegram Send button — docks above the keyboard. Hidden when the
+  // draft is empty or the match is gone; the in-page button below is the
+  // fallback when Telegram provides no MainButton (browser/dev/tests).
+  useMainButton({
+    text: 'Send',
+    visible: !loading && !unavailable && !!draft.trim(),
+    enabled: !!draft.trim() && !sending,
+    loading: sending,
+    onClick: send,
+  })
 
   const lastMineId = [...messages].reverse().find((m) => m.senderId === myUserId)?.id ?? null
 
@@ -71,7 +87,7 @@ export function Chat({ match, myUserId }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#0b0b12]">
+    <div className="flex flex-col h-full bg-[#0b0b12]" style={{ paddingTop: 'var(--tg-safe-top)' }}>
       <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-white/10">
         {match.user.photos[0]
           ? <img src={match.user.photos[0]} alt={match.user.name} className="w-10 h-10 rounded-full object-cover" />
@@ -106,7 +122,7 @@ export function Chat({ match, myUserId }: Props) {
 
           <div
             className="p-4 border-t border-white/10 flex flex-col gap-1"
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
+            style={{ paddingBottom: 'calc(max(var(--tg-safe-bottom), env(safe-area-inset-bottom)) + 16px)' }}
           >
             {sendError && <p role="alert" className="text-[12px] text-red-400">Couldn't send. Try again.</p>}
             <div className="flex gap-2">
@@ -117,13 +133,15 @@ export function Chat({ match, myUserId }: Props) {
                 placeholder="Type a message…"
                 className="flex-1 bg-white/10 rounded-[16px] px-4 py-2 text-white text-[15px] outline-none"
               />
-              <button
-                onClick={send}
-                disabled={!draft.trim() || sending}
-                className="grad-tg text-white font-bold px-4 py-2 rounded-[16px] disabled:opacity-40"
-              >
-                Send
-              </button>
+              {!mainButtonSupported() && (
+                <button
+                  onClick={send}
+                  disabled={!draft.trim() || sending}
+                  className="grad-tg text-white font-bold px-4 py-2 rounded-[16px] disabled:opacity-40"
+                >
+                  Send
+                </button>
+              )}
             </div>
           </div>
         </>

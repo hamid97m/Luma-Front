@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api.js'
+import { mainButtonSupported, useMainButton } from '../telegram.js'
 
 const ALL_TAGS = [
   '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
@@ -73,6 +74,16 @@ export function Onboarding({ onComplete }: Props) {
     }
   }
 
+  // Native Telegram button drives the primary step action. Falls back to the
+  // in-page button below when Telegram provides no MainButton.
+  useMainButton({
+    text: step === TOTAL_STEPS - 1 ? 'Enter Luma' : 'Continue',
+    visible: true,
+    enabled: valid && !saving,
+    loading: saving,
+    onClick: next,
+  })
+
   const toggleInterest = (tag: string) => {
     setState((s) => {
       if (s.interests.includes(tag)) {
@@ -105,7 +116,10 @@ export function Onboarding({ onComplete }: Props) {
   return (
     <div
       className="flex flex-col h-screen relative overflow-hidden"
-      style={{ background: 'linear-gradient(160deg,#1a1024 0%,#2a0f22 55%,#10101a 100%)' }}
+      style={{
+        background: 'linear-gradient(160deg,#1a1024 0%,#2a0f22 55%,#10101a 100%)',
+        paddingTop: 'var(--tg-safe-top)',
+      }}
     >
       {/* Background glow blobs */}
       <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full blur-3xl opacity-30 pointer-events-none"
@@ -309,12 +323,14 @@ export function Onboarding({ onComplete }: Props) {
         </div>
       </div>
 
-      {/* Sticky bottom button */}
-      <div className="relative z-10 px-5 pb-8 pt-4">
-        <button onClick={next} disabled={!valid || saving} className="btn-primary">
-          {saving ? '…' : step === TOTAL_STEPS - 1 ? 'Enter Luma' : 'Continue'}
-        </button>
-      </div>
+      {/* Sticky bottom button — fallback when Telegram provides no MainButton */}
+      {!mainButtonSupported() && (
+        <div className="relative z-10 px-5 pb-8 pt-4">
+          <button onClick={next} disabled={!valid || saving} className="btn-primary">
+            {saving ? '…' : step === TOTAL_STEPS - 1 ? 'Enter Luma' : 'Continue'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

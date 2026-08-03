@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ProfileCard } from './ProfileCard.js'
+import { haptic } from '../telegram.js'
 import type { DiscoveryProfile } from '../types.js'
 
 const THRESHOLD = 110
@@ -46,6 +47,7 @@ export function CardStack({ profiles, onLike, onPass, disabled }: Props) {
   const nopeOpacity = Math.min(1, Math.max(0, -offset / THRESHOLD))
 
   const fly = (dir: 'like' | 'pass') => {
+    haptic.impact('medium')
     setFlying(dir)
     setTimeout(() => {
       setOffset(0)
