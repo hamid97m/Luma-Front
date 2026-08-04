@@ -42,6 +42,7 @@ export function IntrosSection({ onOpenChat, refreshKey }: Props) {
       onOpenChat(matchId)
     } catch {
       setError(t.gifts.introAcceptError)
+    } finally {
       setBusy(null)
     }
   }

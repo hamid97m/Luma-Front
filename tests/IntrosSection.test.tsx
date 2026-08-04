@@ -69,6 +69,29 @@ describe('IntrosSection', () => {
     expect(screen.getByText('Sara')).toBeInTheDocument()
   })
 
+  it('clears busy after accepting one of several intros, leaving the others usable', async () => {
+    const intro2 = { ...BASE_INTRO, id: 'intro-2', buyer: { id: 'buyer-2', name: 'Mona', photo: null } }
+    vi.mocked(api.gifts.intros).mockResolvedValue({ intros: [BASE_INTRO, intro2] })
+    vi.mocked(api.gifts.acceptIntro).mockResolvedValue({ matchId: 'match-99' })
+    const onOpenChat = vi.fn()
+    render(<IntrosSection onOpenChat={onOpenChat} refreshKey={0} />)
+    await waitFor(() => screen.getByText('Sara'))
+    await waitFor(() => screen.getByText('Mona'))
+
+    fireEvent.click(screen.getAllByText('Accept')[0])
+
+    await waitFor(() => expect(onOpenChat).toHaveBeenCalledWith('match-99'))
+    await waitFor(() => expect(screen.queryByText('Sara')).not.toBeInTheDocument())
+
+    // Only Mona's card remains — its Accept/Dismiss must not be stuck disabled
+    // from the now-departed Sara card's busy state (the bug: busy was never
+    // cleared on handleAccept's success path since the component stays
+    // mounted while the chat is open).
+    expect(screen.getByText('Mona')).toBeInTheDocument()
+    expect(screen.getByText('Accept').closest('button')).not.toBeDisabled()
+    expect(screen.getByText('Dismiss').closest('button')).not.toBeDisabled()
+  })
+
   it('refetches intros when refreshKey changes', async () => {
     vi.mocked(api.gifts.intros).mockResolvedValue({ intros: [] })
     const { rerender } = render(<IntrosSection onOpenChat={vi.fn()} refreshKey={0} />)
