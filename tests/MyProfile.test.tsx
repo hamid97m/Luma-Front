@@ -46,4 +46,33 @@ describe('MyProfile settings', () => {
 
     expect(screen.queryByText('Pause my account')).not.toBeInTheDocument()
   })
+
+  it('shows a loading state on the photo while its delete is in flight', async () => {
+    const withPhoto = { ...PROFILE, photos: [{ id: 'ph1', url: 'http://x/ph1.jpg', position: 0 }] }
+    // Mount with a photo; after delete completes, refetch returns no photos.
+    vi.mocked(api.profile.get)
+      .mockResolvedValueOnce(withPhoto as any)
+      .mockResolvedValue(PROFILE as any)
+
+    // Hold the delete open so we can observe the in-flight loading state.
+    let resolveDelete: () => void
+    vi.mocked(api.photos.delete).mockReturnValue(
+      new Promise<any>((res) => { resolveDelete = () => res({ ok: true }) })
+    )
+
+    render(<MyProfile />)
+    await waitFor(() => screen.getByText('My Profile 👤'))
+
+    const del = await screen.findByLabelText('Delete photo')
+    expect(del).not.toBeDisabled()
+
+    fireEvent.click(del)
+
+    // While deleting: button is disabled (spinner shown instead of ✕).
+    await waitFor(() => expect(screen.getByLabelText('Delete photo')).toBeDisabled())
+
+    // Finish the delete → loading clears and the photo is gone.
+    resolveDelete!()
+    await waitFor(() => expect(screen.queryByLabelText('Delete photo')).not.toBeInTheDocument())
+  })
 })

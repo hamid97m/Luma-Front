@@ -59,6 +59,7 @@ export function MyProfile() {
   const [uploading, setUploading] = useState<{ slotId: string; phase: 'processing' | 'uploading'; progress: number } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editing, setEditing] = useState<{ file: File; slotId: string } | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     api.profile.get().then((p) => {
@@ -103,10 +104,16 @@ export function MyProfile() {
   }
 
   const handlePhotoDelete = async (photoId: string) => {
-    await api.photos.delete(photoId)
-    const p = await api.profile.get()
-    setProfile(p)
-    setUser(p)
+    if (deletingId) return
+    setDeletingId(photoId)
+    try {
+      await api.photos.delete(photoId)
+      const p = await api.profile.get()
+      setProfile(p)
+      setUser(p)
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   const setPrimaryPhoto = async (photoId: string) => {
@@ -182,10 +189,19 @@ export function MyProfile() {
                     )}
                     <button
                       onClick={() => handlePhotoDelete(photo.id)}
+                      disabled={deletingId === photo.id}
+                      aria-label="Delete photo"
                       className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center"
                     >
-                      ✕
+                      {deletingId === photo.id
+                        ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        : '✕'}
                     </button>
+                    {deletingId === photo.id && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                   </>
                 ) : uploading?.slotId === slotId ? (
                   <div className="w-full h-full border-2 border-dashed border-white/25 rounded-2xl flex flex-col items-center justify-center gap-2 px-4">
