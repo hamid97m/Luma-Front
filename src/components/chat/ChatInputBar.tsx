@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { t } from '../../i18n.js'
-import { mainButtonSupported } from '../../telegram.js'
+import { haptic, mainButtonSupported } from '../../telegram.js'
 
 const MAX_LENGTH = 2000
 const COUNTER_THRESHOLD = 1800
@@ -14,9 +14,10 @@ interface ChatInputBarProps {
   onCancelEdit?: () => void
   replyingToBody?: string | null
   onCancelReply?: () => void
+  onGiftClick?: () => void
 }
 
-export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCancelEdit, replyingToBody, onCancelReply }: ChatInputBarProps) {
+export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCancelEdit, replyingToBody, onCancelReply, onGiftClick }: ChatInputBarProps) {
   const boxRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-grow: runs on every draft change (typing, prefill, clear-on-send).
@@ -82,6 +83,17 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
         <p className="text-[11px] text-white/40 text-right">{MAX_LENGTH - draft.length}</p>
       )}
       <div className="flex items-end gap-2">
+        <button
+          type="button"
+          aria-label={t.gifts.openButton}
+          onClick={() => {
+            haptic.selection()
+            onGiftClick?.()
+          }}
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 text-lg"
+        >
+          🎁
+        </button>
         <textarea
           ref={boxRef}
           rows={1}

@@ -140,5 +140,8 @@ export const t = {
     sending: 'Sending your gift…',
     refunded: "Payment refunded — the gift couldn't be sent",
     error: 'Something went wrong. Please try again.',
+    openButton: 'Send a gift',
+    sentByMe: 'You sent a gift',
+    sentByOther: (name: string) => `${name} sent you a gift`,
   },
 } as const

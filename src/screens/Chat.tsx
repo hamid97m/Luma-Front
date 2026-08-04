@@ -8,6 +8,7 @@ import { ChatEmptyState } from '../components/chat/ChatEmptyState.js'
 import { ProfilePeekSheet } from '../components/chat/ProfilePeekSheet.js'
 import { MessageActionSheet } from '../components/chat/MessageActionSheet.js'
 import { ReportSheet } from '../components/ReportSheet.js'
+import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
 import { t } from '../i18n.js'
 import type { LocalMessage, Match } from '../types.js'
 
@@ -30,6 +31,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
   const [actionId, setActionId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [replyingToId, setReplyingToId] = useState<string | null>(null)
+  const [giftOpen, setGiftOpen] = useState(false)
   const stashedDraft = useRef('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -307,6 +309,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
                       last={item.last}
                       showTicks={item.message.id === lastMineId}
                       reply={resolveReply(item.message.replyToMessageId)}
+                      counterpartName={match.user.name}
                       onRetry={retry}
                       onLongPress={item.message.status !== 'sending' ? openActions : undefined}
                     />
@@ -334,9 +337,18 @@ export function Chat({ match, myUserId, onBack }: Props) {
             onCancelEdit={cancelEdit}
             replyingToBody={replyingToId ? messagesRef.current.find((m) => m.id === replyingToId)?.body ?? null : null}
             onCancelReply={cancelReply}
+            onGiftClick={() => setGiftOpen(true)}
           />
         </>
       )}
+
+      <GiftPickerSheet
+        open={giftOpen}
+        onClose={() => setGiftOpen(false)}
+        target={{ context: 'chat', matchId: match.id }}
+        recipientName={match.user.name}
+        onSent={load}
+      />
 
       {peeking && (
         <ProfilePeekSheet
