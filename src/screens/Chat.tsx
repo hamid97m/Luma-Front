@@ -98,6 +98,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
       createdAt: new Date().toISOString(),
       readAt: null,
       replyToMessageId: replyToMessageId ?? null,
+      type: 'text',
       status: 'sending',
     }
     setMessages((prev) =>

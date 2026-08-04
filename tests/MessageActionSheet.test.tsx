@@ -9,6 +9,7 @@ const MSG: LocalMessage = {
   body: 'hello there',
   createdAt: '2026-08-03T10:00:00Z',
   readAt: null,
+  type: 'text',
 }
 
 describe('MessageActionSheet', () => {

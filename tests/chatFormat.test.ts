@@ -5,7 +5,7 @@ import type { LocalMessage } from '../src/types.js'
 const NOW = new Date('2026-08-03T18:00:00')
 
 function msg(id: string, senderId: string, createdAt: string): LocalMessage {
-  return { id, senderId, body: `body-${id}`, createdAt, readAt: null }
+  return { id, senderId, body: `body-${id}`, createdAt, readAt: null, type: 'text' }
 }
 
 describe('formatDayLabel', () => {

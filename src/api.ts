@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro } from './types.js'
 import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
@@ -115,6 +115,18 @@ export const api = {
       }),
     delete: (matchId: string, messageId: string) =>
       request<{ ok: boolean }>(`/matches/${matchId}/messages/${messageId}`, { method: 'DELETE' }),
+  },
+  gifts: {
+    catalog: () => request<{ gifts: GiftCatalogItem[] }>('/gifts/catalog'),
+    checkout: (input: { context: 'chat' | 'discovery'; matchId?: string; targetUserId?: string; giftId: string; note?: string }) =>
+      request<{ transactionId: string; invoiceLink: string }>('/gifts/checkout', {
+        method: 'POST', body: JSON.stringify(input),
+      }),
+    transaction: (id: string) =>
+      request<{ status: string; introStatus: string | null }>(`/gifts/transactions/${id}`),
+    intros: () => request<{ intros: GiftIntro[] }>('/gifts/intros'),
+    acceptIntro: (id: string) => request<{ matchId: string }>(`/gifts/intros/${id}/accept`, { method: 'POST' }),
+    dismissIntro: (id: string) => request<{ ok: boolean }>(`/gifts/intros/${id}/dismiss`, { method: 'POST' }),
   },
   reports: {
     create: (input: {

@@ -43,6 +43,21 @@ export interface Match {
   unreadCount: number
 }
 
+export interface GiftCatalogItem {
+  giftId: string
+  emoji: string | null
+  starCost: number
+  chargedStars: number
+}
+
+export interface GiftIntro {
+  id: string
+  buyer: { id: string; name: string; photo: string | null }
+  emoji: string | null
+  note: string | null
+  createdAt: string
+}
+
 export interface Message {
   id: string
   senderId: string
@@ -53,6 +68,8 @@ export interface Message {
   editedAt?: string | null
   /** Id of the message this one replies to; null/absent when not a reply. */
   replyToMessageId?: string | null
+  type: 'text' | 'gift'
+  gift?: { emoji: string | null; starCost: number } | null
 }
 
 /** A chat message plus optional client-only delivery state for optimistic send. */

@@ -40,8 +40,8 @@ describe('Chat', () => {
   it('loads and renders messages from both participants', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({
       messages: [
-        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null },
-        { id: 'm2', senderId: 'other-1', body: 'hi there', createdAt: '2026-01-01T10:01:00Z', readAt: null },
+        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null, type: 'text' },
+        { id: 'm2', senderId: 'other-1', body: 'hi there', createdAt: '2026-01-01T10:01:00Z', readAt: null, type: 'text' },
       ],
     })
 
@@ -54,7 +54,7 @@ describe('Chat', () => {
   it('sends a message, appends it, and clears the input', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
     vi.mocked(api.messages.send).mockResolvedValue({
-      message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null },
+      message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null, type: 'text' },
     })
 
     render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
@@ -69,7 +69,7 @@ describe('Chat', () => {
 
   it('appends the message optimistically before the server responds', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
-    let resolveSend!: (v: { message: { id: string; senderId: string; body: string; createdAt: string; readAt: null } }) => void
+    let resolveSend!: (v: { message: { id: string; senderId: string; body: string; createdAt: string; readAt: null; type: 'text' } }) => void
     vi.mocked(api.messages.send).mockReturnValue(new Promise((r) => { resolveSend = r }))
 
     render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
@@ -83,7 +83,7 @@ describe('Chat', () => {
     expect(screen.getByRole('img', { name: 'Sending' })).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('')
 
-    resolveSend({ message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null } })
+    resolveSend({ message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null, type: 'text' } })
     await waitFor(() => expect(screen.queryByRole('img', { name: 'Sending' })).not.toBeInTheDocument())
     expect(screen.getByRole('img', { name: 'Sent' })).toBeInTheDocument()
   })
@@ -102,7 +102,7 @@ describe('Chat', () => {
     expect(screen.getByText('yo')).toBeInTheDocument()
 
     vi.mocked(api.messages.send).mockResolvedValueOnce({
-      message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null },
+      message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null, type: 'text' },
     })
     fireEvent.click(screen.getByText('Failed — tap to retry'))
 
@@ -128,7 +128,7 @@ describe('Chat', () => {
     await waitFor(() => screen.getByText("Couldn't load this chat."))
 
     vi.mocked(api.messages.list).mockResolvedValueOnce({
-      messages: [{ id: 'm1', senderId: 'other-1', body: 'hi again', createdAt: '2026-01-01T10:00:00Z', readAt: null }],
+      messages: [{ id: 'm1', senderId: 'other-1', body: 'hi again', createdAt: '2026-01-01T10:00:00Z', readAt: null, type: 'text' as const }],
     })
     fireEvent.click(screen.getByText('Try again'))
 
@@ -138,7 +138,7 @@ describe('Chat', () => {
   it('shows a single tick under the last message you sent when it has not been read', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({
       messages: [
-        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null },
+        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null, type: 'text' },
       ],
     })
 
@@ -152,7 +152,7 @@ describe('Chat', () => {
   it('shows a double tick under the last message you sent once it is read', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({
       messages: [
-        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: '2026-01-01T10:05:00Z' },
+        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: '2026-01-01T10:05:00Z', type: 'text' },
       ],
     })
 
@@ -165,9 +165,9 @@ describe('Chat', () => {
   it('does not show a tick on the other participant\'s messages or on earlier messages you sent', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({
       messages: [
-        { id: 'm1', senderId: 'me-1', body: 'first', createdAt: '2026-01-01T10:00:00Z', readAt: '2026-01-01T10:05:00Z' },
-        { id: 'm2', senderId: 'other-1', body: 'reply', createdAt: '2026-01-01T10:01:00Z', readAt: null },
-        { id: 'm3', senderId: 'me-1', body: 'second', createdAt: '2026-01-01T10:02:00Z', readAt: null },
+        { id: 'm1', senderId: 'me-1', body: 'first', createdAt: '2026-01-01T10:00:00Z', readAt: '2026-01-01T10:05:00Z', type: 'text' as const },
+        { id: 'm2', senderId: 'other-1', body: 'reply', createdAt: '2026-01-01T10:01:00Z', readAt: null, type: 'text' as const },
+        { id: 'm3', senderId: 'me-1', body: 'second', createdAt: '2026-01-01T10:02:00Z', readAt: null, type: 'text' as const },
       ],
     })
 
@@ -182,7 +182,7 @@ describe('Chat', () => {
   it('renders a date chip above the messages', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({
       messages: [
-        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null },
+        { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null, type: 'text' },
       ],
     })
 
@@ -200,7 +200,7 @@ describe('Chat', () => {
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     vi.mocked(api.messages.list).mockResolvedValueOnce({
-      messages: [{ id: 'm9', senderId: 'other-1', body: 'im back', createdAt: '2026-01-01T11:00:00Z', readAt: null }],
+      messages: [{ id: 'm9', senderId: 'other-1', body: 'im back', createdAt: '2026-01-01T11:00:00Z', readAt: null, type: 'text' }],
     })
     fireEvent(document, new Event('visibilitychange'))
 
@@ -210,7 +210,7 @@ describe('Chat', () => {
 
   it('does not duplicate a bubble when a send resolves after a visibility refresh already merged the same message', async () => {
     vi.mocked(api.messages.list).mockResolvedValueOnce({ messages: [] })
-    let resolveSend!: (v: { message: { id: string; senderId: string; body: string; createdAt: string; readAt: null } }) => void
+    let resolveSend!: (v: { message: { id: string; senderId: string; body: string; createdAt: string; readAt: null; type: 'text' } }) => void
     vi.mocked(api.messages.send).mockReturnValue(new Promise((r) => { resolveSend = r }))
 
     render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
@@ -226,13 +226,13 @@ describe('Chat', () => {
     // time a visibility refresh runs — the refetch merges the committed copy
     // in alongside the still-pending optimistic local.
     vi.mocked(api.messages.list).mockResolvedValueOnce({
-      messages: [{ id: 'm77', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null }],
+      messages: [{ id: 'm77', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null, type: 'text' as const }],
     })
     fireEvent(document, new Event('visibilitychange'))
     await waitFor(() => expect(api.messages.list).toHaveBeenCalledTimes(2))
 
     // The original send promise then resolves with the same server id.
-    resolveSend({ message: { id: 'm77', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null } })
+    resolveSend({ message: { id: 'm77', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null, type: 'text' as const } })
 
     await waitFor(() => expect(screen.getAllByText('yo')).toHaveLength(1))
     expect(screen.queryByRole('img', { name: 'Sending' })).not.toBeInTheDocument()
@@ -250,7 +250,7 @@ describe('Chat', () => {
 
   it('opens a profile peek from the header and closes it again', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({
-      messages: [{ id: 'm1', senderId: 'other-1', body: 'hi', createdAt: '2026-01-01T10:00:00Z', readAt: null }],
+      messages: [{ id: 'm1', senderId: 'other-1', body: 'hi', createdAt: '2026-01-01T10:00:00Z', readAt: null, type: 'text' as const }],
     })
 
     render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
@@ -266,7 +266,7 @@ describe('Chat', () => {
 
   it('shows a jump-to-latest chip only when scrolled away from the bottom', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({
-      messages: [{ id: 'm1', senderId: 'other-1', body: 'hi', createdAt: '2026-01-01T10:00:00Z', readAt: null }],
+      messages: [{ id: 'm1', senderId: 'other-1', body: 'hi', createdAt: '2026-01-01T10:00:00Z', readAt: null, type: 'text' as const }],
     })
 
     render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
@@ -287,8 +287,8 @@ describe('Chat', () => {
     expect(screen.queryByLabelText('Scroll to latest')).not.toBeInTheDocument()
   })
 
-  const MINE = { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null }
-  const THEIRS = { id: 'm2', senderId: 'other-1', body: 'hi there', createdAt: '2026-01-01T10:01:00Z', readAt: null }
+  const MINE = { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null, type: 'text' as const }
+  const THEIRS = { id: 'm2', senderId: 'other-1', body: 'hi there', createdAt: '2026-01-01T10:01:00Z', readAt: null, type: 'text' as const }
 
   it('opens the action sheet on context-menu of either participant\'s message, with Reply-only on the other person\'s', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
@@ -324,6 +324,7 @@ describe('Chat', () => {
         createdAt: '2026-01-01T10:02:00Z',
         readAt: null,
         replyToMessageId: 'm2',
+        type: 'text',
       },
     })
 
@@ -370,7 +371,7 @@ describe('Chat', () => {
   })
 
   it('keeps the quoted preview after editing a reply', async () => {
-    const MY_REPLY = { id: 'm3', senderId: 'me-1', body: 'my reply', createdAt: '2026-01-01T10:02:00Z', readAt: null, replyToMessageId: 'm1' }
+    const MY_REPLY = { id: 'm3', senderId: 'me-1', body: 'my reply', createdAt: '2026-01-01T10:02:00Z', readAt: null, replyToMessageId: 'm1', type: 'text' as const }
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, MY_REPLY] })
     vi.mocked(api.messages.edit).mockResolvedValue({
       message: { ...MY_REPLY, body: 'my reply edited', editedAt: '2026-01-02T09:00:00Z' },
