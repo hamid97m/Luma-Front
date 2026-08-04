@@ -1,11 +1,13 @@
+import { t } from '../../i18n.js'
 import type { Match } from '../../types.js'
 
 interface ProfilePeekSheetProps {
   user: Match['user']
   onClose: () => void
+  onReport: () => void
 }
 
-export function ProfilePeekSheet({ user, onClose }: ProfilePeekSheetProps) {
+export function ProfilePeekSheet({ user, onClose, onReport }: ProfilePeekSheetProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4" onClick={onClose}>
       <div
@@ -17,7 +19,17 @@ export function ProfilePeekSheet({ user, onClose }: ProfilePeekSheetProps) {
             {user.name}
             {user.age != null && <span className="text-white/60 font-bold">, {user.age}</span>}
           </h2>
-          <button onClick={onClose} aria-label="Close" className="text-white/50 text-2xl leading-none">✕</button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onReport}
+              aria-label={t.report.title}
+              className="w-8 h-8 rounded-full glass-dark flex items-center justify-center text-[14px] text-white/80"
+            >
+              🚩
+            </button>
+            <button onClick={onClose} aria-label="Close" className="text-white/50 text-2xl leading-none">✕</button>
+          </div>
         </div>
 
         {user.photos.length > 0 && (

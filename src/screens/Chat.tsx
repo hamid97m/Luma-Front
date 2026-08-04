@@ -7,23 +7,26 @@ import { ChatInputBar } from '../components/chat/ChatInputBar.js'
 import { ChatEmptyState } from '../components/chat/ChatEmptyState.js'
 import { ProfilePeekSheet } from '../components/chat/ProfilePeekSheet.js'
 import { MessageActionSheet } from '../components/chat/MessageActionSheet.js'
+import { ReportSheet } from '../components/ReportSheet.js'
 import { t } from '../i18n.js'
 import type { LocalMessage, Match } from '../types.js'
 
 interface Props {
   match: Match
   myUserId: string
+  onBack: () => void
 }
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error'
 
 let localSeq = 0
 
-export function Chat({ match, myUserId }: Props) {
+export function Chat({ match, myUserId, onBack }: Props) {
   const [messages, setMessages] = useState<LocalMessage[]>([])
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [draft, setDraft] = useState('')
   const [peeking, setPeeking] = useState(false)
+  const [showReport, setShowReport] = useState(false)
   const [actionId, setActionId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [replyingToId, setReplyingToId] = useState<string | null>(null)
@@ -324,7 +327,30 @@ export function Chat({ match, myUserId }: Props) {
         </>
       )}
 
-      {peeking && <ProfilePeekSheet user={match.user} onClose={() => setPeeking(false)} />}
+      {peeking && (
+        <ProfilePeekSheet
+          user={match.user}
+          onClose={() => setPeeking(false)}
+          onReport={() => {
+            setPeeking(false)
+            setShowReport(true)
+          }}
+        />
+      )}
+
+      {showReport && (
+        <ReportSheet
+          reportedUserId={match.user.id}
+          context="chat"
+          matchId={match.id}
+          onClose={() => setShowReport(false)}
+          onSubmitted={() => {
+            setShowReport(false)
+            window.Telegram?.WebApp?.showAlert?.(t.report.thanks)
+            onBack()
+          }}
+        />
+      )}
 
       {actionId && (() => {
         const msg = messages.find((m) => m.id === actionId)

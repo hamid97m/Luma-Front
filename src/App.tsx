@@ -43,6 +43,13 @@ export function App() {
     setVisited((v) => (v[tab] ? v : { ...v, [tab]: true }))
   }, [tab])
 
+  // Shared back-to-matches handler — used by both the Telegram BackButton and
+  // any in-chat action (e.g. after reporting) that needs to leave the chat.
+  const closeChat = () => {
+    setActiveChatMatch(null)
+    setMatchesRefreshKey((k) => k + 1)
+  }
+
   useEffect(() => {
     const backButton = window.Telegram?.WebApp?.BackButton
     if (!backButton) return
@@ -50,14 +57,10 @@ export function App() {
       backButton.hide()
       return
     }
-    const handleClick = () => {
-      setActiveChatMatch(null)
-      setMatchesRefreshKey((k) => k + 1)
-    }
-    backButton.onClick(handleClick)
+    backButton.onClick(closeChat)
     backButton.show()
     return () => {
-      backButton.offClick(handleClick)
+      backButton.offClick(closeChat)
       backButton.hide()
     }
   }, [activeChatMatch])
@@ -132,6 +135,7 @@ export function App() {
           key={activeChatMatch.id}
           match={activeChatMatch}
           myUserId={useAuthStore.getState().user!.id}
+          onBack={closeChat}
         />
       )}
       <div

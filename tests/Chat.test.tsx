@@ -45,7 +45,7 @@ describe('Chat', () => {
       ],
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
 
     await waitFor(() => screen.getByText('hey'))
     expect(screen.getByText('hi there')).toBeInTheDocument()
@@ -57,7 +57,7 @@ describe('Chat', () => {
       message: { id: 'm3', senderId: 'me-1', body: 'yo', createdAt: '2026-01-01T10:02:00Z', readAt: null },
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
@@ -72,7 +72,7 @@ describe('Chat', () => {
     let resolveSend!: (v: { message: { id: string; senderId: string; body: string; createdAt: string; readAt: null } }) => void
     vi.mocked(api.messages.send).mockReturnValue(new Promise((r) => { resolveSend = r }))
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
@@ -92,7 +92,7 @@ describe('Chat', () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
     vi.mocked(api.messages.send).mockRejectedValueOnce(new Error('network'))
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
@@ -115,7 +115,7 @@ describe('Chat', () => {
       Object.assign(new Error('match_not_found'), { status: 404 })
     )
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
 
     await waitFor(() => screen.getByText('This match is no longer available.'))
   })
@@ -123,7 +123,7 @@ describe('Chat', () => {
   it('shows a retry button on a network load failure and recovers on retry', async () => {
     vi.mocked(api.messages.list).mockRejectedValueOnce(new Error('network down'))
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
 
     await waitFor(() => screen.getByText("Couldn't load this chat."))
 
@@ -142,7 +142,7 @@ describe('Chat', () => {
       ],
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
 
     await waitFor(() => screen.getByText('hey'))
     expect(screen.getByRole('img', { name: 'Sent' })).toBeInTheDocument()
@@ -156,7 +156,7 @@ describe('Chat', () => {
       ],
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
 
     await waitFor(() => screen.getByText('hey'))
     expect(screen.getByRole('img', { name: 'Seen' })).toBeInTheDocument()
@@ -171,7 +171,7 @@ describe('Chat', () => {
       ],
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
 
     await waitFor(() => screen.getByText('second'))
     // Only the last message I sent ("second") gets a tick — one "Sent" icon total.
@@ -186,7 +186,7 @@ describe('Chat', () => {
       ],
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
 
     await waitFor(() => screen.getByText('hey'))
     // 2026-01-01 is far from "today", so the chip shows a short date.
@@ -196,7 +196,7 @@ describe('Chat', () => {
   it('refetches messages when the app becomes visible again', async () => {
     vi.mocked(api.messages.list).mockResolvedValueOnce({ messages: [] })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     vi.mocked(api.messages.list).mockResolvedValueOnce({
@@ -213,7 +213,7 @@ describe('Chat', () => {
     let resolveSend!: (v: { message: { id: string; senderId: string; body: string; createdAt: string; readAt: null } }) => void
     vi.mocked(api.messages.send).mockReturnValue(new Promise((r) => { resolveSend = r }))
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
@@ -241,7 +241,7 @@ describe('Chat', () => {
   it('shows the empty state for a fresh match and prefills the input from a chip', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('You matched with Sara'))
 
     fireEvent.click(screen.getByText("Hey! How's your week going? 😊"))
@@ -253,7 +253,7 @@ describe('Chat', () => {
       messages: [{ id: 'm1', senderId: 'other-1', body: 'hi', createdAt: '2026-01-01T10:00:00Z', readAt: null }],
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hi'))
 
     fireEvent.click(screen.getByRole('button', { name: 'View profile' }))
@@ -269,7 +269,7 @@ describe('Chat', () => {
       messages: [{ id: 'm1', senderId: 'other-1', body: 'hi', createdAt: '2026-01-01T10:00:00Z', readAt: null }],
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hi'))
 
     expect(screen.queryByLabelText('Scroll to latest')).not.toBeInTheDocument()
@@ -293,7 +293,7 @@ describe('Chat', () => {
   it('opens the action sheet on context-menu of either participant\'s message, with Reply-only on the other person\'s', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     // The other person's message: sheet opens, Reply is offered, Edit/Delete are not.
@@ -327,7 +327,7 @@ describe('Chat', () => {
       },
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     fireEvent.contextMenu(screen.getByText('hi there'))
@@ -349,7 +349,7 @@ describe('Chat', () => {
       message: { ...MINE, body: 'hey fixed', editedAt: '2026-01-02T09:00:00Z' },
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     fireEvent.contextMenu(screen.getByText('hey'))
@@ -376,7 +376,7 @@ describe('Chat', () => {
       message: { ...MY_REPLY, body: 'my reply edited', editedAt: '2026-01-02T09:00:00Z' },
     })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('my reply'))
 
     fireEvent.contextMenu(screen.getByText('my reply'))
@@ -394,7 +394,7 @@ describe('Chat', () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE] })
     vi.mocked(api.messages.edit).mockRejectedValue(new Error('network'))
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     fireEvent.contextMenu(screen.getByText('hey'))
@@ -409,7 +409,7 @@ describe('Chat', () => {
   it('cancelling an edit restores the stashed draft', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE] })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'half-typed draft' } })
@@ -426,7 +426,7 @@ describe('Chat', () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
     vi.mocked(api.messages.delete).mockResolvedValue({ ok: true })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     fireEvent.contextMenu(screen.getByText('hey'))
@@ -441,7 +441,7 @@ describe('Chat', () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
     vi.mocked(api.messages.delete).mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }))
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     fireEvent.contextMenu(screen.getByText('hey'))
@@ -455,7 +455,7 @@ describe('Chat', () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
     vi.mocked(api.messages.delete).mockRejectedValue(Object.assign(new Error('message_not_found'), { status: 404 }))
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     fireEvent.contextMenu(screen.getByText('hey'))
@@ -469,7 +469,7 @@ describe('Chat', () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
     vi.mocked(api.messages.send).mockRejectedValueOnce(new Error('network'))
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByPlaceholderText('Type a message…'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'yo' } })
@@ -488,7 +488,7 @@ describe('Chat', () => {
   it('exits edit mode without a request when saving an emptied draft', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE] })
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'wip draft' } })
@@ -509,7 +509,7 @@ describe('Chat', () => {
     let resolveEdit!: (v: { message: typeof MINE & { editedAt: string } }) => void
     vi.mocked(api.messages.edit).mockReturnValue(new Promise((r) => { resolveEdit = r }))
 
-    render(<Chat match={MATCH} myUserId="me-1" />)
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
     await waitFor(() => screen.getByText('hey'))
 
     fireEvent.contextMenu(screen.getByText('hey'))
