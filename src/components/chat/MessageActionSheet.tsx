@@ -21,7 +21,7 @@ export function MessageActionSheet({ message, mine, onReply, onEdit, onDelete, o
       <div
         role="menu"
         aria-label={t.chat.messageActions}
-        className="glass border border-white/15 rounded-3xl p-2 w-full max-w-sm shadow-2xl"
+        className="glass border border-white/15 rounded-3xl p-2 w-full max-w-sm shadow-2xl select-none"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-white/50 text-[13px] px-4 pt-2 pb-1 truncate">{message.body}</p>
