@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api.js'
+import { t } from '../../i18n.js'
 import { openInvoice, haptic } from '../../telegram.js'
 import type { GiftCatalogItem } from '../../types.js'
 
@@ -26,6 +27,11 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
   const mountedRef = useRef(true)
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollTriesRef = useRef(0)
+  // Bumped whenever the sheet opens (fresh session) or closes — every async
+  // continuation captures the session it started with and bails if it no
+  // longer matches, so a checkout/poll abandoned by closing (or superseded
+  // by a later reopen) can never open an invoice or close a *newer* session.
+  const sessionRef = useRef(0)
 
   useEffect(() => {
     mountedRef.current = true
@@ -49,6 +55,9 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
       return
     }
 
+    sessionRef.current += 1
+    const session = sessionRef.current
+
     setGifts(null)
     setSelectedGiftId(null)
     setNote('')
@@ -58,10 +67,10 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
     api.gifts
       .catalog()
       .then((res) => {
-        if (mountedRef.current) setGifts(res.gifts)
+        if (mountedRef.current && session === sessionRef.current) setGifts(res.gifts)
       })
       .catch(() => {
-        if (mountedRef.current) setGifts([])
+        if (mountedRef.current && session === sessionRef.current) setGifts([])
       })
 
     return () => {
@@ -74,6 +83,7 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
 
   const handleClose = () => {
     clearPolling()
+    sessionRef.current += 1
     onClose()
   }
 
@@ -83,14 +93,21 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
     setSelectedGiftId(gift.giftId)
   }
 
-  const startPolling = (transactionId: string) => {
+  const startPolling = (transactionId: string, session: number) => {
     clearPolling()
     pollTriesRef.current = 0
     pollTimerRef.current = setInterval(async () => {
+      if (!mountedRef.current || session !== sessionRef.current) {
+        clearPolling()
+        return
+      }
       pollTriesRef.current += 1
       try {
         const res = await api.gifts.transaction(transactionId)
-        if (!mountedRef.current) return
+        if (!mountedRef.current || session !== sessionRef.current) {
+          clearPolling()
+          return
+        }
         if (res.status === 'sent') {
           clearPolling()
           haptic.notification('success')
@@ -108,7 +125,7 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
       }
       if (pollTriesRef.current >= POLL_MAX_TRIES && pollTimerRef.current != null) {
         clearPolling()
-        if (mountedRef.current) setPhase('error')
+        if (mountedRef.current && session === sessionRef.current) setPhase('error')
       }
     }, POLL_INTERVAL_MS)
   }
@@ -116,6 +133,12 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
   const handleSend = async () => {
     const gift = gifts?.find((g) => g.giftId === selectedGiftId)
     if (!gift || busy) return
+
+    // Capture the session this checkout belongs to. If the sheet is closed
+    // (or closed+reopened) before an await below resolves, sessionRef will
+    // have moved on and every check below bails instead of opening an
+    // invoice for an abandoned checkout or closing a newer session.
+    const session = sessionRef.current
 
     haptic.impact('medium')
     setBusy(true)
@@ -127,12 +150,14 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
         giftId: gift.giftId,
         note: note.trim() || undefined,
       })
+      if (!mountedRef.current || session !== sessionRef.current) return
+
       const status = await openInvoice(invoiceLink)
-      if (!mountedRef.current) return
+      if (!mountedRef.current || session !== sessionRef.current) return
 
       if (status === 'paid') {
         setPhase('sending')
-        startPolling(transactionId)
+        startPolling(transactionId, session)
       } else if (status === 'cancelled') {
         handleClose()
         return
@@ -140,9 +165,9 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
         setPhase('error')
       }
     } catch {
-      if (mountedRef.current) setPhase('error')
+      if (mountedRef.current && session === sessionRef.current) setPhase('error')
     } finally {
-      if (mountedRef.current) setBusy(false)
+      if (mountedRef.current && session === sessionRef.current) setBusy(false)
     }
   }
 
@@ -156,30 +181,30 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-extrabold text-white">Send a gift to {recipientName}</h2>
-          <button onClick={handleClose} aria-label="Close" className="text-white/50 text-2xl leading-none">
+          <h2 className="text-xl font-extrabold text-white">{t.gifts.title(recipientName)}</h2>
+          <button onClick={handleClose} aria-label={t.gifts.close} className="text-white/50 text-2xl leading-none">
             ✕
           </button>
         </div>
 
         {phase === 'refunded' && (
-          <p className="text-rose-400 text-[14px] mb-4">Payment refunded — the gift couldn't be sent</p>
+          <p className="text-rose-400 text-[14px] mb-4">{t.gifts.refunded}</p>
         )}
         {phase === 'error' && (
-          <p className="text-rose-400 text-[14px] mb-4">Something went wrong. Please try again.</p>
+          <p className="text-rose-400 text-[14px] mb-4">{t.gifts.error}</p>
         )}
 
         {phase === 'sending' ? (
           <div className="flex flex-col items-center justify-center py-10">
             <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-white/70 text-[14px]">Sending your gift…</p>
+            <p className="text-white/70 text-[14px]">{t.gifts.sending}</p>
           </div>
         ) : gifts === null ? (
           <div className="flex items-center justify-center py-10">
             <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
           </div>
         ) : gifts.length === 0 ? (
-          <p className="text-white/60 text-[14px] text-center py-10">Gifts unavailable right now</p>
+          <p className="text-white/60 text-[14px] text-center py-10">{t.gifts.unavailable}</p>
         ) : (
           <>
             <div className="grid grid-cols-3 gap-3 mb-4 max-h-[40vh] overflow-y-auto">
@@ -206,7 +231,7 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={128}
-              placeholder="Add a note (optional)"
+              placeholder={t.gifts.notePlaceholder}
               rows={2}
               disabled={busy}
               className="w-full rounded-2xl bg-white/5 border border-white/12 p-3 text-[14px] text-white placeholder:text-white/40 mb-4 disabled:opacity-50"
@@ -216,9 +241,9 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
               {busy ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : selectedGift ? (
-                `Send ${selectedGift.emoji ?? '🎁'} for ⭐${selectedGift.chargedStars}`
+                t.gifts.send(selectedGift.emoji ?? '🎁', selectedGift.chargedStars)
               ) : (
-                'Select a gift'
+                t.gifts.selectPrompt
               )}
             </button>
           </>

@@ -130,4 +130,15 @@ export const t = {
     title: 'Your account has been blocked',
     body: 'Your account was blocked for violating our community guidelines.',
   },
+  gifts: {
+    title: (name: string) => `Send a gift to ${name}`,
+    close: 'Close',
+    unavailable: 'Gifts unavailable right now',
+    notePlaceholder: 'Add a note (optional)',
+    selectPrompt: 'Select a gift',
+    send: (emoji: string, stars: number) => `Send ${emoji} for ⭐${stars}`,
+    sending: 'Sending your gift…',
+    refunded: "Payment refunded — the gift couldn't be sent",
+    error: 'Something went wrong. Please try again.',
+  },
 } as const
