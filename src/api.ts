@@ -103,10 +103,10 @@ export const api = {
   },
   messages: {
     list: (matchId: string) => request<{ messages: Message[] }>(`/matches/${matchId}/messages`),
-    send: (matchId: string, body: string) =>
+    send: (matchId: string, body: string, replyToMessageId?: string) =>
       request<{ message: Message }>(`/matches/${matchId}/messages`, {
         method: 'POST',
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({ body, replyToMessageId }),
       }),
     edit: (matchId: string, messageId: string, body: string) =>
       request<{ message: Message }>(`/matches/${matchId}/messages/${messageId}`, {

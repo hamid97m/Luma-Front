@@ -76,6 +76,10 @@ export const t = {
     retryMessage: 'Retry',
     cancelAction: 'Cancel',
     messageActions: 'Message actions',
+    replyAction: 'Reply',
+    replyingLabel: 'Replying',
+    replyYou: 'You',
+    replyDeleted: 'Original message was deleted',
   },
   profile: {
     title: 'My Profile',

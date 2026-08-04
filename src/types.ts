@@ -51,6 +51,8 @@ export interface Message {
   readAt: string | null
   /** Set when the sender edited the message; optional so pre-existing fixtures remain valid. */
   editedAt?: string | null
+  /** Id of the message this one replies to; null/absent when not a reply. */
+  replyToMessageId?: string | null
 }
 
 /** A chat message plus optional client-only delivery state for optimistic send. */
