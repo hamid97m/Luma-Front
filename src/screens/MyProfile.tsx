@@ -211,7 +211,7 @@ export function MyProfile() {
                       accept="image/*"
                       disabled={!!uploading}
                       className="sr-only"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) setEditing({ file: f, slotId }) }}
+                      onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) setEditing({ file: f, slotId }) }}
                     />
                   </label>
                 )}

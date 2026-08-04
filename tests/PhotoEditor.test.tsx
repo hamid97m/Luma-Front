@@ -64,4 +64,17 @@ describe('PhotoEditor', () => {
       0,
     )
   })
+
+  it('shows an inline error and keeps the editor open when cropImage rejects', async () => {
+    vi.mocked(cropImage).mockRejectedValueOnce(new Error('crop_failed'))
+    const onConfirm = vi.fn()
+    render(<PhotoEditor file={makeFile()} onCancel={vi.fn()} onConfirm={onConfirm} />)
+    fireEvent.click(screen.getByTestId('mock-crop-complete'))
+    fireEvent.click(screen.getByRole('button', { name: /use photo/i }))
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(onConfirm).not.toHaveBeenCalled()
+    // Editor stays mounted and interactive — button reverts from "Saving…".
+    expect(screen.getByRole('button', { name: /use photo/i })).not.toBeDisabled()
+  })
 })

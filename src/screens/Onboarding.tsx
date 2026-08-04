@@ -97,6 +97,7 @@ export function Onboarding({ onComplete }: Props) {
   }
 
   const handlePhotoFile = async (file: File) => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview)
     const preview = URL.createObjectURL(file)
     setPhotoPreview(preview)
     setUploadPhase({ phase: 'processing', progress: 0 })
@@ -271,7 +272,7 @@ export function Onboarding({ onComplete }: Props) {
                     type="file"
                     accept="image/*"
                     className="sr-only"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) setEditingFile(f) }}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) setEditingFile(f) }}
                   />
                   <div className={`relative w-32 h-32 rounded-2xl flex flex-col items-center justify-center overflow-hidden ${
                     photoPreview ? '' : 'border-2 border-dashed border-white/30'
