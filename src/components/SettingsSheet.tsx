@@ -6,9 +6,10 @@ interface Props {
   isActive: boolean
   onPauseChange: (isActive: boolean) => void
   onClose: () => void
+  onOpenSupport: () => void
 }
 
-export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
+export function SettingsSheet({ isActive, onPauseChange, onClose, onOpenSupport }: Props) {
   const [view, setView] = useState<'menu' | 'confirmDelete'>('menu')
   const [pausing, setPausing] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -76,6 +77,15 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
               <p className="text-white/50 text-[13px] font-normal">
                 You won't appear in Discovery. Your existing matches can still reach you.
               </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={onOpenSupport}
+              className="w-full text-left glass border border-white/12 rounded-2xl p-4 mb-4"
+            >
+              <span className="text-white font-semibold">Support</span>
+              <p className="text-white/50 text-[13px] font-normal">Contact us — questions, problems, feedback.</p>
             </button>
 
             <button

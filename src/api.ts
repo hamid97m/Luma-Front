@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage } from './types.js'
 import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
@@ -124,5 +124,17 @@ export const api = {
       note?: string
       matchId?: string
     }) => request<{ ok: true }>('/reports', { method: 'POST', body: JSON.stringify(input) }),
+  },
+  support: {
+    list: () => request<{ tickets: SupportTicketListItem[] }>('/support/tickets'),
+    thread: (id: string) => request<SupportThread>(`/support/tickets/${id}`),
+    create: (body: string) =>
+      request<{ ticket: { id: string; status: 'open' | 'closed'; createdAt: string } }>(
+        '/support/tickets', { method: 'POST', body: JSON.stringify({ body }) },
+      ),
+    reply: (id: string, body: string) =>
+      request<{ message: SupportMessage }>(`/support/tickets/${id}/messages`, {
+        method: 'POST', body: JSON.stringify({ body }),
+      }),
   },
 }

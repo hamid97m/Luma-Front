@@ -22,7 +22,7 @@ describe('SettingsSheet', () => {
 
   it('calls onClose when the close button is clicked', () => {
     const onClose = vi.fn()
-    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={onClose} />)
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={onClose} onOpenSupport={vi.fn()} />)
     fireEvent.click(screen.getByLabelText('Close'))
     expect(onClose).toHaveBeenCalled()
   })
@@ -30,7 +30,7 @@ describe('SettingsSheet', () => {
   it('pauses the account and calls onPauseChange(false)', async () => {
     vi.mocked(api.profile.update).mockResolvedValue({} as any)
     const onPauseChange = vi.fn()
-    render(<SettingsSheet isActive={true} onPauseChange={onPauseChange} onClose={vi.fn()} />)
+    render(<SettingsSheet isActive={true} onPauseChange={onPauseChange} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('switch'))
 
@@ -43,7 +43,7 @@ describe('SettingsSheet', () => {
   it('resumes a paused account and calls onPauseChange(true)', async () => {
     vi.mocked(api.profile.update).mockResolvedValue({} as any)
     const onPauseChange = vi.fn()
-    render(<SettingsSheet isActive={false} onPauseChange={onPauseChange} onClose={vi.fn()} />)
+    render(<SettingsSheet isActive={false} onPauseChange={onPauseChange} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('switch'))
 
@@ -54,10 +54,10 @@ describe('SettingsSheet', () => {
   })
 
   it('reflects the correct aria-checked state (checked means active/enabled, not paused)', () => {
-    const { rerender } = render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    const { rerender } = render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true')
 
-    rerender(<SettingsSheet isActive={false} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    rerender(<SettingsSheet isActive={false} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
   })
 
@@ -66,7 +66,7 @@ describe('SettingsSheet', () => {
     vi.mocked(api.profile.update).mockReturnValue(
       new Promise((resolve) => { resolveUpdate = resolve }) as any
     )
-    const { container } = render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    const { container } = render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('switch'))
 
@@ -84,7 +84,7 @@ describe('SettingsSheet', () => {
   })
 
   it('shows a confirmation view before deleting, and cancel does not call delete', () => {
-    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
 
     fireEvent.click(screen.getByText('Delete my account'))
     expect(screen.getByText('Delete your account?')).toBeInTheDocument()
@@ -103,7 +103,7 @@ describe('SettingsSheet', () => {
       value: { ...window.location, reload: reloadMock },
     })
 
-    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
 
     fireEvent.click(screen.getByText('Delete my account'))
     fireEvent.click(screen.getByText('Yes, delete my account'))

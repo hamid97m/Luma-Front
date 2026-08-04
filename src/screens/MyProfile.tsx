@@ -43,7 +43,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function MyProfile() {
+export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const { user: storeUser, setUser } = useAuthStore()
   const [profile, setProfile] = useState<UserProfile | null>(storeUser)
 
@@ -365,6 +365,7 @@ export function MyProfile() {
           isActive={profile.is_active}
           onPauseChange={handlePauseChange}
           onClose={() => setSettingsOpen(false)}
+          onOpenSupport={() => { setSettingsOpen(false); onOpenSupport() }}
         />
       )}
 
