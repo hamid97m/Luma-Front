@@ -11,6 +11,7 @@ import { Discovery } from './screens/Discovery.js'
 import { Matches } from './screens/Matches.js'
 import { MyProfile } from './screens/MyProfile.js'
 import { Chat } from './screens/Chat.js'
+import { Support } from './screens/Support.js'
 import { BottomNav } from './components/BottomNav.js'
 import { NotifyPrompt } from './components/NotifyPrompt.js'
 import type { Match, UserProfile } from './types.js'
@@ -29,6 +30,7 @@ export function App() {
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0)
   const [matchesBadge, setMatchesBadge] = useState(0)
   const [showNotifyPrompt, setShowNotifyPrompt] = useState(false)
+  const [showSupport, setShowSupport] = useState(false)
   // Once a tab has been visited, keep it mounted (hidden via CSS) instead of
   // unmounting — avoids refetching and a loading flash on every tab switch.
   const [visited, setVisited] = useState<Record<Tab, boolean>>({
@@ -54,6 +56,7 @@ export function App() {
   useEffect(() => {
     const backButton = window.Telegram?.WebApp?.BackButton
     if (!backButton) return
+    if (showSupport) return            // Support overlay owns the back button while open
     if (!activeChatMatch) {
       backButton.hide()
       return
@@ -64,7 +67,7 @@ export function App() {
       backButton.offClick(closeChat)
       backButton.hide()
     }
-  }, [activeChatMatch])
+  }, [activeChatMatch, showSupport])
 
   useEffect(() => {
     if (screen !== 'main') return
@@ -143,6 +146,7 @@ export function App() {
   // matches silently instead of remounting into a loading screen.
   return (
     <>
+      {showSupport && <Support onClose={() => setShowSupport(false)} />}
       {activeChatMatch && (
         <Chat
           key={activeChatMatch.id}
@@ -166,7 +170,7 @@ export function App() {
               <Matches onOpenChat={setActiveChatMatch} refreshKey={matchesRefreshKey} />
             </div>
           )}
-          {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile /></div>}
+          {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile onOpenSupport={() => setShowSupport(true)} /></div>}
         </div>
         <BottomNav active={tab} onChange={setTab} matchesBadge={matchesBadge} />
         {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}

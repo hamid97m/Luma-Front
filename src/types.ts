@@ -67,3 +67,25 @@ export interface SwipeResult {
     user: { id: string; name: string; telegramId: number; username: string | null }
   }
 }
+
+export interface SupportMessage {
+  id: string
+  sender: 'user' | 'admin'
+  body: string
+  createdAt: string
+}
+
+export interface SupportTicketListItem {
+  id: string
+  status: 'open' | 'closed'
+  lastSender: 'user' | 'admin'
+  lastMessageAt: string
+  createdAt: string
+  preview: string
+  unread: boolean
+}
+
+export interface SupportThread {
+  ticket: { id: string; status: 'open' | 'closed'; createdAt: string }
+  messages: SupportMessage[]
+}

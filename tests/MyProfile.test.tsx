@@ -28,7 +28,7 @@ describe('MyProfile settings', () => {
 
   it('opens the settings sheet when the gear icon is clicked', async () => {
     vi.mocked(api.profile.get).mockResolvedValue(PROFILE as any)
-    render(<MyProfile />)
+    render(<MyProfile onOpenSupport={vi.fn()} />)
 
     await waitFor(() => screen.getByText('My Profile 👤'))
     fireEvent.click(screen.getByLabelText('Settings'))
@@ -38,7 +38,7 @@ describe('MyProfile settings', () => {
 
   it('closes the settings sheet when its close button is clicked', async () => {
     vi.mocked(api.profile.get).mockResolvedValue(PROFILE as any)
-    render(<MyProfile />)
+    render(<MyProfile onOpenSupport={vi.fn()} />)
 
     await waitFor(() => screen.getByText('My Profile 👤'))
     fireEvent.click(screen.getByLabelText('Settings'))
