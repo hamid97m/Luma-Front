@@ -81,4 +81,42 @@ describe('ChatInputBar', () => {
     expect(box.selectionStart).toBe('hello there'.length)
     expect(box.selectionEnd).toBe('hello there'.length)
   })
+
+  it('shows the reply strip with the quoted body and cancels on ✕', () => {
+    const onCancelReply = vi.fn()
+    render(
+      <ChatInputBar
+        draft="" onDraftChange={vi.fn()} onSend={vi.fn()}
+        replyingToBody="their message" onCancelReply={onCancelReply}
+      />
+    )
+
+    expect(screen.getByText('Replying')).toBeInTheDocument()
+    expect(screen.getByText('their message')).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Cancel'))
+    expect(onCancelReply).toHaveBeenCalled()
+  })
+
+  it('shows the edit strip (not the reply strip) when both are set', () => {
+    render(
+      <ChatInputBar
+        draft="fixed" onDraftChange={vi.fn()} onSend={vi.fn()}
+        editingBody="orig" onCancelEdit={vi.fn()}
+        replyingToBody="their message" onCancelReply={vi.fn()}
+      />
+    )
+    expect(screen.getByText('Editing message')).toBeInTheDocument()
+    expect(screen.queryByText('Replying')).not.toBeInTheDocument()
+  })
+
+  it('focuses the input when entering reply mode', () => {
+    const { rerender } = render(<ChatInputBar draft="" onDraftChange={vi.fn()} onSend={vi.fn()} />)
+    const box = screen.getByPlaceholderText('Type a message…') as HTMLTextAreaElement
+    expect(document.activeElement).not.toBe(box)
+
+    rerender(
+      <ChatInputBar draft="" onDraftChange={vi.fn()} onSend={vi.fn()} replyingToBody="their message" onCancelReply={vi.fn()} />
+    )
+    expect(document.activeElement).toBe(box)
+  })
 })

@@ -12,9 +12,11 @@ interface ChatInputBarProps {
   onSend: () => void
   editingBody?: string | null
   onCancelEdit?: () => void
+  replyingToBody?: string | null
+  onCancelReply?: () => void
 }
 
-export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCancelEdit }: ChatInputBarProps) {
+export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCancelEdit, replyingToBody, onCancelReply }: ChatInputBarProps) {
   const boxRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-grow: runs on every draft change (typing, prefill, clear-on-send).
@@ -35,6 +37,12 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
     el.setSelectionRange(el.value.length, el.value.length)
   }, [editingBody])
 
+  // Entering reply mode opens the keyboard so the user can type immediately.
+  useEffect(() => {
+    if (replyingToBody == null) return
+    boxRef.current?.focus()
+  }, [replyingToBody])
+
   return (
     <div
       className="p-4 border-t border-white/10 flex flex-col gap-1"
@@ -48,6 +56,21 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
           </div>
           <button
             onClick={onCancelEdit}
+            aria-label={t.chat.cancelAction}
+            className="text-white/50 text-xl leading-none px-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      {editingBody == null && replyingToBody != null && (
+        <div className="flex items-center gap-2 pb-1">
+          <div className="flex-1 min-w-0 border-l-2 border-white/40 pl-2">
+            <p className="text-[11px] font-bold text-white/80">{t.chat.replyingLabel}</p>
+            <p className="text-[12px] text-white/50 truncate">{replyingToBody}</p>
+          </div>
+          <button
+            onClick={onCancelReply}
             aria-label={t.chat.cancelAction}
             className="text-white/50 text-xl leading-none px-1"
           >
