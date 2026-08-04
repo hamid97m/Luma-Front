@@ -116,4 +116,13 @@ export const api = {
     delete: (matchId: string, messageId: string) =>
       request<{ ok: boolean }>(`/matches/${matchId}/messages/${messageId}`, { method: 'DELETE' }),
   },
+  reports: {
+    create: (input: {
+      reportedUserId: string
+      context: 'discovery' | 'chat'
+      reason: string
+      note?: string
+      matchId?: string
+    }) => request<{ ok: true }>('/reports', { method: 'POST', body: JSON.stringify(input) }),
+  },
 }

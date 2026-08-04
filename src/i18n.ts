@@ -101,4 +101,16 @@ export const t = {
     generic: 'Something went wrong',
     retry: 'Try again',
   },
+  report: {
+    title: 'Report user',
+    reasonFake: 'Fake profile or photos',
+    reasonInappropriate: 'Inappropriate or explicit content',
+    reasonHarassment: 'Harassment or abuse',
+    reasonSpam: 'Spam or scam',
+    reasonOther: 'Other',
+    notePlaceholder: 'Add a note (optional)',
+    submit: 'Submit report',
+    thanks: 'Thanks — our team will review this.',
+    cancel: 'Cancel',
+  },
 } as const
