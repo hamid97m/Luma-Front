@@ -4,6 +4,7 @@ import { api } from '../api.js'
 import { CardStack } from '../components/CardStack.js'
 import { MatchPopup } from '../components/MatchPopup.js'
 import { NotifyPrompt } from '../components/NotifyPrompt.js'
+import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
 import { shouldPromptWriteAccess } from '../telegram.js'
 import type { DiscoveryProfile, SwipeResult, Match } from '../types.js'
 
@@ -20,6 +21,7 @@ export function Discovery({ onOpenChat }: Props) {
   const [swiping, setSwiping] = useState(false)
   const [activeMatch, setActiveMatch] = useState<NonNullable<SwipeResult['match']> | null>(null)
   const [showNotifyPrompt, setShowNotifyPrompt] = useState(false)
+  const [giftTarget, setGiftTarget] = useState<{ id: string; name: string } | null>(null)
   // Every id swiped this session — outlives the queue, so a prefetch response
   // started before a swipe (and thus unaware of it) can't re-add that profile.
   const swipedIds = useRef<Set<string>>(new Set())
@@ -96,7 +98,20 @@ export function Discovery({ onOpenChat }: Props) {
         onLike={() => swipe('like')}
         onPass={() => swipe('pass')}
         disabled={swiping}
+        onGiftClick={(profile) => setGiftTarget({ id: profile.id, name: profile.name })}
       />
+      {giftTarget && (
+        <GiftPickerSheet
+          open={true}
+          onClose={() => setGiftTarget(null)}
+          target={{ context: 'discovery', targetUserId: giftTarget.id }}
+          recipientName={giftTarget.name}
+          onSent={() => {
+            window.Telegram?.WebApp?.showAlert?.(t.gifts.sentToast(giftTarget.name))
+            setGiftTarget(null)
+          }}
+        />
+      )}
       {activeMatch && (
         <MatchPopup
           match={activeMatch}

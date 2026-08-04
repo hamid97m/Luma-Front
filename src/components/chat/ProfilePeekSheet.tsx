@@ -5,9 +5,10 @@ interface ProfilePeekSheetProps {
   user: Match['user']
   onClose: () => void
   onReport: () => void
+  onSendGift?: () => void
 }
 
-export function ProfilePeekSheet({ user, onClose, onReport }: ProfilePeekSheetProps) {
+export function ProfilePeekSheet({ user, onClose, onReport, onSendGift }: ProfilePeekSheetProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4" onClick={onClose}>
       <div
@@ -43,10 +44,20 @@ export function ProfilePeekSheet({ user, onClose, onReport }: ProfilePeekSheetPr
         {user.bio && <p className="text-white/80 text-[14px] mb-4">{user.bio}</p>}
 
         {user.icebreakerPrompt && user.icebreakerAnswer && (
-          <div className="border border-white/15 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.06)' }}>
+          <div className="border border-white/15 rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,255,255,.06)' }}>
             <p className="text-white/50 text-[11px] font-bold uppercase tracking-widest mb-1">{user.icebreakerPrompt}</p>
             <p className="text-white text-[14px]">{user.icebreakerAnswer}</p>
           </div>
+        )}
+
+        {onSendGift && (
+          <button
+            type="button"
+            onClick={onSendGift}
+            className="w-full rounded-2xl bg-white/10 border border-white/15 py-3 text-white font-semibold text-[14px] flex items-center justify-center gap-2"
+          >
+            {t.gifts.openButton} 🎁
+          </button>
         )}
       </div>
     </div>

@@ -13,9 +13,10 @@ interface Props {
   onPhotoTap: (side: 'left' | 'right') => void
   dragMoved: () => boolean
   onReport: () => void
+  onGiftClick: () => void
 }
 
-export function ProfileCard({ profile, photoIdx, onPhotoTap, dragMoved, onReport }: Props) {
+export function ProfileCard({ profile, photoIdx, onPhotoTap, dragMoved, onReport, onGiftClick }: Props) {
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
   const hasLeft = photoIdx > 0
   const hasRight = photoIdx < profile.photos.length - 1
@@ -72,6 +73,17 @@ export function ProfileCard({ profile, photoIdx, onPhotoTap, dragMoved, onReport
         className="absolute top-10 right-3 w-8 h-8 rounded-full glass-dark flex items-center justify-center text-[14px] text-white/80 pointer-events-auto"
       >
         🚩
+      </button>
+
+      {/* Send-a-gift trigger */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onGiftClick() }}
+        onPointerDown={(e) => e.stopPropagation()}
+        aria-label={t.gifts.openButton}
+        className="absolute top-10 right-14 w-8 h-8 rounded-full glass-dark flex items-center justify-center text-[14px] text-white/80 pointer-events-auto"
+      >
+        🎁
       </button>
 
       {/* Dark overlay gradient */}

@@ -143,5 +143,6 @@ export const t = {
     openButton: 'Send a gift',
     sentByMe: 'You sent a gift',
     sentByOther: (name: string) => `${name} sent you a gift`,
+    sentToast: (name: string) => `Gift sent to ${name} 🎁`,
   },
 } as const
