@@ -3,6 +3,7 @@ import { api } from '../api.js'
 import { useAuthStore } from '../store.js'
 import type { UserProfile } from '../types.js'
 import { SettingsSheet } from '../components/SettingsSheet.js'
+import { PhotoEditor } from '../components/PhotoEditor.js'
 
 const ALL_TAGS = [
   '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
@@ -57,6 +58,7 @@ export function MyProfile() {
   const [answer, setAnswer] = useState(storeUser?.icebreaker_answer ?? '')
   const [uploading, setUploading] = useState<{ slotId: string; phase: 'processing' | 'uploading'; progress: number } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [editing, setEditing] = useState<{ file: File; slotId: string } | null>(null)
 
   useEffect(() => {
     api.profile.get().then((p) => {
@@ -209,7 +211,7 @@ export function MyProfile() {
                       accept="image/*"
                       disabled={!!uploading}
                       className="sr-only"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, slotId) }}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) setEditing({ file: f, slotId }) }}
                     />
                   </label>
                 )}
@@ -347,6 +349,18 @@ export function MyProfile() {
           isActive={profile.is_active}
           onPauseChange={handlePauseChange}
           onClose={() => setSettingsOpen(false)}
+        />
+      )}
+
+      {editing && (
+        <PhotoEditor
+          file={editing.file}
+          onCancel={() => setEditing(null)}
+          onConfirm={async (edited) => {
+            const { slotId } = editing
+            setEditing(null)
+            await handlePhotoUpload(edited, slotId)
+          }}
         />
       )}
     </div>
