@@ -26,7 +26,7 @@ describe('MyProfile photo editor wiring', () => {
   })
 
   it('opens the editor on file select and uploads the edited file on confirm', async () => {
-    const { container } = render(<MyProfile />)
+    const { container } = render(<MyProfile onOpenSupport={vi.fn()} />)
     await waitFor(() => screen.getByText('My Profile 👤'))
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement

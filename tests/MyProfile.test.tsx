@@ -60,7 +60,7 @@ describe('MyProfile settings', () => {
       new Promise<any>((res) => { resolveDelete = () => res({ ok: true }) })
     )
 
-    render(<MyProfile />)
+    render(<MyProfile onOpenSupport={vi.fn()} />)
     await waitFor(() => screen.getByText('My Profile 👤'))
 
     const del = await screen.findByLabelText('Delete photo')
