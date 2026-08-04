@@ -245,21 +245,31 @@ export function Chat({ match, myUserId, onBack }: Props) {
 
   return (
     <div className="flex flex-col h-full bg-[#0b0b12]" style={{ paddingTop: 'var(--tg-safe-top)' }}>
-      <button
-        type="button"
-        aria-label={t.chat.viewProfile}
-        onClick={() => setPeeking(true)}
-        className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-white/10 text-left w-full"
-      >
-        {match.user.photos[0]
-          ? <img src={match.user.photos[0]} alt={match.user.name} className="w-10 h-10 rounded-full object-cover" />
-          : <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-lg">👤</div>
-        }
-        <p className="font-bold text-white text-[17px]">
-          {match.user.name}
-          {match.user.age != null && <span className="text-white/50 font-semibold">, {match.user.age}</span>}
-        </p>
-      </button>
+      <div className="flex items-center gap-2 px-4 pt-12 pb-4 border-b border-white/10 w-full">
+        <button
+          type="button"
+          aria-label={t.chat.viewProfile}
+          onClick={() => setPeeking(true)}
+          className="flex items-center gap-3 text-left flex-1 min-w-0"
+        >
+          {match.user.photos[0]
+            ? <img src={match.user.photos[0]} alt={match.user.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+            : <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-lg flex-shrink-0">👤</div>
+          }
+          <p className="font-bold text-white text-[17px] truncate">
+            {match.user.name}
+            {match.user.age != null && <span className="text-white/50 font-semibold">, {match.user.age}</span>}
+          </p>
+        </button>
+        <button
+          type="button"
+          aria-label={t.report.title}
+          onClick={() => setShowReport(true)}
+          className="w-9 h-9 rounded-full glass-dark flex items-center justify-center text-[16px] text-white/80 flex-shrink-0"
+        >
+          🚩
+        </button>
+      </div>
 
       {loadState === 'unavailable' ? (
         <div className="flex-1 flex items-center justify-center p-8 text-center text-white/50 text-[15px]">
