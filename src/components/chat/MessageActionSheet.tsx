@@ -3,6 +3,8 @@ import type { LocalMessage } from '../../types.js'
 
 interface MessageActionSheetProps {
   message: LocalMessage
+  mine: boolean
+  onReply: (id: string) => void
   onEdit: (id: string) => void
   onDelete: (id: string) => void
   onRetry: (id: string) => void
@@ -12,7 +14,7 @@ interface MessageActionSheetProps {
 const itemClass =
   'w-full text-left px-4 py-3 text-[16px] font-semibold rounded-2xl active:bg-white/10'
 
-export function MessageActionSheet({ message, onEdit, onDelete, onRetry, onClose }: MessageActionSheetProps) {
+export function MessageActionSheet({ message, mine, onReply, onEdit, onDelete, onRetry, onClose }: MessageActionSheetProps) {
   const failed = message.status === 'failed'
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4" onClick={onClose}>
@@ -28,13 +30,22 @@ export function MessageActionSheet({ message, onEdit, onDelete, onRetry, onClose
             {t.chat.retryMessage}
           </button>
         ) : (
-          <button role="menuitem" onClick={() => onEdit(message.id)} className={`${itemClass} text-white`}>
-            {t.chat.editAction}
+          <>
+            <button role="menuitem" onClick={() => onReply(message.id)} className={`${itemClass} text-white`}>
+              {t.chat.replyAction}
+            </button>
+            {mine && (
+              <button role="menuitem" onClick={() => onEdit(message.id)} className={`${itemClass} text-white`}>
+                {t.chat.editAction}
+              </button>
+            )}
+          </>
+        )}
+        {mine && (
+          <button role="menuitem" onClick={() => onDelete(message.id)} className={`${itemClass} text-red-400`}>
+            {t.chat.deleteAction}
           </button>
         )}
-        <button role="menuitem" onClick={() => onDelete(message.id)} className={`${itemClass} text-red-400`}>
-          {t.chat.deleteAction}
-        </button>
         <button role="menuitem" onClick={onClose} className={`${itemClass} text-white/60`}>
           {t.chat.cancelAction}
         </button>
