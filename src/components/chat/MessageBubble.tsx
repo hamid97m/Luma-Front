@@ -103,6 +103,7 @@ function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onL
       onPointerLeave={clearPress}
       onPointerCancel={clearPress}
       onContextMenu={handleContextMenu}
+      style={onLongPress ? { WebkitTouchCallout: 'none', WebkitUserSelect: 'none' } : undefined}
       className={`max-w-[75%] px-4 py-2 rounded-[18px] text-[15px] ${corners} ${
         mine ? 'self-end grad-tg text-white' : 'self-start bg-white/10 text-white'
       } ${failed ? 'opacity-70' : ''} ${last ? 'mb-2' : ''} ${onLongPress ? 'select-none' : ''}`}
