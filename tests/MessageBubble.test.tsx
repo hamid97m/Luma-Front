@@ -118,4 +118,32 @@ describe('MessageBubble', () => {
     expect(onLongPress).not.toHaveBeenCalled()
     vi.useRealTimers()
   })
+
+  it('renders a quoted reply preview with author and text', () => {
+    render(
+      <MessageBubble
+        message={{ ...BASE, replyToMessageId: 'p1' }}
+        reply={{ author: 'Sara', text: 'the original' }}
+        mine first last showTicks={false}
+      />
+    )
+    expect(screen.getByText('Sara')).toBeInTheDocument()
+    expect(screen.getByText('the original')).toBeInTheDocument()
+  })
+
+  it('renders the deleted placeholder when the parent is gone (empty author)', () => {
+    render(
+      <MessageBubble
+        message={{ ...BASE, replyToMessageId: 'p1' }}
+        reply={{ author: '', text: 'Original message was deleted' }}
+        mine first last showTicks={false}
+      />
+    )
+    expect(screen.getByText('Original message was deleted')).toBeInTheDocument()
+  })
+
+  it('renders no preview block when reply is null', () => {
+    render(<MessageBubble message={BASE} reply={null} mine first last showTicks={false} />)
+    expect(screen.queryByText('Original message was deleted')).not.toBeInTheDocument()
+  })
 })

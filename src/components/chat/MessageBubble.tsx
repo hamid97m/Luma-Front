@@ -14,6 +14,7 @@ interface MessageBubbleProps {
   showTicks: boolean
   onRetry?: (id: string) => void
   onLongPress?: (id: string) => void
+  reply?: { author: string; text: string } | null
 }
 
 function SeenTicks({ seen }: { seen: boolean }) {
@@ -40,7 +41,7 @@ function ClockIcon() {
   )
 }
 
-function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onLongPress }: MessageBubbleProps) {
+function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onLongPress, reply }: MessageBubbleProps) {
   const failed = message.status === 'failed'
   const pressTimer = useRef<number | null>(null)
   const pressStart = useRef<{ x: number; y: number } | null>(null)
@@ -106,6 +107,12 @@ function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onL
         mine ? 'self-end grad-tg text-white' : 'self-start bg-white/10 text-white'
       } ${failed ? 'opacity-70' : ''} ${last ? 'mb-2' : ''} ${onLongPress ? 'select-none' : ''}`}
     >
+      {reply && (
+        <div className={`mb-1 px-2 py-1 rounded-lg border-l-2 ${mine ? 'border-white/70 bg-black/15' : 'border-white/40 bg-white/5'}`}>
+          {reply.author && <p className="text-[11px] font-bold opacity-90 truncate">{reply.author}</p>}
+          <p className="text-[12px] opacity-70 truncate">{reply.text}</p>
+        </div>
+      )}
       <p className="whitespace-pre-wrap break-words">{message.body}</p>
       {failed ? (
         <p className="text-[10px] mt-0.5 text-red-300 font-semibold">{t.chat.failed}</p>
