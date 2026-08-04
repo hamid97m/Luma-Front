@@ -179,3 +179,19 @@ export function useMainButton({ text, visible, enabled = true, loading = false, 
   // Always hide when the owning screen unmounts.
   useEffect(() => () => { webApp()?.MainButton?.hide?.() }, [])
 }
+
+// ---------------------------------------------------------------------------
+// Stars invoice — opens Telegram's native Stars payment sheet.
+// ---------------------------------------------------------------------------
+/** Opens Telegram's native Stars invoice sheet. Resolves with the final status. */
+export function openInvoice(url: string): Promise<'paid' | 'cancelled' | 'failed' | 'pending'> {
+  return new Promise((resolve) => {
+    const wa = webApp()
+    if (!wa?.openInvoice) return resolve('failed')
+    try {
+      wa.openInvoice(url, (status) => resolve(status))
+    } catch {
+      resolve('failed')
+    }
+  })
+}

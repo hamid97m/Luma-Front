@@ -85,6 +85,8 @@ interface TelegramWebApp {
   offEvent: (event: string, callback: () => void) => void
   openTelegramLink: (url: string) => void
   openLink: (url: string, options?: { try_instant_view?: boolean }) => void
+  // Bot API 6.1+ — absent on older clients
+  openInvoice?: (url: string, callback?: (status: 'paid' | 'cancelled' | 'failed' | 'pending') => void) => void
 }
 
 interface Window {
