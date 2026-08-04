@@ -26,6 +26,7 @@ export function Chat({ match, myUserId }: Props) {
   const [peeking, setPeeking] = useState(false)
   const [actionId, setActionId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [replyingToId, setReplyingToId] = useState<string | null>(null)
   const stashedDraft = useRef('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -85,7 +86,7 @@ export function Chat({ match, myUserId }: Props) {
     }
   }, [messages])
 
-  const sendBody = useCallback((body: string, existingId?: string) => {
+  const sendBody = useCallback((body: string, existingId?: string, replyToMessageId?: string) => {
     const id = existingId ?? `local-${++localSeq}`
     const optimistic: LocalMessage = {
       id,
@@ -93,13 +94,14 @@ export function Chat({ match, myUserId }: Props) {
       body,
       createdAt: new Date().toISOString(),
       readAt: null,
+      replyToMessageId: replyToMessageId ?? null,
       status: 'sending',
     }
     setMessages((prev) =>
       existingId ? prev.map((m) => (m.id === id ? optimistic : m)) : [...prev, optimistic]
     )
     haptic.impact('light')
-    api.messages.send(match.id, body)
+    api.messages.send(match.id, body, replyToMessageId)
       .then(({ message }) => {
         setMessages((prev) => prev.some((m) => m.id === message.id)
           ? prev.filter((m) => m.id !== id) // server copy already merged in via a background refresh — drop the local one
@@ -114,15 +116,17 @@ export function Chat({ match, myUserId }: Props) {
   const send = () => {
     const body = draft.trim()
     if (!body) return
+    const replyTo = replyingToId
     setDraft('')
+    setReplyingToId(null)
     nearBottomRef.current = true
     setShowJump(false)
-    sendBody(body)
+    sendBody(body, undefined, replyTo ?? undefined)
   }
 
   const retry = useCallback((id: string) => {
     const msg = messagesRef.current.find((m) => m.id === id)
-    if (msg) sendBody(msg.body, id)
+    if (msg) sendBody(msg.body, id, msg.replyToMessageId ?? undefined)
   }, [sendBody])
 
   const openActions = useCallback((id: string) => {
@@ -132,6 +136,7 @@ export function Chat({ match, myUserId }: Props) {
 
   const beginEdit = (id: string) => {
     setActionId(null)
+    setReplyingToId(null)
     const msg = messagesRef.current.find((m) => m.id === id)
     if (!msg) return
     stashedDraft.current = draft
@@ -144,6 +149,14 @@ export function Chat({ match, myUserId }: Props) {
     setDraft(stashedDraft.current)
     stashedDraft.current = ''
   }
+
+  const beginReply = (id: string) => {
+    setActionId(null)
+    if (editingId) cancelEdit()
+    setReplyingToId(id)
+  }
+
+  const cancelReply = () => setReplyingToId(null)
 
   const saveEdit = () => {
     const id = editingId
@@ -197,6 +210,15 @@ export function Chat({ match, myUserId }: Props) {
   }
 
   const items = useMemo(() => buildChatItems(messages), [messages])
+
+  const byId = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages])
+
+  const resolveReply = useCallback((parentId: string | null | undefined) => {
+    if (!parentId) return null
+    const parent = byId.get(parentId)
+    if (!parent) return { author: '', text: t.chat.replyDeleted }
+    return { author: parent.senderId === myUserId ? t.chat.replyYou : match.user.name, text: parent.body }
+  }, [byId, myUserId, match.user.name])
 
   // Native Telegram Send button — docks above the keyboard. Hidden when the
   // draft is empty or the match is gone; the in-page button below is the
@@ -270,12 +292,9 @@ export function Chat({ match, myUserId }: Props) {
                       first={item.first}
                       last={item.last}
                       showTicks={item.message.id === lastMineId}
+                      reply={resolveReply(item.message.replyToMessageId)}
                       onRetry={retry}
-                      onLongPress={
-                        item.message.senderId === myUserId && item.message.status !== 'sending'
-                          ? openActions
-                          : undefined
-                      }
+                      onLongPress={item.message.status !== 'sending' ? openActions : undefined}
                     />
                   )
                 )}
@@ -299,6 +318,8 @@ export function Chat({ match, myUserId }: Props) {
             onSend={submit}
             editingBody={editingId ? messagesRef.current.find((m) => m.id === editingId)?.body ?? null : null}
             onCancelEdit={cancelEdit}
+            replyingToBody={replyingToId ? messagesRef.current.find((m) => m.id === replyingToId)?.body ?? null : null}
+            onCancelReply={cancelReply}
           />
         </>
       )}
@@ -310,6 +331,8 @@ export function Chat({ match, myUserId }: Props) {
         return msg ? (
           <MessageActionSheet
             message={msg}
+            mine={msg.senderId === myUserId}
+            onReply={beginReply}
             onEdit={beginEdit}
             onDelete={deleteMessage}
             onRetry={retryFromSheet}

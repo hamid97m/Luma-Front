@@ -290,17 +290,57 @@ describe('Chat', () => {
   const MINE = { id: 'm1', senderId: 'me-1', body: 'hey', createdAt: '2026-01-01T10:00:00Z', readAt: null }
   const THEIRS = { id: 'm2', senderId: 'other-1', body: 'hi there', createdAt: '2026-01-01T10:01:00Z', readAt: null }
 
-  it('opens the action sheet on context-menu of my own message only', async () => {
+  it('opens the action sheet on context-menu of either participant\'s message, with Reply-only on the other person\'s', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
 
     render(<Chat match={MATCH} myUserId="me-1" />)
     await waitFor(() => screen.getByText('hey'))
 
+    // The other person's message: sheet opens, Reply is offered, Edit/Delete are not.
     fireEvent.contextMenu(screen.getByText('hi there'))
+    expect(screen.getByRole('menu', { name: 'Message actions' })).toBeInTheDocument()
+    expect(screen.getByText('Reply')).toBeInTheDocument()
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument()
+    expect(screen.queryByText('Delete')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Cancel' }))
     expect(screen.queryByRole('menu', { name: 'Message actions' })).not.toBeInTheDocument()
 
+    // My own message: sheet opens with the full set including Edit/Delete.
     fireEvent.contextMenu(screen.getByText('hey'))
     expect(screen.getByRole('menu', { name: 'Message actions' })).toBeInTheDocument()
+    expect(screen.getByText('Reply')).toBeInTheDocument()
+    expect(screen.getByText('Edit')).toBeInTheDocument()
+    expect(screen.getByText('Delete')).toBeInTheDocument()
+  })
+
+  it('sends a reply with the parent id and shows a quoted preview once sent', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, THEIRS] })
+    vi.mocked(api.messages.send).mockResolvedValue({
+      message: {
+        id: 'm3',
+        senderId: 'me-1',
+        body: 'my reply',
+        createdAt: '2026-01-01T10:02:00Z',
+        readAt: null,
+        replyToMessageId: 'm2',
+      },
+    })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('hey'))
+
+    fireEvent.contextMenu(screen.getByText('hi there'))
+    fireEvent.click(screen.getByText('Reply'))
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'my reply' } })
+    fireEvent.click(screen.getByLabelText('Send'))
+
+    await waitFor(() => expect(api.messages.send).toHaveBeenCalledWith('match-1', 'my reply', 'm2'))
+
+    // The quoted preview inside the reply bubble renders the parent body,
+    // which also still exists in the original bubble — two matches total.
+    await waitFor(() => expect(screen.getAllByText('hi there')).toHaveLength(2))
   })
 
   it('edits a message optimistically through the sheet and input bar', async () => {
