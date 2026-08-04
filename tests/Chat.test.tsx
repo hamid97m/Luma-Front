@@ -369,6 +369,27 @@ describe('Chat', () => {
     expect(api.messages.edit).toHaveBeenCalledWith('match-1', 'm1', 'hey fixed')
   })
 
+  it('keeps the quoted preview after editing a reply', async () => {
+    const MY_REPLY = { id: 'm3', senderId: 'me-1', body: 'my reply', createdAt: '2026-01-01T10:02:00Z', readAt: null, replyToMessageId: 'm1' }
+    vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE, MY_REPLY] })
+    vi.mocked(api.messages.edit).mockResolvedValue({
+      message: { ...MY_REPLY, body: 'my reply edited', editedAt: '2026-01-02T09:00:00Z' },
+    })
+
+    render(<Chat match={MATCH} myUserId="me-1" />)
+    await waitFor(() => screen.getByText('my reply'))
+
+    fireEvent.contextMenu(screen.getByText('my reply'))
+    fireEvent.click(screen.getByText('Edit'))
+
+    fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'my reply edited' } })
+    fireEvent.click(screen.getByLabelText('Save'))
+
+    // The quoted preview (parent body 'hey') must survive the edit: it
+    // renders once in the parent bubble and once in the reply's quote.
+    await waitFor(() => expect(screen.getAllByText('hey')).toHaveLength(2))
+  })
+
   it('reverts an edit when the server rejects it', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MINE] })
     vi.mocked(api.messages.edit).mockRejectedValue(new Error('network'))
