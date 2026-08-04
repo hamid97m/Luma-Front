@@ -144,5 +144,11 @@ export const t = {
     sentByMe: 'You sent a gift',
     sentByOther: (name: string) => `${name} sent you a gift`,
     sentToast: (name: string) => `Gift sent to ${name} 🎁`,
+    introsTitle: 'Gifts for you 🎁',
+    introSubtitle: 'Sent you a gift',
+    accept: 'Accept',
+    dismiss: 'Dismiss',
+    introAcceptError: 'Could not accept the gift. Please try again.',
+    introDismissError: 'Could not dismiss. Please try again.',
   },
 } as const

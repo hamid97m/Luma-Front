@@ -38,5 +38,10 @@ vi.mock('../src/api.ts', () => ({
     swipes: { swipe: vi.fn() },
     matches: { list: vi.fn(), unreadCount: vi.fn() },
     messages: { list: vi.fn(), send: vi.fn() },
+    gifts: {
+      intros: vi.fn(() => Promise.resolve({ intros: [] })),
+      acceptIntro: vi.fn(),
+      dismissIntro: vi.fn(),
+    },
   },
 }))

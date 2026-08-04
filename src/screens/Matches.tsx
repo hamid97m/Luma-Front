@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
+import { IntrosSection } from '../components/gifts/IntrosSection.js'
 import type { Match } from '../types.js'
 
 const PaperPlaneSVG = () => (
@@ -38,6 +39,25 @@ export function Matches({ onOpenChat, refreshKey }: Props) {
       .finally(() => setLoading(false))
   }, [refreshKey])
 
+  // Accepting an intro only returns a matchId, so it may not be in the
+  // already-loaded list (it's a brand-new match). Reuse the same
+  // api.matches.list() + onOpenChat navigation the "Chat" button below uses,
+  // refetching first if the match isn't found locally yet.
+  const openChatById = (matchId: string) => {
+    const local = matches.find((m) => m.id === matchId)
+    if (local) {
+      onOpenChat(local)
+      return
+    }
+    api.matches.list()
+      .then(({ matches: fresh }) => {
+        setMatches(fresh)
+        const found = fresh.find((m) => m.id === matchId)
+        if (found) onOpenChat(found)
+      })
+      .catch(() => {})
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -51,6 +71,8 @@ export function Matches({ onOpenChat, refreshKey }: Props) {
       <h1 className="text-2xl font-extrabold px-5 pt-12 pb-5 text-white">
         Matches 💬
       </h1>
+
+      <IntrosSection onOpenChat={openChatById} refreshKey={refreshKey} />
 
       {matches.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center p-8">
