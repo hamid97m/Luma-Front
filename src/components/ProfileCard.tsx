@@ -1,4 +1,5 @@
 import type { DiscoveryProfile } from '../types.js'
+import { t } from '../i18n.js'
 
 const VerifiedSVG = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="#2ea6ff" className="inline ml-1 flex-shrink-0">
@@ -11,9 +12,10 @@ interface Props {
   photoIdx: number
   onPhotoTap: (side: 'left' | 'right') => void
   dragMoved: () => boolean
+  onReport: () => void
 }
 
-export function ProfileCard({ profile, photoIdx, onPhotoTap, dragMoved }: Props) {
+export function ProfileCard({ profile, photoIdx, onPhotoTap, dragMoved, onReport }: Props) {
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
   const hasLeft = photoIdx > 0
   const hasRight = photoIdx < profile.photos.length - 1
@@ -60,6 +62,17 @@ export function ProfileCard({ profile, photoIdx, onPhotoTap, dragMoved }: Props)
       <div className="absolute top-10 left-3 glass-dark rounded-full text-[12px] px-3 py-1 text-white/90 pointer-events-none">
         📍 nearby
       </div>
+
+      {/* Report trigger */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onReport() }}
+        onPointerDown={(e) => e.stopPropagation()}
+        aria-label={t.report.title}
+        className="absolute top-10 right-3 w-8 h-8 rounded-full glass-dark flex items-center justify-center text-[14px] text-white/80 pointer-events-auto"
+      >
+        🚩
+      </button>
 
       {/* Dark overlay gradient */}
       <div

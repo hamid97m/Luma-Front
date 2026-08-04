@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { ProfileCard } from './ProfileCard.js'
+import { ReportSheet } from './ReportSheet.js'
 import { haptic } from '../telegram.js'
+import { t } from '../i18n.js'
 import type { DiscoveryProfile } from '../types.js'
 
 const THRESHOLD = 110
@@ -30,6 +32,7 @@ export function CardStack({ profiles, onLike, onPass, disabled }: Props) {
   const [offset, setOffset] = useState(0)
   const [flying, setFlying] = useState<'like' | 'pass' | null>(null)
   const [photoIdx, setPhotoIdx] = useState(0)
+  const [reportUserId, setReportUserId] = useState<string | null>(null)
 
   const profile = profiles[0]
   const nextProfile = profiles[1]
@@ -108,6 +111,14 @@ export function CardStack({ profiles, onLike, onPass, disabled }: Props) {
     )
   }
 
+  const handleReported = () => {
+    setReportUserId(null)
+    window.Telegram?.WebApp?.showAlert?.(t.report.thanks)
+    // Advance past this card the same way the Pass button does — the user
+    // is already auto-hidden server-side, this just clears the local queue.
+    if (!disabled && !flying) fly('pass')
+  }
+
   if (!profile) return null
 
   return (
@@ -148,6 +159,7 @@ export function CardStack({ profiles, onLike, onPass, disabled }: Props) {
             photoIdx={photoIdx}
             onPhotoTap={handlePhotoTap}
             dragMoved={() => dragRef.current.moved}
+            onReport={() => !disabled && !flying && setReportUserId(profile.id)}
           />
         </div>
       </div>
@@ -181,6 +193,15 @@ export function CardStack({ profiles, onLike, onPass, disabled }: Props) {
           <HeartSVG />
         </button>
       </div>
+
+      {reportUserId && (
+        <ReportSheet
+          reportedUserId={reportUserId}
+          context="discovery"
+          onClose={() => setReportUserId(null)}
+          onSubmitted={handleReported}
+        />
+      )}
     </div>
   )
 }
