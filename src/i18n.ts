@@ -113,4 +113,8 @@ export const t = {
     thanks: 'Thanks — our team will review this.',
     cancel: 'Cancel',
   },
+  blocked: {
+    title: 'Your account has been blocked',
+    body: 'Your account was blocked for violating our community guidelines.',
+  },
 } as const
