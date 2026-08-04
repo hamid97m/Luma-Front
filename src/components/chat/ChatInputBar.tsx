@@ -25,6 +25,16 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
     el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT_PX)}px`
   }, [draft])
 
+  // Entering edit mode (or switching edit targets) opens the keyboard with
+  // the cursor at the end of the prefilled text, like Telegram.
+  useEffect(() => {
+    if (editingBody == null) return
+    const el = boxRef.current
+    if (!el) return
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
+  }, [editingBody])
+
   return (
     <div
       className="p-4 border-t border-white/10 flex flex-col gap-1"

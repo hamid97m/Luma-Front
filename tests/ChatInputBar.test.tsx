@@ -65,4 +65,20 @@ describe('ChatInputBar', () => {
     render(<ChatInputBar draft="hi" onDraftChange={vi.fn()} onSend={vi.fn()} />)
     expect(screen.queryByText('Editing message')).not.toBeInTheDocument()
   })
+
+  it('focuses the input with the cursor at the end when entering edit mode', () => {
+    const { rerender } = render(<ChatInputBar draft="" onDraftChange={vi.fn()} onSend={vi.fn()} />)
+    const box = screen.getByPlaceholderText('Type a message…') as HTMLTextAreaElement
+    expect(document.activeElement).not.toBe(box)
+
+    rerender(
+      <ChatInputBar
+        draft="hello there" onDraftChange={vi.fn()} onSend={vi.fn()}
+        editingBody="hello there" onCancelEdit={vi.fn()}
+      />
+    )
+    expect(document.activeElement).toBe(box)
+    expect(box.selectionStart).toBe('hello there'.length)
+    expect(box.selectionEnd).toBe('hello there'.length)
+  })
 })
