@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api.js'
 import { mainButtonSupported, useMainButton } from '../telegram.js'
+import { PhotoEditor } from '../components/PhotoEditor.js'
 
 const ALL_TAGS = [
   '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
@@ -44,6 +45,7 @@ export function Onboarding({ onComplete }: Props) {
   const [uploadPhase, setUploadPhase] = useState<{ phase: 'processing' | 'uploading'; progress: number } | null>(null)
   const [saving, setSaving] = useState(false)
   const [ageError, setAgeError] = useState(false)
+  const [editingFile, setEditingFile] = useState<File | null>(null)
 
   const valid = isValid(step, state, photoUploaded)
 
@@ -269,7 +271,7 @@ export function Onboarding({ onComplete }: Props) {
                     type="file"
                     accept="image/*"
                     className="sr-only"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoFile(f) }}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) setEditingFile(f) }}
                   />
                   <div className={`relative w-32 h-32 rounded-2xl flex flex-col items-center justify-center overflow-hidden ${
                     photoPreview ? '' : 'border-2 border-dashed border-white/30'
@@ -330,6 +332,17 @@ export function Onboarding({ onComplete }: Props) {
             {saving ? '…' : step === TOTAL_STEPS - 1 ? 'Enter Luma' : 'Continue'}
           </button>
         </div>
+      )}
+
+      {editingFile && (
+        <PhotoEditor
+          file={editingFile}
+          onCancel={() => setEditingFile(null)}
+          onConfirm={async (edited) => {
+            setEditingFile(null)
+            await handlePhotoFile(edited)
+          }}
+        />
       )}
     </div>
   )
