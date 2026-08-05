@@ -19,6 +19,7 @@ vi.mock('../src/telegram.js', () => ({
 }))
 
 import { api } from '../src/api.js'
+import { openInvoice, haptic } from '../src/telegram.js'
 import { usePremiumStore } from '../src/store.js'
 import { PremiumCard } from '../src/components/premium/PremiumCard.js'
 import { MyProfile } from '../src/screens/MyProfile.js'
@@ -83,6 +84,42 @@ describe('PremiumCard', () => {
     render(<PremiumCard />)
 
     expect(screen.getByText('Active')).toBeInTheDocument()
+  })
+
+  it('completes a purchase without dropping the success feedback when the card flips to Active mid-flight', async () => {
+    // Regression for: PaywallSheet used to be nested inside the state-2 (upsell)
+    // branch, so the post-purchase store refresh (which flips content to the
+    // state-1 Active branch) unmounted the sheet before its mountedRef-guarded
+    // success path (haptic + handleClose) could run.
+    const plan = { id: 'p1', title: '1 Month', description: '', priceStars: 100, discountPercent: null, originalPriceStars: null, durationDays: 30 }
+    const initialStatus = { enabled: true, premiumUntil: null, plans: [plan] }
+    const activeUntil = new Date(Date.now() + 30 * DAY_MS).toISOString()
+    const activeStatus = { enabled: true, premiumUntil: activeUntil, plans: [plan] }
+
+    usePremiumStore.setState({ status: initialStatus })
+    vi.mocked(api.premium.status)
+      .mockResolvedValueOnce(initialStatus) // sheet's open-effect refresh
+      .mockResolvedValue(activeStatus) // post-'paid' refresh
+    vi.mocked(api.premium.checkout).mockResolvedValue({ transactionId: 'tx1', invoiceLink: 'https://t.me/i' })
+    vi.mocked(openInvoice).mockResolvedValue('paid')
+    vi.mocked(api.premium.transaction).mockResolvedValue({ status: 'paid' })
+
+    render(<PremiumCard />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Get Premium' }))
+    await waitFor(() => expect(screen.getByText('Luma Premium')).toBeInTheDocument())
+
+    await userEvent.click(screen.getByText('1 Month'))
+    await userEvent.click(screen.getByRole('button', { name: /Continue/ }))
+
+    await waitFor(() => expect(openInvoice).toHaveBeenCalledWith('https://t.me/i'))
+    await waitFor(() => expect(api.premium.transaction).toHaveBeenCalledWith('tx1'), { timeout: 4000 })
+
+    // The card must flip to the Active state...
+    await waitFor(() => expect(screen.getByText('Active')).toBeInTheDocument(), { timeout: 4000 })
+    // ...and the sheet must have survived long enough to fire its success haptic and close itself.
+    expect(haptic.notification).toHaveBeenCalledWith('success')
+    await waitFor(() => expect(screen.queryByText('Luma Premium')).not.toBeInTheDocument(), { timeout: 4000 })
   })
 })
 
