@@ -4,6 +4,7 @@ import { useAuthStore } from '../store.js'
 import type { UserProfile } from '../types.js'
 import { SettingsSheet } from '../components/SettingsSheet.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
+import { PremiumCard } from '../components/premium/PremiumCard.js'
 
 const ALL_TAGS = [
   '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
@@ -235,6 +236,8 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             )
           })}
         </div>
+
+        <PremiumCard />
 
         {/* Name */}
         <InfoCard>

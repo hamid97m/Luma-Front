@@ -162,5 +162,11 @@ export const t = {
     error: 'Something went wrong. Please try again.',
     close: 'Close',
     noPlans: 'Premium is unavailable right now',
+    active: 'Active',
+    daysLeft: (n: number) => `${n} day${n === 1 ? '' : 's'} left`,
+    endsToday: 'Ends today',
+    until: (date: string) => `Until ${date}`,
+    pitch: 'Unlock unlimited messaging and more with Luma Premium.',
+    getButton: 'Get Premium',
   },
 } as const
