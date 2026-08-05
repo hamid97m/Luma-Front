@@ -151,4 +151,16 @@ export const t = {
     introAcceptError: 'Could not accept the gift. Please try again.',
     introDismissError: 'Could not dismiss. Please try again.',
   },
+  premium: {
+    title: 'Luma Premium',
+    subtitle: 'Go Premium to send her a message',
+    days: (n: number) => `${n} days`,
+    buy: (stars: number) => `Continue — ⭐${stars}`,
+    selectPrompt: 'Choose a plan',
+    activating: 'Activating Premium…',
+    refunded: "Payment refunded — Premium couldn't be activated",
+    error: 'Something went wrong. Please try again.',
+    close: 'Close',
+    noPlans: 'Premium is unavailable right now',
+  },
 } as const

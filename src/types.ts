@@ -41,6 +41,23 @@ export interface Match {
   }
   lastMessage: { body: string; createdAt: string; senderId: string } | null
   unreadCount: number
+  premiumRequired?: boolean
+}
+
+export interface PremiumPlan {
+  id: string
+  title: string
+  description: string
+  priceStars: number
+  discountPercent: number | null
+  originalPriceStars: number | null
+  durationDays: number
+}
+
+export interface PremiumStatus {
+  enabled: boolean
+  premiumUntil: string | null
+  plans: PremiumPlan[]
 }
 
 export interface GiftCatalogItem {

@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus } from './types.js'
 import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
@@ -127,6 +127,14 @@ export const api = {
     intros: () => request<{ intros: GiftIntro[] }>('/gifts/intros'),
     acceptIntro: (id: string) => request<{ matchId: string }>(`/gifts/intros/${id}/accept`, { method: 'POST' }),
     dismissIntro: (id: string) => request<{ ok: boolean }>(`/gifts/intros/${id}/dismiss`, { method: 'POST' }),
+  },
+  premium: {
+    status: () => request<PremiumStatus>('/premium/status'),
+    checkout: (planId: string) =>
+      request<{ transactionId: string; invoiceLink: string }>('/premium/checkout', {
+        method: 'POST', body: JSON.stringify({ planId }),
+      }),
+    transaction: (id: string) => request<{ status: string }>(`/premium/transactions/${id}`),
   },
   reports: {
     create: (input: {

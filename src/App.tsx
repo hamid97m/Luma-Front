@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch } from './telegram.js'
-import { useAuthStore } from './store.js'
+import { useAuthStore, usePremiumStore } from './store.js'
 import { isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
 import { Reconnect } from './screens/Reconnect.js'
@@ -73,6 +73,12 @@ export function App() {
     if (screen !== 'main') return
     api.matches.unreadCount().then(({ count }) => setMatchesBadge(count))
   }, [screen, matchesRefreshKey])
+
+  // Premium gate status (toggle + own expiry + plans) — needed before the
+  // user first hits send in a gated chat; refreshed by the paywall on purchase.
+  useEffect(() => {
+    if (screen === 'main') usePremiumStore.getState().refresh()
+  }, [screen])
 
   // Ask for bot DM permission on entering the app — covers both a fresh
   // profile right after onboarding and returning users who never granted it.
