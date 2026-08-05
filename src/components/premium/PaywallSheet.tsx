@@ -71,6 +71,7 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
         if (res.status === 'paid') {
           clearPolling()
           await usePremiumStore.getState().refresh()
+          if (!mountedRef.current || session !== sessionRef.current) return
           haptic.notification('success')
           handleClose()
           return

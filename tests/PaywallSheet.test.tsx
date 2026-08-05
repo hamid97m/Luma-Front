@@ -67,4 +67,54 @@ describe('PaywallSheet', () => {
     await userEvent.click(screen.getByRole('button', { name: /Continue/ }))
     await waitFor(() => expect(screen.getByText(/refunded/i)).toBeInTheDocument(), { timeout: 4000 })
   })
+
+  it('does not close a reopened session when a stale paid-poll refresh resolves late', async () => {
+    vi.mocked(api.premium.checkout).mockResolvedValue({ transactionId: 'tx1', invoiceLink: 'https://t.me/i' })
+    vi.mocked(openInvoice).mockResolvedValue('paid')
+    vi.mocked(api.premium.transaction).mockResolvedValue({ status: 'paid' })
+
+    // First call (initial mount refresh) resolves immediately; every call after
+    // that (the poll's post-'paid' refresh, and the reopen's own refresh) hangs
+    // until resolved manually — each gets its own resolver (keyed by call
+    // index) so resolving the stale poll's refresh can't accidentally resolve
+    // the reopen's unrelated refresh instead.
+    const resolvers: Array<(v: { enabled: boolean; premiumUntil: string | null; plans: typeof PLANS }) => void> = []
+    let statusCallCount = 0
+    vi.mocked(api.premium.status).mockImplementation(() => {
+      statusCallCount += 1
+      if (statusCallCount === 1) {
+        return Promise.resolve({ enabled: true, premiumUntil: null, plans: PLANS })
+      }
+      return new Promise((resolve) => { resolvers[statusCallCount] = resolve })
+    })
+
+    const onClose = vi.fn()
+    const { rerender } = render(<PaywallSheet open onClose={onClose} />)
+
+    await userEvent.click(screen.getByText('1 Month'))
+    await userEvent.click(screen.getByRole('button', { name: /Continue/ }))
+
+    await waitFor(() => expect(openInvoice).toHaveBeenCalledWith('https://t.me/i'))
+    await waitFor(() => expect(api.premium.transaction).toHaveBeenCalledWith('tx1'), { timeout: 4000 })
+    // Poll saw 'paid' and is now awaiting the (deferred) post-paid refresh.
+    await waitFor(() => expect(statusCallCount).toBeGreaterThanOrEqual(2), { timeout: 4000 })
+
+    // Capture the resolver for the stale (session-1) poll's refresh before
+    // reopening triggers its own, unrelated refresh call.
+    const resolveStalePollRefresh = resolvers[2]
+
+    // Simulate the user closing and reopening the sheet while that refresh is
+    // still pending — this bumps the internal session guard.
+    rerender(<PaywallSheet open={false} onClose={onClose} />)
+    rerender(<PaywallSheet open onClose={onClose} />)
+
+    // Now let the stale (session-1) refresh resolve — NOT the reopen's own
+    // refresh call, which is left pending and irrelevant to this assertion.
+    resolveStalePollRefresh({ enabled: true, premiumUntil: null, plans: PLANS })
+
+    // Give the stale continuation a chance to run. It must bail on the
+    // post-refresh session check instead of closing the newer session.
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(onClose).not.toHaveBeenCalled()
+  })
 })
