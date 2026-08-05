@@ -9,6 +9,9 @@ import { ProfilePeekSheet } from '../components/chat/ProfilePeekSheet.js'
 import { MessageActionSheet } from '../components/chat/MessageActionSheet.js'
 import { ReportSheet } from '../components/ReportSheet.js'
 import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
+import { PaywallSheet } from '../components/premium/PaywallSheet.js'
+import { usePremiumStore } from '../store.js'
+import { premiumSendBlocked } from '../utils/premium.js'
 import { t } from '../i18n.js'
 import type { LocalMessage, Match } from '../types.js'
 
@@ -32,6 +35,8 @@ export function Chat({ match, myUserId, onBack }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [replyingToId, setReplyingToId] = useState<string | null>(null)
   const [giftOpen, setGiftOpen] = useState(false)
+  const [paywallOpen, setPaywallOpen] = useState(false)
+  const premiumStatus = usePremiumStore((s) => s.status)
   const stashedDraft = useRef('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -113,7 +118,18 @@ export function Chat({ match, myUserId, onBack }: Props) {
           ? prev.filter((m) => m.id !== id) // server copy already merged in via a background refresh — drop the local one
           : prev.map((m) => (m.id === id ? message : m)))
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        const status = (err as { status?: number } | null)?.status
+        const message = err instanceof Error ? err.message : ''
+        if (status === 403 && message.includes('premium_required')) {
+          // Never reached the server's inbox: drop the optimistic bubble,
+          // put the text back in the input, and show the paywall.
+          setMessages((prev) => prev.filter((m) => m.id !== id))
+          setDraft((d) => d || body)
+          usePremiumStore.getState().refresh()
+          setPaywallOpen(true)
+          return
+        }
         haptic.notification('error')
         setMessages((prev) => prev.map((m) => (m.id === id ? { ...optimistic, status: 'failed' } : m)))
       })
@@ -211,8 +227,13 @@ export function Chat({ match, myUserId, onBack }: Props) {
   }
 
   const submit = () => {
-    if (editingId) saveEdit()
-    else send()
+    if (editingId) { saveEdit(); return }
+    if (draft.trim() && premiumSendBlocked(match, premiumStatus)) {
+      haptic.impact('light')
+      setPaywallOpen(true)
+      return
+    }
+    send()
   }
 
   const items = useMemo(() => buildChatItems(messages), [messages])
@@ -349,6 +370,8 @@ export function Chat({ match, myUserId, onBack }: Props) {
         recipientName={match.user.name}
         onSent={load}
       />
+
+      <PaywallSheet open={paywallOpen} onClose={() => setPaywallOpen(false)} />
 
       {peeking && (
         <ProfilePeekSheet

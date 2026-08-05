@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Chat } from '../src/screens/Chat.js'
 import { api } from '../src/api.js'
+import { usePremiumStore } from '../src/store.js'
 import type { Match } from '../src/types.js'
 
 vi.mock('../src/api.js', () => ({
@@ -13,6 +14,7 @@ vi.mock('../src/api.js', () => ({
     swipes: { swipe: vi.fn() },
     matches: { list: vi.fn() },
     messages: { list: vi.fn(), send: vi.fn(), edit: vi.fn(), delete: vi.fn() },
+    premium: { status: vi.fn() },
   },
 }))
 
@@ -531,5 +533,46 @@ describe('Chat', () => {
     resolveEdit({ message: { ...MINE, body: 'hey fixed', editedAt: '2026-01-02T09:00:00Z' } })
     await waitFor(() => expect(screen.getByText('edited')).toBeInTheDocument())
     expect(screen.getAllByText('hey fixed')).toHaveLength(1)
+  })
+
+  describe('premium gate', () => {
+    beforeEach(() => {
+      usePremiumStore.setState({ status: null })
+    })
+
+    it('send in a gated chat opens the paywall and keeps the draft', async () => {
+      vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
+      usePremiumStore.setState({ status: { enabled: true, premiumUntil: null, plans: [] } })
+
+      render(<Chat match={{ ...MATCH, premiumRequired: true }} myUserId="me-1" onBack={vi.fn()} />)
+      await waitFor(() => screen.getByPlaceholderText('Type a message…'))
+
+      fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'hey' } })
+      fireEvent.click(screen.getByLabelText('Send'))
+
+      expect(screen.getByText('Luma Premium')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('hey')
+      expect(api.messages.send).not.toHaveBeenCalled()
+    })
+
+    it('a 403 premium_required response restores the draft and opens the paywall', async () => {
+      vi.mocked(api.messages.list).mockResolvedValue({ messages: [] })
+      vi.mocked(api.premium.status).mockResolvedValue({ enabled: true, premiumUntil: null, plans: [] })
+      vi.mocked(api.messages.send).mockRejectedValueOnce(
+        Object.assign(new Error('{"error":"premium_required"}'), { status: 403 })
+      )
+
+      // Stale client state: match has no premiumRequired flag, so the client-side
+      // check doesn't intercept — only the server 403 does.
+      render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
+      await waitFor(() => screen.getByPlaceholderText('Type a message…'))
+
+      fireEvent.change(screen.getByPlaceholderText('Type a message…'), { target: { value: 'hey' } })
+      fireEvent.click(screen.getByLabelText('Send'))
+
+      await waitFor(() => expect(screen.getByText('Luma Premium')).toBeInTheDocument())
+      expect(screen.getByPlaceholderText('Type a message…')).toHaveValue('hey')
+      expect(screen.queryByText('hey', { selector: '[class*="bubble"], p' })).not.toBeInTheDocument()
+    })
   })
 })
