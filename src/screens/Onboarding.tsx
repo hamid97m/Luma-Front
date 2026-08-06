@@ -318,6 +318,10 @@ export function Onboarding({ onComplete }: Props) {
                   <p className="text-right text-[11px] text-white/35">{state.bio.length}/150</p>
                 </div>
               </div>
+              <p className="glass border border-amber-400/30 rounded-2xl px-4 py-3 text-amber-200/90 text-[12px] leading-relaxed">
+                ⚠️ Use real photos of yourself. Fake photos can be reported by
+                other users and will get your account blocked.
+              </p>
               <p className="text-white/40 text-[12px] text-center">
                 You can pause or delete your account anytime from Settings.
               </p>
