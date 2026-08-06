@@ -18,8 +18,6 @@ interface Props {
 // by CardStack on the draggable wrapper (see handleTap there).
 export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props) {
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
-  const hasLeft = photoIdx > 0
-  const hasRight = photoIdx < profile.photos.length - 1
 
   return (
     <div className="absolute inset-0 rounded-[32px] overflow-hidden select-none">
@@ -39,14 +37,6 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props)
             />
           ))}
         </div>
-      )}
-
-      {/* Chevron hints */}
-      {hasLeft && (
-        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-white/70 text-2xl pointer-events-none">‹</div>
-      )}
-      {hasRight && (
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 text-2xl pointer-events-none">›</div>
       )}
 
       {/* Distance pill */}

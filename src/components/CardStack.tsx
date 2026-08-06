@@ -73,22 +73,23 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current.active) return
     const dx = e.clientX - dragRef.current.startX
-    if (Math.abs(dx) > 5) dragRef.current.moved = true
+    // 10px slop so natural finger jitter on touch devices still counts as a tap.
+    if (Math.abs(dx) > 10) dragRef.current.moved = true
     setOffset(dx)
   }
 
-  // Tap zones on the photo: left/right 40% cycle photos, the middle opens the
-  // fullscreen viewer. Handled here on pointerup (not via onClick in
-  // ProfileCard) because setPointerCapture retargets the click event to this
-  // wrapper, so child click handlers never fire in regular browsers.
+  // A tap anywhere on the photo (above the info panel) opens the fullscreen
+  // viewer; photo browsing happens inside it. Handled here on pointerup (not
+  // via onClick in ProfileCard) because setPointerCapture retargets the click
+  // event to this wrapper, so child click handlers never fire in regular
+  // browsers.
   const handleTap = (e: React.PointerEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left
     const y = e.clientY - rect.top
-    if (y > rect.height * 0.48) return
-    if (x < rect.width * 0.4) handlePhotoTap('left')
-    else if (x > rect.width * 0.6) handlePhotoTap('right')
-    else if (profile?.photos.length) setViewerOpen(true)
+    if (y > rect.height * 0.7) return
+    if (!profile?.photos.length) return
+    haptic.selection()
+    setViewerOpen(true)
   }
 
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -120,14 +121,6 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
           transition: 'transform .3s cubic-bezier(.2,.8,.2,1)',
           touchAction: 'pan-y',
         }
-
-  const handlePhotoTap = (side: 'left' | 'right') => {
-    setPhotoIdx((i) =>
-      side === 'left'
-        ? Math.max(0, i - 1)
-        : Math.min((profile?.photos.length ?? 1) - 1, i + 1)
-    )
-  }
 
   const handleGiftClick = () => {
     if (disabled || flying || !profile) return
