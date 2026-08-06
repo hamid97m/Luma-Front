@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ProfileCard } from './ProfileCard.js'
+import { PhotoViewer } from './PhotoViewer.js'
 import { ReportSheet } from './ReportSheet.js'
 import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
@@ -33,6 +34,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
   const [offset, setOffset] = useState(0)
   const [flying, setFlying] = useState<'like' | 'pass' | null>(null)
   const [photoIdx, setPhotoIdx] = useState(0)
+  const [viewerOpen, setViewerOpen] = useState(false)
   const [reportUserId, setReportUserId] = useState<string | null>(null)
 
   const profile = profiles[0]
@@ -165,6 +167,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
             profile={profile}
             photoIdx={photoIdx}
             onPhotoTap={handlePhotoTap}
+            onPhotoOpen={() => !flying && setViewerOpen(true)}
             dragMoved={() => dragRef.current.moved}
             onReport={() => !disabled && !flying && setReportUserId(profile.id)}
             onGiftClick={handleGiftClick}
@@ -174,7 +177,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
 
       {/* Hint */}
       <p className="text-center text-[11px] text-white/35 select-none">
-        Swipe to like or pass · tap the sides for more photos
+        Swipe to like or pass · tap the photo to view it
       </p>
 
       {/* Action buttons */}
@@ -201,6 +204,18 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
           <HeartSVG />
         </button>
       </div>
+
+      {viewerOpen && (
+        <PhotoViewer
+          photos={profile.photos}
+          initialIndex={photoIdx}
+          alt={profile.name}
+          onClose={(finalIdx) => {
+            setViewerOpen(false)
+            setPhotoIdx(finalIdx)
+          }}
+        />
+      )}
 
       {reportUserId && (
         <ReportSheet

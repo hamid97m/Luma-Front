@@ -11,12 +11,13 @@ interface Props {
   profile: DiscoveryProfile
   photoIdx: number
   onPhotoTap: (side: 'left' | 'right') => void
+  onPhotoOpen: () => void
   dragMoved: () => boolean
   onReport: () => void
   onGiftClick: () => void
 }
 
-export function ProfileCard({ profile, photoIdx, onPhotoTap, dragMoved, onReport, onGiftClick }: Props) {
+export function ProfileCard({ profile, photoIdx, onPhotoTap, onPhotoOpen, dragMoved, onReport, onGiftClick }: Props) {
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
   const hasLeft = photoIdx > 0
   const hasRight = photoIdx < profile.photos.length - 1
@@ -29,6 +30,7 @@ export function ProfileCard({ profile, photoIdx, onPhotoTap, dragMoved, onReport
     if (y > rect.height * 0.48) return
     if (x < rect.width * 0.4) onPhotoTap('left')
     else if (x > rect.width * 0.6) onPhotoTap('right')
+    else if (photo) onPhotoOpen()
   }
 
   return (
