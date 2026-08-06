@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
@@ -14,10 +14,11 @@ import { api } from '../src/api.js'
 import { openInvoice } from '../src/telegram.js'
 import { usePremiumStore } from '../src/store.js'
 import { PaywallSheet } from '../src/components/premium/PaywallSheet.js'
+import type { PremiumPlan } from '../src/types.js'
 
-const PLANS = [
-  { id: 'p1', title: '1 Month', description: 'Best start', priceStars: 100, discountPercent: null, originalPriceStars: null, durationDays: 30 },
-  { id: 'p2', title: '3 Months', description: 'Save more', priceStars: 150, discountPercent: 50, originalPriceStars: 300, durationDays: 90 },
+const PLANS: PremiumPlan[] = [
+  { id: 'p1', title: '1 Month', description: 'Best start', priceStars: 100, discountPercent: null, originalPriceStars: null, durationDays: 30, discountEndsAt: null },
+  { id: 'p2', title: '3 Months', description: 'Save more', priceStars: 150, discountPercent: 50, originalPriceStars: 300, durationDays: 90, discountEndsAt: null },
 ]
 
 describe('PaywallSheet', () => {
@@ -116,5 +117,74 @@ describe('PaywallSheet', () => {
     // post-refresh session check instead of closing the newer session.
     await new Promise((resolve) => setTimeout(resolve, 50))
     expect(onClose).not.toHaveBeenCalled()
+  })
+})
+
+describe('PaywallSheet discount countdown', () => {
+  // Fake timers scoped to this describe block only — the suite above uses
+  // real timers (waitFor + userEvent), so we install/uninstall per-test here
+  // rather than touching the outer beforeEach.
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const discountedPlan = (overrides: Partial<(typeof PLANS)[number]> = {}) => ({
+    id: 'd1',
+    title: 'Discounted',
+    description: '',
+    priceStars: 50,
+    discountPercent: 50,
+    originalPriceStars: 100,
+    durationDays: 30,
+    discountEndsAt: new Date(Date.now() + 65_000).toISOString(),
+    ...overrides,
+  })
+
+  it('renders "Ends in …" for a discounted plan with an end time, and ticks every second', async () => {
+    vi.useFakeTimers()
+    const plans = [discountedPlan()]
+    usePremiumStore.setState({ status: { enabled: true, premiumUntil: null, plans } })
+    vi.mocked(api.premium.status).mockResolvedValue({ enabled: true, premiumUntil: null, plans })
+
+    render(<PaywallSheet open onClose={() => {}} />)
+
+    expect(screen.getByText('Ends in 00:01:05')).toBeInTheDocument()
+
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(screen.getByText('Ends in 00:01:04')).toBeInTheDocument()
+  })
+
+  it('shows no timer for a plan without discountEndsAt', () => {
+    vi.useFakeTimers()
+    const plans = [{ ...PLANS[0], discountEndsAt: null }, discountedPlan({ discountEndsAt: null, discountPercent: null, originalPriceStars: null })]
+    usePremiumStore.setState({ status: { enabled: true, premiumUntil: null, plans } })
+    vi.mocked(api.premium.status).mockResolvedValue({ enabled: true, premiumUntil: null, plans })
+
+    render(<PaywallSheet open onClose={() => {}} />)
+
+    expect(screen.queryByText(/Ends in/)).not.toBeInTheDocument()
+  })
+
+  it('calls store refresh exactly once when a shown countdown crosses zero', async () => {
+    vi.useFakeTimers()
+    const plans = [discountedPlan({ discountEndsAt: new Date(Date.now() + 2_000).toISOString() })]
+    usePremiumStore.setState({ status: { enabled: true, premiumUntil: null, plans } })
+    vi.mocked(api.premium.status).mockResolvedValue({ enabled: true, premiumUntil: null, plans })
+
+    render(<PaywallSheet open onClose={() => {}} />)
+
+    // Initial mount-on-open refresh (existing behavior).
+    expect(api.premium.status).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(api.premium.status).toHaveBeenCalledTimes(2)
+
+    // Further ticks must not fire additional refreshes.
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(api.premium.status).toHaveBeenCalledTimes(2)
   })
 })

@@ -3,6 +3,7 @@ import { api } from '../../api.js'
 import { t } from '../../i18n.js'
 import { openInvoice, haptic } from '../../telegram.js'
 import { usePremiumStore } from '../../store.js'
+import { formatCountdown } from '../../utils/premium.js'
 
 interface PaywallSheetProps {
   open: boolean
@@ -20,6 +21,7 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
   const [busy, setBusy] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
 
   const mountedRef = useRef(true)
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -27,6 +29,9 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
   // Same session-guard pattern as GiftPickerSheet: async continuations bail
   // when the sheet was closed/reopened after they started.
   const sessionRef = useRef(0)
+  // Guards the "countdown crossed zero" refresh so it fires once per plans
+  // snapshot rather than once per tick while the expired discount lingers.
+  const expiredRefreshFiredRef = useRef(false)
 
   useEffect(() => {
     mountedRef.current = true
@@ -46,10 +51,41 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
     setSelectedId(null)
     setPhase('idle')
     setBusy(false)
+    setNow(Date.now())
+    expiredRefreshFiredRef.current = false
     usePremiumStore.getState().refresh()
     return () => { clearPolling() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  // Reset the once-per-snapshot refresh guard whenever the plans list changes
+  // (e.g. after a refresh brings fresh discount data).
+  useEffect(() => {
+    expiredRefreshFiredRef.current = false
+  }, [plans])
+
+  // One shared 1-second interval for the whole sheet (not one per card) —
+  // only runs while a discounted plan with an end time is actually shown.
+  useEffect(() => {
+    if (!open) return
+    const hasCountdown = plans.some((p) => p.discountPercent != null && p.discountEndsAt)
+    if (!hasCountdown) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [open, plans])
+
+  // When any shown countdown crosses zero, refresh once so prices/badges
+  // pick up the server's post-expiry values.
+  useEffect(() => {
+    if (!open) return
+    const anyExpired = plans.some(
+      (p) => p.discountPercent != null && p.discountEndsAt && new Date(p.discountEndsAt).getTime() - now <= 0
+    )
+    if (anyExpired && !expiredRefreshFiredRef.current) {
+      expiredRefreshFiredRef.current = true
+      usePremiumStore.getState().refresh()
+    }
+  }, [now, open, plans])
 
   if (!open) return null
 
@@ -176,6 +212,11 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
                       )}
                       <span className="text-white font-extrabold text-[16px]">⭐{plan.priceStars}</span>
                     </div>
+                    {plan.discountPercent != null && plan.discountEndsAt && (
+                      <div className="text-white/40 text-[11px] mt-1">
+                        {t.premium.endsIn(formatCountdown(new Date(plan.discountEndsAt).getTime() - now))}
+                      </div>
+                    )}
                   </button>
                 )
               })}

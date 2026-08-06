@@ -168,5 +168,6 @@ export const t = {
     until: (date: string) => `Until ${date}`,
     pitch: 'Unlock unlimited messaging and more with Luma Premium.',
     getButton: 'Get Premium',
+    endsIn: (time: string) => `Ends in ${time}`,
   },
 } as const

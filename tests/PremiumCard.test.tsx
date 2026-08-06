@@ -91,7 +91,7 @@ describe('PremiumCard', () => {
     // branch, so the post-purchase store refresh (which flips content to the
     // state-1 Active branch) unmounted the sheet before its mountedRef-guarded
     // success path (haptic + handleClose) could run.
-    const plan = { id: 'p1', title: '1 Month', description: '', priceStars: 100, discountPercent: null, originalPriceStars: null, durationDays: 30 }
+    const plan = { id: 'p1', title: '1 Month', description: '', priceStars: 100, discountPercent: null, originalPriceStars: null, durationDays: 30, discountEndsAt: null }
     const initialStatus = { enabled: true, premiumUntil: null, plans: [plan] }
     const activeUntil = new Date(Date.now() + 30 * DAY_MS).toISOString()
     const activeStatus = { enabled: true, premiumUntil: activeUntil, plans: [plan] }

@@ -52,6 +52,7 @@ export interface PremiumPlan {
   discountPercent: number | null
   originalPriceStars: number | null
   durationDays: number
+  discountEndsAt: string | null
 }
 
 export interface PremiumStatus {
