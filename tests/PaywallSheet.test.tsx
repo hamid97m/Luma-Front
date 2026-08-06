@@ -173,7 +173,15 @@ describe('PaywallSheet discount countdown', () => {
     vi.useFakeTimers()
     const plans = [discountedPlan({ discountEndsAt: new Date(Date.now() + 2_000).toISOString() })]
     usePremiumStore.setState({ status: { enabled: true, premiumUntil: null, plans } })
-    vi.mocked(api.premium.status).mockResolvedValue({ enabled: true, premiumUntil: null, plans })
+    // A fresh response object/array per call — like the real store.refresh(),
+    // which always replaces `status` (and thus `plans`) with a new reference
+    // even when the underlying data is unchanged. Array-identity-keyed guards
+    // would be fooled into re-firing by this; this test catches that.
+    vi.mocked(api.premium.status).mockImplementation(async () => ({
+      enabled: true,
+      premiumUntil: null,
+      plans: plans.map((p) => ({ ...p })),
+    }))
 
     render(<PaywallSheet open onClose={() => {}} />)
 
@@ -185,6 +193,34 @@ describe('PaywallSheet discount countdown', () => {
 
     // Further ticks must not fire additional refreshes.
     await vi.advanceTimersByTimeAsync(3_000)
+    expect(api.premium.status).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not loop-refresh when a clock-skewed refetch still reports the same expired discount', async () => {
+    vi.useFakeTimers()
+    // Simulates client clock ahead of server (or server not yet clearing the
+    // discount): every refetch still returns the *same* discountEndsAt in the
+    // past, as a brand-new array/object each time — regression for an
+    // unthrottled refresh loop that pegged CPU.
+    const endsAt = new Date(Date.now() + 2_000).toISOString()
+    const plans = [discountedPlan({ discountEndsAt: endsAt })]
+    usePremiumStore.setState({ status: { enabled: true, premiumUntil: null, plans } })
+    vi.mocked(api.premium.status).mockImplementation(async () => ({
+      enabled: true,
+      premiumUntil: null,
+      plans: [{ ...plans[0], discountEndsAt: endsAt }],
+    }))
+
+    render(<PaywallSheet open onClose={() => {}} />)
+    expect(api.premium.status).toHaveBeenCalledTimes(1)
+
+    // Cross zero — triggers exactly one more refresh.
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(api.premium.status).toHaveBeenCalledTimes(2)
+
+    // Several more ticks, each refetching the still-expired discount — must
+    // not fire additional refreshes.
+    await vi.advanceTimersByTimeAsync(5_000)
     expect(api.premium.status).toHaveBeenCalledTimes(2)
   })
 })

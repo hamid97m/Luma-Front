@@ -29,9 +29,16 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
   // Same session-guard pattern as GiftPickerSheet: async continuations bail
   // when the sheet was closed/reopened after they started.
   const sessionRef = useRef(0)
-  // Guards the "countdown crossed zero" refresh so it fires once per plans
-  // snapshot rather than once per tick while the expired discount lingers.
-  const expiredRefreshFiredRef = useRef(false)
+  // Guards the "countdown crossed zero" refresh so it fires once per discount
+  // target (`${plan.id}:${plan.discountEndsAt}`), not once per plans-array
+  // identity. store.refresh() always produces a new array, so keying on
+  // array identity would re-arm the guard on every refresh even when the
+  // refetched data still shows the same expired discount (client clock
+  // ahead of server, or the server hasn't cleared it yet) — that caused an
+  // unthrottled refresh loop. A key only becomes eligible again if the
+  // plan's discountEndsAt genuinely changes (new discount window) or the
+  // sheet is reopened.
+  const expiredRefreshFiredKeysRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     mountedRef.current = true
@@ -52,17 +59,11 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
     setPhase('idle')
     setBusy(false)
     setNow(Date.now())
-    expiredRefreshFiredRef.current = false
+    expiredRefreshFiredKeysRef.current = new Set()
     usePremiumStore.getState().refresh()
     return () => { clearPolling() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
-
-  // Reset the once-per-snapshot refresh guard whenever the plans list changes
-  // (e.g. after a refresh brings fresh discount data).
-  useEffect(() => {
-    expiredRefreshFiredRef.current = false
-  }, [plans])
 
   // One shared 1-second interval for the whole sheet (not one per card) —
   // only runs while a discounted plan with an end time is actually shown.
@@ -74,15 +75,21 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
     return () => clearInterval(id)
   }, [open, plans])
 
-  // When any shown countdown crosses zero, refresh once so prices/badges
-  // pick up the server's post-expiry values.
+  // When a shown countdown crosses zero, refresh once per discount target so
+  // prices/badges pick up the server's post-expiry values. Keyed (not
+  // array-identity-guarded) so a refetch that still shows the same expired
+  // discount doesn't re-fire the refresh on the next tick.
   useEffect(() => {
     if (!open) return
-    const anyExpired = plans.some(
-      (p) => p.discountPercent != null && p.discountEndsAt && new Date(p.discountEndsAt).getTime() - now <= 0
-    )
-    if (anyExpired && !expiredRefreshFiredRef.current) {
-      expiredRefreshFiredRef.current = true
+    const firedKeys = expiredRefreshFiredKeysRef.current
+    const newlyExpired = plans.filter((p) => {
+      if (p.discountPercent == null || !p.discountEndsAt) return false
+      if (new Date(p.discountEndsAt).getTime() - now > 0) return false
+      const key = `${p.id}:${p.discountEndsAt}`
+      return !firedKeys.has(key)
+    })
+    if (newlyExpired.length > 0) {
+      for (const p of newlyExpired) firedKeys.add(`${p.id}:${p.discountEndsAt}`)
       usePremiumStore.getState().refresh()
     }
   }, [now, open, plans])
