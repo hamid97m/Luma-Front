@@ -77,6 +77,20 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
     setOffset(dx)
   }
 
+  // Tap zones on the photo: left/right 40% cycle photos, the middle opens the
+  // fullscreen viewer. Handled here on pointerup (not via onClick in
+  // ProfileCard) because setPointerCapture retargets the click event to this
+  // wrapper, so child click handlers never fire in regular browsers.
+  const handleTap = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    if (y > rect.height * 0.48) return
+    if (x < rect.width * 0.4) handlePhotoTap('left')
+    else if (x > rect.width * 0.6) handlePhotoTap('right')
+    else if (profile?.photos.length) setViewerOpen(true)
+  }
+
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current.active) return
     dragRef.current.active = false
@@ -85,6 +99,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
       fly(dx > 0 ? 'like' : 'pass')
     } else {
       setOffset(0)
+      if (!dragRef.current.moved && !flying) handleTap(e)
     }
   }
 
@@ -166,9 +181,6 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
           <ProfileCard
             profile={profile}
             photoIdx={photoIdx}
-            onPhotoTap={handlePhotoTap}
-            onPhotoOpen={() => !flying && setViewerOpen(true)}
-            dragMoved={() => dragRef.current.moved}
             onReport={() => !disabled && !flying && setReportUserId(profile.id)}
             onGiftClick={handleGiftClick}
           />

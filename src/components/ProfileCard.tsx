@@ -10,31 +10,19 @@ const VerifiedSVG = () => (
 interface Props {
   profile: DiscoveryProfile
   photoIdx: number
-  onPhotoTap: (side: 'left' | 'right') => void
-  onPhotoOpen: () => void
-  dragMoved: () => boolean
   onReport: () => void
   onGiftClick: () => void
 }
 
-export function ProfileCard({ profile, photoIdx, onPhotoTap, onPhotoOpen, dragMoved, onReport, onGiftClick }: Props) {
+// Purely presentational — photo cycling and viewer-opening taps are handled
+// by CardStack on the draggable wrapper (see handleTap there).
+export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props) {
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
   const hasLeft = photoIdx > 0
   const hasRight = photoIdx < profile.photos.length - 1
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (dragMoved()) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    if (y > rect.height * 0.48) return
-    if (x < rect.width * 0.4) onPhotoTap('left')
-    else if (x > rect.width * 0.6) onPhotoTap('right')
-    else if (photo) onPhotoOpen()
-  }
-
   return (
-    <div className="absolute inset-0 rounded-[32px] overflow-hidden select-none" onClick={handleClick}>
+    <div className="absolute inset-0 rounded-[32px] overflow-hidden select-none">
       {/* Photo */}
       {photo
         ? <img src={photo} alt={profile.name} className="w-full h-full object-cover pointer-events-none" draggable={false} />
