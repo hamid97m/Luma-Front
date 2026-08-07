@@ -4,7 +4,7 @@ import { t } from '../../i18n.js'
 import { openInvoice, haptic } from '../../telegram.js'
 import { usePremiumStore } from '../../store.js'
 import { formatCountdown } from '../../utils/premium.js'
-import { Button, Icon, Sheet } from '../ui'
+import { Icon, Sheet } from '../ui'
 
 interface PaywallSheetProps {
   open: boolean
@@ -25,6 +25,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [busy, setBusy] = useState(false)
   const [now, setNow] = useState(() => Date.now())
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const mountedRef = useRef(true)
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -61,6 +62,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
     setSelectedId(null)
     setPhase('idle')
     setBusy(false)
+    setHelpOpen(false)
     setNow(Date.now())
     expiredRefreshFiredKeysRef.current = new Set()
     usePremiumStore.getState().refresh()
@@ -96,6 +98,20 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
       usePremiumStore.getState().refresh()
     }
   }, [now, open, plans])
+
+  // Design: the best-value plan (cheapest per week) carries a badge and comes
+  // preselected when the sheet opens. Plans arrive async via store.refresh(),
+  // so preselect as soon as they're available rather than in the open effect.
+  const perWeekOf = (p: { priceStars: number; durationDays: number }) =>
+    p.priceStars / (Math.max(1, p.durationDays) / 7)
+  const bestValueId =
+    plans.length > 1 ? plans.reduce((a, b) => (perWeekOf(b) < perWeekOf(a) ? b : a)).id : null
+
+  useEffect(() => {
+    if (!open || selectedId != null || plans.length === 0) return
+    setSelectedId(bestValueId ?? plans[0].id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, plans, selectedId])
 
   if (!open) return null
 
@@ -166,12 +182,39 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
 
   const selected = plans.find((p) => p.id === selectedId) ?? null
 
+  const benefits = [
+    { icon: 'heart', label: t.premium.benefitSwipes },
+    { icon: 'message', label: t.premium.benefitChat },
+    { icon: 'eye', label: t.premium.benefitLikes },
+  ] as const
+
   return (
-    <Sheet open onClose={handleClose} title={t.premium.title}>
-      <p className="text-txt2 text-[14px] mb-4 -mt-1">{subtitle ?? t.premium.subtitle}</p>
+    <Sheet
+      open
+      onClose={handleClose}
+      title={
+        <span className="flex items-center gap-2 text-[22px]">
+          <Icon name="sparkle" size={20} className="text-gold" />
+          {t.premium.title}
+        </span>
+      }
+    >
+      <p className="text-txt2 text-[14px] mb-3.5 -mt-1">{subtitle ?? t.premium.subtitle}</p>
 
       {phase === 'refunded' && <p className="text-error text-[14px] mb-4">{t.premium.refunded}</p>}
       {phase === 'error' && <p className="text-error text-[14px] mb-4">{t.premium.error}</p>}
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {benefits.map((b) => (
+          <div
+            key={b.icon}
+            className="bg-surface rounded-m3-md px-2 py-2.5 flex flex-col items-center gap-1.5 text-center"
+          >
+            <Icon name={b.icon} size={18} className="text-primary" />
+            <span className="text-[11px] font-medium leading-tight text-txt">{b.label}</span>
+          </div>
+        ))}
+      </div>
 
       {phase === 'activating' ? (
         <div className="flex flex-col items-center justify-center py-10">
@@ -194,14 +237,21 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
                   type="button"
                   onClick={() => { if (!busy) { haptic.selection(); setSelectedId(plan.id) } }}
                   disabled={busy}
-                  className={`text-left rounded-m3-md p-4 transition-colors disabled:opacity-50 ${
-                    isSelected ? 'bg-primary-container text-on-primary-container' : 'bg-surface text-txt'
+                  className={`text-left rounded-m3-md px-4 py-3.5 border-2 transition-colors disabled:opacity-50 ${
+                    isSelected ? 'border-primary bg-primary-container' : 'border-transparent bg-surface'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-[15px] flex items-center gap-2">
+                    <span className="font-medium text-[15px] text-txt flex items-center gap-2">
                       {plan.title}
-                      {isSelected && <Icon name="check" size={18} className="text-primary" />}
+                      {plan.id === bestValueId && (
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full text-primary"
+                          style={{ background: 'var(--prtint)' }}
+                        >
+                          {t.premium.bestValue}
+                        </span>
+                      )}
                     </span>
                     {plan.discountPercent != null && (
                       <span className="bg-primary text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
@@ -209,18 +259,21 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
                       </span>
                     )}
                   </div>
-                  <div className={`text-[12px] mt-0.5 ${isSelected ? 'text-on-primary-container' : 'text-txt2'}`}>
-                    {t.premium.days(plan.durationDays)}
-                    {plan.description ? ` · ${plan.description}` : ''}
-                  </div>
+                  {plan.description && (
+                    <div className="text-[12px] text-txt2 mt-0.5">{plan.description}</div>
+                  )}
                   <div className="flex items-baseline gap-2 mt-2">
                     {plan.originalPriceStars != null && (
-                      <span className={`text-[13px] line-through inline-flex items-center gap-0.5 ${isSelected ? 'text-on-primary-container' : 'text-txt3'}`}>
+                      <span className="text-[13px] line-through text-txt3 inline-flex items-center gap-0.5">
                         <Icon name="star" size={12} className="text-primary" />{plan.originalPriceStars}
                       </span>
                     )}
-                    <span className="font-bold text-[16px] inline-flex items-center gap-1">
+                    <span className="font-bold text-[16px] text-txt inline-flex items-center gap-1">
                       <Icon name="star" size={15} className="text-primary" />{plan.priceStars}
+                    </span>
+                    <span className="text-[12px] text-txt2">· {t.premium.days(plan.durationDays)}</span>
+                    <span className="ml-auto text-[12px] text-txt2">
+                      {t.premium.perWeek(Math.round(perWeekOf(plan)))}
                     </span>
                   </div>
                   {plan.discountPercent != null && plan.discountEndsAt && (
@@ -234,10 +287,15 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             })}
           </div>
 
-          <Button onClick={handleBuy} disabled={!selected || busy} block size="lg">
+          <button
+            type="button"
+            onClick={handleBuy}
+            disabled={!selected || busy}
+            className="w-full h-12 rounded-full bg-gold-btn text-[#241A00] font-medium text-[15px] flex items-center justify-center transition-opacity disabled:opacity-45"
+          >
             {busy ? (
               <span
-                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                className="w-5 h-5 border-2 border-[#241A00] border-t-transparent rounded-full"
                 style={{ animation: 'lumaSpin .8s linear infinite' }}
               />
             ) : selected ? (
@@ -245,7 +303,42 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             ) : (
               t.premium.selectPrompt
             )}
-          </Button>
+          </button>
+
+          <div className="flex items-center justify-center gap-1.5 mt-3">
+            <Icon name="lock" size={13} className="text-txt3" />
+            <span className="text-[12px] text-txt3">{t.premium.payHint}</span>
+          </div>
+          <p className="text-center text-[12px] text-txt2 mt-2.5 mb-0">{t.premium.socialProof}</p>
+
+          <button
+            type="button"
+            onClick={() => setHelpOpen((v) => !v)}
+            className="w-full mt-3.5 py-2 flex items-center justify-center gap-1.5 text-primary text-[13px] font-medium"
+          >
+            <Icon name="help-circle" size={14} />
+            {t.premium.starsHelpToggle}
+            <Icon
+              name="chevron-down"
+              size={14}
+              className={`transition-transform ${helpOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {helpOpen && (
+            <div className="bg-surface rounded-m3-lg p-4 mt-1 flex flex-col gap-3.5">
+              {t.premium.starsHelpSteps.map((step, i) => (
+                <div key={step.title} className="flex gap-3 items-start">
+                  <span className="w-6 h-6 rounded-full bg-primary-container text-primary text-[12px] font-bold flex items-center justify-center flex-none">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="m-0 text-[13px] font-medium text-txt">{step.title}</p>
+                    <p className="mt-0.5 mb-0 text-[12px] leading-relaxed text-txt2">{step.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </Sheet>

@@ -179,7 +179,29 @@ export const t = {
     until: (date: string) => `Until ${date}`,
     pitch: 'Unlock unlimited messaging and more with Luma Premium.',
     getButton: 'Get Premium',
-    endsIn: (time: string) => `Ends in ${time}`,
+    endsIn: (time: string) => `Offer ends in ${time}`,
+    benefitSwipes: 'Unlimited swipes',
+    benefitChat: 'Chat with anyone',
+    benefitLikes: 'See who likes you',
+    bestValue: 'Best value',
+    perWeek: (stars: number) => `≈ ⭐${stars}/week`,
+    payHint: 'Pay with Telegram Stars · Cancel anytime',
+    socialProof: '8 out of 10 Premium members match within a month',
+    starsHelpToggle: "Don't have Stars? See how to buy",
+    starsHelpSteps: [
+      {
+        title: 'Inside Telegram',
+        body: 'Settings → My Stars → Buy More Stars. Needs an international payment method.',
+      },
+      {
+        title: 'With TON on Fragment',
+        body: 'Buy TON from a local crypto exchange, then get Stars on fragment.com — no foreign card needed.',
+      },
+      {
+        title: 'From a local reseller',
+        body: 'Many trusted local shops sell Stars as a gift to your Telegram account. Pay in rials — check reviews before buying.',
+      },
+    ],
   },
   swipeLimit: {
     title: "You're out of likes",

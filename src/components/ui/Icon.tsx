@@ -53,6 +53,8 @@ export type IconName =
   | 'sparkle'
   | 'moon'
   | 'settings-2'
+  | 'lock'
+  | 'help-circle'
 
 // Each entry is the inner markup of a 24x24 Lucide glyph. `fill` glyphs (heart,
 // star, verified) are noted; everything else is stroked.
@@ -105,6 +107,8 @@ const PATHS: Record<IconName, JSX.Element> = {
   sparkle: <path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4Z" />,
   moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />,
   'settings-2': <><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></>,
+  lock: <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>,
+  'help-circle': <><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></>,
 }
 
 // Glyphs drawn as fills rather than strokes.

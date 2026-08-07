@@ -25,6 +25,8 @@ export default {
         'error-container': 'var(--erc)',
         destructive: 'var(--erbtn)',
         'destructive-hover': 'var(--erbtnh)',
+        gold: 'var(--gold)',
+        'gold-btn': 'var(--goldbtn)',
       },
       fontFamily: {
         sans: ['Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],

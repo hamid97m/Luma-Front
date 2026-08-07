@@ -32,6 +32,8 @@
   --erbtnh: #93000A;   /* destructive button hover  */
   --scrim:  rgba(33, 26, 29, 0.5);      /* modal scrim   */
   --prtint: rgba(176, 41, 92, 0.12);    /* primary tint  */
+  --gold:   #B98900;   /* premium accent (sparkle)  */
+  --goldbtn:#E2A926;   /* premium buy button        */
 
   /* Legacy tokens kept so not-yet-restyled components still resolve during the
      redesign migration. Point them at the new palette. */
@@ -69,6 +71,8 @@
   --erbtnh: #E85B60;
   --scrim:  rgba(0, 0, 0, 0.65);
   --prtint: rgba(224, 83, 127, 0.22);
+  --gold:   #ECC248;
+  --goldbtn:#ECC248;
 }
 
 @layer base {
