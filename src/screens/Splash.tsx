@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '../components/ui'
+import { t } from '../i18n'
 
 interface Props {
   onDone: () => void
@@ -15,11 +16,39 @@ const HEARTS = [
   { size: 16, left: '86%', bottom: 70, opacity: 0.5, dur: 5.2, delay: 3 },
 ]
 
+// Mockup timings: a new message every 2.2s. The splash minimum stays just past
+// the first rotation so a text change is always seen, even on instant auth.
+const MSG_INTERVAL = 2200
+const MIN_DURATION = 2600
+
+function shuffle<T>(items: readonly T[]): T[] {
+  const a = [...items]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export function Splash({ onDone }: Props) {
+  const [messages] = useState(() => shuffle(t.splash.messages))
+  const [current, setCurrent] = useState(0)
+  const [prev, setPrev] = useState<number | null>(null)
+
   useEffect(() => {
-    const id = setTimeout(onDone, 2000)
+    const id = setTimeout(onDone, MIN_DURATION)
     return () => clearTimeout(id)
   }, [onDone])
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCurrent((c) => {
+        setPrev(c)
+        return (c + 1) % messages.length
+      })
+    }, MSG_INTERVAL)
+    return () => clearInterval(id)
+  }, [messages])
 
   return (
     <div
@@ -44,16 +73,34 @@ export function Splash({ onDone }: Props) {
         ))}
       </div>
 
-      {/* Logo tile — the Luma brand icon, beating like the mockup's heart */}
-      <div
-        className="w-24 h-24 rounded-m3-xl flex items-center justify-center overflow-hidden"
-        style={{ background: 'rgba(255,255,255,.16)', animation: 'lumaBeat 1.6s ease-in-out infinite' }}
-      >
-        <img src="/luma-icon.png" alt="Luma" className="w-16 h-16 select-none" />
-      </div>
+      {/* Luma brand icon, beating like the mockup's heart */}
+      <img
+        src="/luma-icon.png"
+        alt="Luma"
+        className="w-24 h-24 rounded-m3-xl select-none"
+        style={{ boxShadow: '0 12px 32px rgba(0,0,0,.3)', animation: 'lumaBeat 1.6s ease-in-out infinite' }}
+      />
 
       <h1 className="text-[40px] font-medium text-white">Luma</h1>
-      <p className="text-[14px] text-white/85">Find your person</p>
+
+      {/* Rotating taglines — shuffled per launch, cross-fading in place */}
+      <div className="relative w-full h-11 flex-none">
+        {messages.map((m, i) => (
+          <p
+            key={m}
+            className="absolute inset-0 flex items-start justify-center px-10 text-[14px] leading-[1.45] text-center text-white/90"
+            style={
+              i === current
+                ? { animation: 'lumaMsgIn .5s cubic-bezier(.2,0,0,1) both' }
+                : i === prev
+                  ? { animation: 'lumaMsgOut .4s ease both' }
+                  : { opacity: 0, pointerEvents: 'none' }
+            }
+          >
+            {m}
+          </p>
+        ))}
+      </div>
 
       {/* Loader dots */}
       <div className="absolute bottom-[72px] flex gap-2">
