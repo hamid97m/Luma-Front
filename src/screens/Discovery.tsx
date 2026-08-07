@@ -7,6 +7,10 @@ import { NotifyPrompt } from '../components/NotifyPrompt.js'
 import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
 import { shouldPromptWriteAccess } from '../telegram.js'
 import { DiscoveryEmpty } from '../components/DiscoveryEmpty.js'
+import { SwipeLimited } from '../components/SwipeLimited.js'
+import { PaywallSheet } from '../components/premium/PaywallSheet.js'
+import { usePremiumStore } from '../store.js'
+import { haptic } from '../telegram.js'
 import type { DiscoveryProfile, SwipeResult, Match } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
@@ -26,14 +30,22 @@ export function Discovery({ onOpenChat }: Props) {
   // Every id swiped this session — outlives the queue, so a prefetch response
   // started before a swipe (and thus unaware of it) can't re-add that profile.
   const swipedIds = useRef<Set<string>>(new Set())
+  const [limitResetAt, setLimitResetAt] = useState<string | null>(null)
+  const [paywallOpen, setPaywallOpen] = useState(false)
+  const premiumStatus = usePremiumStore((s) => s.status)
+  // Buying premium clears the limit instantly (server stops gating; no refetch needed).
+  const premiumActive =
+    !!premiumStatus?.premiumUntil && new Date(premiumStatus.premiumUntil).getTime() > Date.now()
+  const limited = limitResetAt != null && !premiumActive
 
   const fetchBatch = useCallback(async () => {
-    const { profiles, exhausted: done } = await api.discovery.feed()
+    const { profiles, exhausted: done, swipeLimit } = await api.discovery.feed()
     setQueue((q) => {
       const seen = new Set(q.map((p) => p.id))
       return [...q, ...profiles.filter((p) => !seen.has(p.id) && !swipedIds.current.has(p.id))]
     })
     setExhausted(done)
+    if (swipeLimit?.limited && swipeLimit.resetAt) setLimitResetAt(swipeLimit.resetAt)
     setLoading(false)
   }, [])
 
@@ -55,16 +67,32 @@ export function Discovery({ onOpenChat }: Props) {
     setSwiping(true)
     setQueue(rest)
 
-    const result = await api.swipes.swipe(current.id, direction)
-    if (result.matched && result.match) {
-      // Small delay so card animation can finish before popup
-      setTimeout(() => setActiveMatch(result.match!), 400)
+    try {
+      const result = await api.swipes.swipe(current.id, direction)
+      if (result.swipeLimit?.remaining === 0) setLimitResetAt(result.swipeLimit.resetAt)
+      if (result.matched && result.match) {
+        // Small delay so card animation can finish before popup
+        setTimeout(() => setActiveMatch(result.match!), 400)
+      }
+      // Prefetch next batch when queue runs low
+      if (rest.length <= PREFETCH_THRESHOLD && !exhausted) fetchBatch()
+    } catch (err) {
+      // The swipe never reached the server — put the card back.
+      swipedIds.current.delete(current.id)
+      setQueue((q) => [current, ...q])
+      const status = (err as { status?: number } | null)?.status
+      const message = err instanceof Error ? err.message : ''
+      if (status === 403 && message.includes('swipe_limit')) {
+        // request() throws Error(bodyText), so the 403 body's resetAt is parseable.
+        let resetAt: string | null = null
+        try { resetAt = (JSON.parse(message) as { resetAt?: string }).resetAt ?? null } catch { /* not JSON */ }
+        setLimitResetAt(resetAt ?? new Date(Date.now() + 4 * 3600_000).toISOString())
+        usePremiumStore.getState().refresh()
+      }
+      haptic.notification('error')
+    } finally {
+      setSwiping(false)
     }
-
-    // Prefetch next batch when queue runs low
-    if (rest.length <= PREFETCH_THRESHOLD && !exhausted) fetchBatch()
-
-    setSwiping(false)
   }
 
   // The swipe response only carries a minimal match shape (id + counterpart
@@ -86,6 +114,23 @@ export function Discovery({ onOpenChat }: Props) {
     return (
       <div className="flex items-center justify-center h-full bg-bg text-txt">
         <img src="/luma-icon.png" alt="" className="w-14 h-14 rounded-m3-lg animate-pulse-heart select-none" />
+      </div>
+    )
+  }
+
+  if (limited) {
+    return (
+      <div className="h-full bg-bg text-txt flex flex-col">
+        <SwipeLimited
+          resetAt={limitResetAt!}
+          onExpired={() => { setLimitResetAt(null); refresh() }}
+          onGetPremium={() => { haptic.impact('medium'); setPaywallOpen(true) }}
+        />
+        <PaywallSheet
+          open={paywallOpen}
+          onClose={() => setPaywallOpen(false)}
+          subtitle={t.swipeLimit.paywallSubtitle}
+        />
       </div>
     )
   }
