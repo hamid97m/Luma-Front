@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import { mainButtonSupported, useMainButton } from '../telegram.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
+import { Button, IconButton, Input, Textarea, Chip, Icon } from '../components/ui/index.js'
 
 const ALL_TAGS = [
   '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
@@ -113,60 +114,46 @@ export function Onboarding({ onComplete }: Props) {
     }
   }
 
-  const cardUnselected = 'glass border border-white/15 rounded-2xl py-4 px-6 text-white/80 text-left flex items-center justify-between cursor-pointer transition-all'
-  const cardSelected = 'bg-white/95 text-[#1a1024] scale-[1.02] shadow-2xl rounded-2xl py-4 px-6 font-bold flex items-center justify-between cursor-pointer transition-all'
-
   return (
     <div
-      className="flex flex-col h-screen relative overflow-hidden"
-      style={{
-        background: 'linear-gradient(160deg,#1a1024 0%,#2a0f22 55%,#10101a 100%)',
-        paddingTop: 'var(--tg-safe-top)',
-      }}
+      className="flex flex-col h-screen relative overflow-hidden bg-bg text-txt"
+      style={{ paddingTop: 'var(--tg-safe-top)' }}
     >
-      {/* Background glow blobs */}
-      <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full blur-3xl opacity-30 pointer-events-none"
-           style={{ background: '#ec4067' }} />
-      <div className="absolute -bottom-20 -right-20 w-64 h-64 rounded-full blur-3xl opacity-30 pointer-events-none"
-           style={{ background: '#a855f7' }} />
-
       {/* Top bar */}
-      <div className="relative z-10 flex items-center gap-3 px-5 pt-12 pb-4">
-        <button
+      <div className="relative z-10 flex items-center gap-2 px-4 pt-12 pb-4">
+        <IconButton
+          icon="arrow-left"
           onClick={back}
-          className={`text-white/70 text-2xl w-8 flex-shrink-0 transition-opacity ${step === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-        >
-          ‹
-        </button>
-        <div className="flex-1 flex gap-1">
+          aria-label="Back"
+          tone="ghost"
+          iconSize={22}
+          className={`text-txt transition-opacity ${step === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        />
+        <div className="flex-1 flex gap-1 pr-2">
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
               key={i}
-              className="h-1 flex-1 rounded-full transition-all duration-500"
-              style={i <= step
-                ? { background: 'linear-gradient(90deg,#ec4067,#a855f7)' }
-                : { background: 'rgba(255,255,255,.15)' }
-              }
+              className={`h-1 flex-1 rounded-full transition-colors duration-500 ${i <= step ? 'bg-primary' : 'bg-surface-high'}`}
             />
           ))}
         </div>
       </div>
 
       {/* Step content */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-5 py-2">
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 py-2">
         <div key={step} className="animate-fade-up flex flex-col gap-5">
 
           {/* Step 0: Name */}
           {step === 0 && (
             <>
-              <h2 className="text-[28px] font-extrabold text-white">What's your name?</h2>
-              <input
+              <h2 className="text-[28px] font-medium leading-tight text-txt">What's your name?</h2>
+              <Input
                 autoFocus
                 type="text"
                 value={state.name}
                 onChange={(e) => setState((s) => ({ ...s, name: e.target.value }))}
                 placeholder="Your name"
-                className="w-full text-[20px] font-semibold border-b-2 border-white/20 focus:border-[#ec4067] outline-none pb-2 transition-colors"
+                className="text-[18px] font-normal"
               />
             </>
           )}
@@ -174,8 +161,8 @@ export function Onboarding({ onComplete }: Props) {
           {/* Step 1: Age */}
           {step === 1 && (
             <>
-              <h2 className="text-[28px] font-extrabold text-white">How old are you?</h2>
-              <input
+              <h2 className="text-[28px] font-medium leading-tight text-txt">How old are you?</h2>
+              <Input
                 autoFocus
                 type="number"
                 min={18}
@@ -186,10 +173,10 @@ export function Onboarding({ onComplete }: Props) {
                   setAgeError(e.target.value.length >= 2 && Number(e.target.value) < 18)
                 }}
                 placeholder="25"
-                className="w-full text-[48px] font-extrabold text-center border-b-2 border-white/20 focus:border-[#ec4067] outline-none pb-2 transition-colors"
+                className="text-[44px] font-medium text-center rounded-m3-lg"
               />
               {ageError && (
-                <p className="text-rose-400 text-sm text-center">You must be at least 18.</p>
+                <p className="text-error text-sm text-center">You must be at least 18.</p>
               )}
             </>
           )}
@@ -197,18 +184,25 @@ export function Onboarding({ onComplete }: Props) {
           {/* Step 2: Gender */}
           {step === 2 && (
             <>
-              <h2 className="text-[28px] font-extrabold text-white">I am a…</h2>
-              <div className="flex flex-col gap-3">
-                {([['woman', 'Woman 👩'], ['man', 'Man 👨'], ['nonbinary', 'Non-binary 🧑']] as const).map(([val, label]) => (
-                  <button
-                    key={val}
-                    onClick={() => setState((s) => ({ ...s, gender: val }))}
-                    className={state.gender === val ? cardSelected : cardUnselected}
-                  >
-                    <span>{label}</span>
-                    {state.gender === val && <span className="text-[#ec4067] font-bold">✓</span>}
-                  </button>
-                ))}
+              <h2 className="text-[28px] font-medium leading-tight text-txt">I am a…</h2>
+              <div className="flex flex-col gap-2.5">
+                {([['woman', 'Woman'], ['man', 'Man'], ['nonbinary', 'Non-binary']] as const).map(([val, label]) => {
+                  const selected = state.gender === val
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => setState((s) => ({ ...s, gender: val }))}
+                      className={`rounded-m3-md px-[17px] py-[15px] text-[15px] text-left flex items-center justify-between cursor-pointer transition-colors border-2 ${
+                        selected
+                          ? 'bg-primary-container text-on-primary-container border-primary font-medium'
+                          : 'bg-surface text-txt border-transparent'
+                      }`}
+                    >
+                      <span>{label}</span>
+                      {selected && <Icon name="check" size={20} className="text-primary" strokeWidth={2.5} />}
+                    </button>
+                  )
+                })}
               </div>
             </>
           )}
@@ -216,18 +210,25 @@ export function Onboarding({ onComplete }: Props) {
           {/* Step 3: Preference */}
           {step === 3 && (
             <>
-              <h2 className="text-[28px] font-extrabold text-white">Interested in…</h2>
-              <div className="flex flex-col gap-3">
-                {([['men', 'Men 👨'], ['women', 'Women 👩'], ['everyone', 'Everyone 🌈']] as const).map(([val, label]) => (
-                  <button
-                    key={val}
-                    onClick={() => setState((s) => ({ ...s, pref: val }))}
-                    className={state.pref === val ? cardSelected : cardUnselected}
-                  >
-                    <span>{label}</span>
-                    {state.pref === val && <span className="text-[#ec4067] font-bold">✓</span>}
-                  </button>
-                ))}
+              <h2 className="text-[28px] font-medium leading-tight text-txt">Interested in…</h2>
+              <div className="flex flex-col gap-2.5">
+                {([['men', 'Men'], ['women', 'Women'], ['everyone', 'Everyone']] as const).map(([val, label]) => {
+                  const selected = state.pref === val
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => setState((s) => ({ ...s, pref: val }))}
+                      className={`rounded-m3-md px-[17px] py-[15px] text-[15px] text-left flex items-center justify-between cursor-pointer transition-colors border-2 ${
+                        selected
+                          ? 'bg-primary-container text-on-primary-container border-primary font-medium'
+                          : 'bg-surface text-txt border-transparent'
+                      }`}
+                    >
+                      <span>{label}</span>
+                      {selected && <Icon name="check" size={20} className="text-primary" strokeWidth={2.5} />}
+                    </button>
+                  )
+                })}
               </div>
             </>
           )}
@@ -236,28 +237,21 @@ export function Onboarding({ onComplete }: Props) {
           {step === 4 && (
             <>
               <div>
-                <h2 className="text-[28px] font-extrabold text-white">Pick your interests</h2>
-                <p className="text-[14px] text-white/50 mt-1">
+                <h2 className="text-[28px] font-medium leading-tight text-txt">Pick your interests</h2>
+                <p className="text-[13px] text-txt2 mt-1.5">
                   {state.interests.length}/5 selected · choose at least 3
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {ALL_TAGS.map((tag) => {
-                  const selected = state.interests.includes(tag)
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() => toggleInterest(tag)}
-                      className={`rounded-full px-4 py-2 text-sm transition-all ${
-                        selected
-                          ? 'bg-white/90 text-[#1a1024] font-semibold'
-                          : 'glass border border-white/20 text-white/80'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  )
-                })}
+                {ALL_TAGS.map((tag) => (
+                  <Chip
+                    key={tag}
+                    selected={state.interests.includes(tag)}
+                    onClick={() => toggleInterest(tag)}
+                  >
+                    {tag}
+                  </Chip>
+                ))}
               </div>
             </>
           )}
@@ -265,7 +259,7 @@ export function Onboarding({ onComplete }: Props) {
           {/* Step 5: Photo + Bio */}
           {step === 5 && (
             <>
-              <h2 className="text-[28px] font-extrabold text-white">Add a photo & bio</h2>
+              <h2 className="text-[28px] font-medium leading-tight text-txt">Add a photo & bio</h2>
               <div className="flex gap-4">
                 <label className="relative cursor-pointer flex-shrink-0">
                   <input
@@ -274,55 +268,57 @@ export function Onboarding({ onComplete }: Props) {
                     className="sr-only"
                     onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) setEditingFile(f) }}
                   />
-                  <div className={`relative w-32 h-32 rounded-2xl flex flex-col items-center justify-center overflow-hidden ${
-                    photoPreview ? '' : 'border-2 border-dashed border-white/30'
+                  <div className={`relative w-32 h-32 rounded-m3-lg flex flex-col items-center justify-center overflow-hidden box-border ${
+                    photoPreview ? '' : 'border-2 border-dashed border-outline bg-bg'
                   }`}>
                     {photoPreview
-                      ? <img src={photoPreview} alt="preview" className="w-full h-full object-cover rounded-2xl" />
-                      : <span className="text-3xl text-white/40">＋</span>
+                      ? <img src={photoPreview} alt="preview" className="w-full h-full object-cover rounded-m3-lg" />
+                      : <Icon name="camera" size={28} className="text-primary" />
                     }
                     {uploadPhase && (
-                      <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-1.5 px-3">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3" style={{ background: 'var(--scrim)' }}>
                         {uploadPhase.phase === 'processing' ? (
-                          <span className="text-[11px] text-white/80 animate-pulse">Resizing…</span>
+                          <span className="text-[11px] text-white font-medium animate-pulse">Resizing…</span>
                         ) : (
                           <>
-                            <div className="w-full h-1.5 rounded-full bg-white/20 overflow-hidden">
+                            <div className="w-full h-1 rounded-full bg-white/25 overflow-hidden">
                               <div
-                                className="h-full rounded-full transition-[width]"
-                                style={{ width: `${uploadPhase.progress}%`, background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
+                                className="h-full rounded-full bg-white transition-[width]"
+                                style={{ width: `${uploadPhase.progress}%` }}
                               />
                             </div>
-                            <span className="text-[10px] text-white/70">{uploadPhase.progress}%</span>
+                            <span className="text-[10px] text-white">{uploadPhase.progress}%</span>
                           </>
                         )}
                       </div>
                     )}
                   </div>
                   {photoUploaded && (
-                    <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Nice! ✓
+                    <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-medium px-2.5 py-0.5 rounded-full">
+                      Added ✓
                     </span>
                   )}
                 </label>
 
                 <div className="flex-1 flex flex-col gap-1">
-                  <textarea
+                  <Textarea
                     rows={5}
                     maxLength={150}
                     value={state.bio}
                     onChange={(e) => setState((s) => ({ ...s, bio: e.target.value }))}
                     placeholder="Write a short bio…"
-                    className="w-full glass border border-white/15 rounded-2xl p-3 text-sm resize-none outline-none focus:border-[#ec4067] transition-colors"
                   />
-                  <p className="text-right text-[11px] text-white/35">{state.bio.length}/150</p>
+                  <p className="text-right text-[11px] text-txt3">{state.bio.length}/150</p>
                 </div>
               </div>
-              <p className="glass border border-amber-400/30 rounded-2xl px-4 py-3 text-amber-200/90 text-[12px] leading-relaxed">
-                ⚠️ Use real photos of yourself. Fake photos can be reported by
-                other users and will get your account blocked.
-              </p>
-              <p className="text-white/40 text-[12px] text-center">
+              <div className="flex gap-2.5 bg-surface rounded-m3-md px-3.5 py-3">
+                <Icon name="alert-triangle" size={16} className="text-primary flex-none mt-px" />
+                <p className="text-txt2 text-[12px] leading-relaxed">
+                  Use real photos of yourself. Profiles with fake photos can be
+                  reported by other users and may be blocked.
+                </p>
+              </div>
+              <p className="text-txt3 text-[12px] text-center">
                 You can pause or delete your account anytime from Settings.
               </p>
             </>
@@ -332,10 +328,10 @@ export function Onboarding({ onComplete }: Props) {
 
       {/* Sticky bottom button — fallback when Telegram provides no MainButton */}
       {!mainButtonSupported() && (
-        <div className="relative z-10 px-5 pb-8 pt-4">
-          <button onClick={next} disabled={!valid || saving} className="btn-primary">
+        <div className="relative z-10 px-6 pb-10 pt-4">
+          <Button block size="lg" onClick={next} disabled={!valid || saving}>
             {saving ? '…' : step === TOTAL_STEPS - 1 ? 'Enter Luma' : 'Continue'}
-          </button>
+          </Button>
         </div>
       )}
 

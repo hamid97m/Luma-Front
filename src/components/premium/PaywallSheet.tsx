@@ -4,6 +4,7 @@ import { t } from '../../i18n.js'
 import { openInvoice, haptic } from '../../telegram.js'
 import { usePremiumStore } from '../../store.js'
 import { formatCountdown } from '../../utils/premium.js'
+import { Button, Icon, Sheet } from '../ui'
 
 interface PaywallSheetProps {
   open: boolean
@@ -164,83 +165,87 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
   const selected = plans.find((p) => p.id === selectedId) ?? null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4" onClick={handleClose}>
-      <div
-        className="glass border border-white/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl max-h-[85vh] overflow-y-auto"
-        style={{ paddingBottom: 'calc(1.5rem + var(--tg-safe-bottom, 0px))' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-xl font-extrabold text-white">{t.premium.title}</h2>
-          <button onClick={handleClose} aria-label={t.premium.close} className="text-white/50 text-2xl leading-none">✕</button>
+    <Sheet open onClose={handleClose} title={t.premium.title}>
+      <p className="text-txt2 text-[14px] mb-4 -mt-1">{t.premium.subtitle}</p>
+
+      {phase === 'refunded' && <p className="text-error text-[14px] mb-4">{t.premium.refunded}</p>}
+      {phase === 'error' && <p className="text-error text-[14px] mb-4">{t.premium.error}</p>}
+
+      {phase === 'activating' ? (
+        <div className="flex flex-col items-center justify-center py-10">
+          <div
+            className="w-7 h-7 border-[3px] border-primary-container border-t-primary rounded-full mb-3"
+            style={{ animation: 'lumaSpin .8s linear infinite' }}
+          />
+          <p className="text-txt2 text-[14px]">{t.premium.activating}</p>
         </div>
-        <p className="text-white/60 text-[14px] mb-5">{t.premium.subtitle}</p>
-
-        {phase === 'refunded' && <p className="text-rose-400 text-[14px] mb-4">{t.premium.refunded}</p>}
-        {phase === 'error' && <p className="text-rose-400 text-[14px] mb-4">{t.premium.error}</p>}
-
-        {phase === 'activating' ? (
-          <div className="flex flex-col items-center justify-center py-10">
-            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-white/70 text-[14px]">{t.premium.activating}</p>
-          </div>
-        ) : plans.length === 0 ? (
-          <p className="text-white/60 text-[14px] text-center py-10">{t.premium.noPlans}</p>
-        ) : (
-          <>
-            <div className="flex flex-col gap-3 mb-4">
-              {plans.map((plan) => {
-                const isSelected = plan.id === selectedId
-                return (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    onClick={() => { if (!busy) { haptic.selection(); setSelectedId(plan.id) } }}
-                    disabled={busy}
-                    className={`text-left rounded-2xl border p-4 transition-colors disabled:opacity-50 ${
-                      isSelected ? 'border-[#ec4067] bg-[#ec4067]/15' : 'border-white/12 bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-white font-bold text-[15px]">{plan.title}</span>
-                      {plan.discountPercent != null && (
-                        <span className="bg-[#ec4067] text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-                          -{plan.discountPercent}%
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-white/50 text-[12px] mt-0.5">
-                      {t.premium.days(plan.durationDays)}
-                      {plan.description ? ` · ${plan.description}` : ''}
-                    </div>
-                    <div className="flex items-baseline gap-2 mt-1.5">
-                      {plan.originalPriceStars != null && (
-                        <span className="text-white/40 text-[13px] line-through">⭐{plan.originalPriceStars}</span>
-                      )}
-                      <span className="text-white font-extrabold text-[16px]">⭐{plan.priceStars}</span>
-                    </div>
-                    {plan.discountPercent != null && plan.discountEndsAt && (
-                      <div className="text-white/40 text-[11px] mt-1">
-                        {t.premium.endsIn(formatCountdown(new Date(plan.discountEndsAt).getTime() - now))}
-                      </div>
+      ) : plans.length === 0 ? (
+        <p className="text-txt2 text-[14px] text-center py-10">{t.premium.noPlans}</p>
+      ) : (
+        <>
+          <div className="flex flex-col gap-2 mb-3.5">
+            {plans.map((plan) => {
+              const isSelected = plan.id === selectedId
+              return (
+                <button
+                  key={plan.id}
+                  type="button"
+                  onClick={() => { if (!busy) { haptic.selection(); setSelectedId(plan.id) } }}
+                  disabled={busy}
+                  className={`text-left rounded-m3-md p-4 transition-colors disabled:opacity-50 ${
+                    isSelected ? 'bg-primary-container text-on-primary-container' : 'bg-surface text-txt'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-[15px] flex items-center gap-2">
+                      {plan.title}
+                      {isSelected && <Icon name="check" size={18} className="text-primary" />}
+                    </span>
+                    {plan.discountPercent != null && (
+                      <span className="bg-primary text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                        -{plan.discountPercent}%
+                      </span>
                     )}
-                  </button>
-                )
-              })}
-            </div>
+                  </div>
+                  <div className={`text-[12px] mt-0.5 ${isSelected ? 'text-on-primary-container' : 'text-txt2'}`}>
+                    {t.premium.days(plan.durationDays)}
+                    {plan.description ? ` · ${plan.description}` : ''}
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    {plan.originalPriceStars != null && (
+                      <span className={`text-[13px] line-through inline-flex items-center gap-0.5 ${isSelected ? 'text-on-primary-container' : 'text-txt3'}`}>
+                        <Icon name="star" size={12} className="text-primary" />{plan.originalPriceStars}
+                      </span>
+                    )}
+                    <span className="font-bold text-[16px] inline-flex items-center gap-1">
+                      <Icon name="star" size={15} className="text-primary" />{plan.priceStars}
+                    </span>
+                  </div>
+                  {plan.discountPercent != null && plan.discountEndsAt && (
+                    <div className="flex items-center gap-1.5 mt-2 text-primary text-[11px] font-bold">
+                      <Icon name="clock" size={12} />
+                      {t.premium.endsIn(formatCountdown(new Date(plan.discountEndsAt).getTime() - now))}
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
 
-            <button onClick={handleBuy} disabled={!selected || busy} className="btn-primary flex items-center justify-center gap-2">
-              {busy ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : selected ? (
-                t.premium.buy(selected.priceStars)
-              ) : (
-                t.premium.selectPrompt
-              )}
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+          <Button onClick={handleBuy} disabled={!selected || busy} block size="lg">
+            {busy ? (
+              <span
+                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                style={{ animation: 'lumaSpin .8s linear infinite' }}
+              />
+            ) : selected ? (
+              t.premium.buy(selected.priceStars)
+            ) : (
+              t.premium.selectPrompt
+            )}
+          </Button>
+        </>
+      )}
+    </Sheet>
   )
 }

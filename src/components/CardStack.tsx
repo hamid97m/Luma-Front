@@ -4,22 +4,10 @@ import { PhotoViewer } from './PhotoViewer.js'
 import { ReportSheet } from './ReportSheet.js'
 import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
+import { Icon } from './ui/index.js'
 import type { DiscoveryProfile } from '../types.js'
 
 const THRESHOLD = 110
-
-const HeartSVG = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-  </svg>
-)
-
-const CrossSVG = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fb7185" strokeWidth="2.5" strokeLinecap="round">
-    <line x1="18" y1="6" x2="6" y2="18"/>
-    <line x1="6" y1="6" x2="18" y2="18"/>
-  </svg>
-)
 
 interface Props {
   profiles: DiscoveryProfile[]
@@ -144,7 +132,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
       <div className="relative flex-1">
         {/* Peek card behind */}
         {nextProfile && (
-          <div className="absolute inset-x-3 top-3 bottom-0 rounded-[32px] bg-white/10 -z-10" />
+          <div className="absolute inset-x-3 top-3 bottom-0 rounded-m3-xl bg-surface-high -z-10" />
         )}
 
         {/* Top card — draggable */}
@@ -157,18 +145,27 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
         >
           {/* LIKE stamp */}
           <div
-            className="absolute top-8 left-6 z-20 text-emerald-400 font-extrabold text-3xl border-4 border-emerald-400 rounded-xl px-3 py-1 pointer-events-none"
-            style={{ opacity: likeOpacity, transform: 'rotate(-16deg)' }}
+            className="absolute top-7 left-5 z-20 text-white font-bold text-[22px] tracking-wide rounded-xl px-4 py-1.5 pointer-events-none"
+            style={{
+              opacity: likeOpacity,
+              transform: 'rotate(-10deg)',
+              background: '#1B6B3A',
+              boxShadow: '0 4px 12px rgba(0,0,0,.25)',
+            }}
           >
             LIKE
           </div>
 
-          {/* NOPE stamp */}
+          {/* PASS stamp */}
           <div
-            className="absolute top-8 right-6 z-20 text-rose-400 font-extrabold text-3xl border-4 border-rose-400 rounded-xl px-3 py-1 pointer-events-none"
-            style={{ opacity: nopeOpacity, transform: 'rotate(16deg)' }}
+            className="absolute top-7 right-5 z-20 bg-destructive text-white font-bold text-[22px] tracking-wide rounded-xl px-4 py-1.5 pointer-events-none"
+            style={{
+              opacity: nopeOpacity,
+              transform: 'rotate(10deg)',
+              boxShadow: '0 4px 12px rgba(0,0,0,.25)',
+            }}
           >
-            NOPE
+            PASS
           </div>
 
           <ProfileCard
@@ -181,32 +178,28 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
       </div>
 
       {/* Hint */}
-      <p className="text-center text-[11px] text-white/35 select-none">
+      <p className="text-center text-[11px] text-txt3 select-none">
         Swipe to like or pass · tap the photo to view it
       </p>
 
       {/* Action buttons */}
-      <div className="flex items-center justify-center gap-8 pb-2">
+      <div className="flex items-center justify-center gap-6 pb-2">
         <button
           onClick={() => !disabled && !flying && fly('pass')}
           disabled={disabled}
-          className="w-16 h-16 rounded-full glass-dark border border-white/20 flex items-center justify-center disabled:opacity-40"
+          className="w-14 h-14 rounded-[18px] bg-surface text-txt2 shadow-m3-1 flex items-center justify-center disabled:opacity-40 hover:bg-surface-high transition-colors"
           aria-label="Pass"
         >
-          <CrossSVG />
+          <Icon name="x" size={24} strokeWidth={2.5} />
         </button>
 
         <button
           onClick={() => !disabled && !flying && fly('like')}
           disabled={disabled}
-          className="w-20 h-20 rounded-full flex items-center justify-center disabled:opacity-40"
-          style={{
-            background: 'linear-gradient(135deg,#f43f5e,#ec4067)',
-            boxShadow: '0 16px 40px rgba(236,64,103,.6)',
-          }}
+          className="w-[76px] h-[76px] rounded-[24px] bg-primary text-white shadow-m3-fab flex items-center justify-center disabled:opacity-40 hover:bg-primary-hover transition-colors"
           aria-label="Like"
         >
-          <HeartSVG />
+          <Icon name="heart" size={32} filled />
         </button>
       </div>
 

@@ -2,23 +2,9 @@ import { useState } from 'react'
 import { usePremiumStore } from '../../store.js'
 import { t } from '../../i18n.js'
 import { PaywallSheet } from './PaywallSheet.js'
+import { Badge, Button, Card, Icon } from '../ui'
 
 const DAY_MS = 86_400_000
-
-function CardShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="rounded-[24px] p-4 border border-[#ec4067]/40"
-      style={{ background: 'rgba(236,64,103,.08)' }}
-    >
-      <div
-        className="h-1 rounded-full mb-4 -mx-4 -mt-4"
-        style={{ background: 'linear-gradient(90deg,#f43f5e,#ec4067,#a855f7)' }}
-      />
-      {children}
-    </div>
-  )
-}
 
 export function PremiumCard() {
   const status = usePremiumStore((s) => s.status)
@@ -33,26 +19,33 @@ export function PremiumCard() {
     const diffDays = (premiumUntil!.getTime() - Date.now()) / DAY_MS
     const remainingLabel = diffDays < 1 ? t.premium.endsToday : t.premium.daysLeft(Math.ceil(diffDays))
     content = (
-      <CardShell>
+      <Card variant="filled">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-white font-bold text-[15px]">{t.premium.title} ⭐</span>
-          <span className="bg-[#ec4067] text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-            {t.premium.active}
+          <span className="text-txt font-medium text-[16px] flex items-center gap-2">
+            <Icon name="star" size={16} className="text-primary" />
+            {t.premium.title}
           </span>
+          <Badge tone="primary">{t.premium.active}</Badge>
         </div>
-        <p className="text-white/85 text-[14px]">{remainingLabel}</p>
-        <p className="text-white/50 text-[12px] mt-1">{t.premium.until(premiumUntil!.toLocaleDateString())}</p>
-      </CardShell>
+        <p className="text-txt text-[14px]">{remainingLabel}</p>
+        <p className="text-txt2 text-[12px] mt-1">{t.premium.until(premiumUntil!.toLocaleDateString())}</p>
+      </Card>
     )
   } else if (status && !isActive && status.enabled) {
     content = (
-      <CardShell>
-        <p className="text-white font-bold text-[15px] mb-1">{t.premium.title} ⭐</p>
-        <p className="text-white/70 text-[13px] mb-3">{t.premium.pitch}</p>
-        <button onClick={() => setPaywallOpen(true)} className="btn-primary">
+      <div
+        className="rounded-m3-xl p-[18px] text-white"
+        style={{ background: 'linear-gradient(135deg, var(--pr), var(--prh))' }}
+      >
+        <p className="font-medium text-[18px] mb-1 flex items-center gap-2">
+          <Icon name="sparkles" size={18} />
+          {t.premium.title}
+        </p>
+        <p className="text-white/85 text-[13px] mb-3.5 leading-snug">{t.premium.pitch}</p>
+        <Button onClick={() => setPaywallOpen(true)} variant="tonal">
           {t.premium.getButton}
-        </button>
-      </CardShell>
+        </Button>
+      </div>
     )
   }
 

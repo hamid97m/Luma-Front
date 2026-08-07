@@ -1,19 +1,74 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Design tokens — "Luma Material" (Material 3, rose seed).
+   Light is the default (:root). Dark is applied by setting
+   document.documentElement[data-theme="dark"] from the Telegram color scheme
+   (see applyTheme() in telegram.ts). Every component takes color from these
+   vars (directly or via the Tailwind token names in tailwind.config.js) so the
+   whole app flips light/dark with the Telegram theme.
+   --------------------------------------------------------------------------- */
 :root {
-  --accent:   #ec4067;
-  --accent-r: #f43f5e;
-  --purple:   #a855f7;
-  --app-bg:   #0b0b12;
+  --bg:     #FFF8F8;   /* app background            */
+  --field:  #ffffff;   /* input / raised fill       */
+  --sc:     #F7EDF0;   /* surface container         */
+  --sch:    #F1E5E9;   /* surface container high    */
+  --tx:     #211A1D;   /* text primary              */
+  --tx2:    #52434A;   /* text secondary            */
+  --tx3:    rgba(82, 67, 74, 0.6);   /* text tertiary */
+  --pr:     #B0295C;   /* primary                   */
+  --prh:    #8C1F49;   /* primary hover / pressed   */
+  --pc:     #FFD9E2;   /* primary container         */
+  --pch:    #F6C4D2;   /* primary container high    */
+  --onpc:   #3F0021;   /* on primary container      */
+  --ol:     #D7C1C8;   /* outline                   */
+  --ol2:    #85737B;   /* outline variant           */
+  --er:     #BA1A1A;   /* error                     */
+  --erc:    #FFDAD6;   /* error container           */
+  --erbtn:  #BA1A1A;   /* destructive button        */
+  --erbtnh: #93000A;   /* destructive button hover  */
+  --scrim:  rgba(33, 26, 29, 0.5);      /* modal scrim   */
+  --prtint: rgba(176, 41, 92, 0.12);    /* primary tint  */
+
+  /* Legacy tokens kept so not-yet-restyled components still resolve during the
+     redesign migration. Point them at the new palette. */
+  --accent:   var(--pr);
+  --accent-r: var(--pr);
+  --purple:   var(--pr);
+  --app-bg:   var(--bg);
+
   /* Telegram fullscreen safe-area insets, written from JS (see telegram.ts).
      Default to 0 so non-fullscreen / non-Telegram layouts are unchanged. */
   --tg-safe-top:    0px;
   --tg-safe-bottom: 0px;
   --tg-safe-left:   0px;
   --tg-safe-right:  0px;
+}
+
+:root[data-theme='dark'] {
+  --bg:     #1C1216;
+  --field:  #3D2E35;
+  --sc:     #2B1F25;
+  --sch:    #3A2B32;
+  --tx:     #F2DEE4;
+  --tx2:    #CFB4BD;
+  --tx3:    rgba(207, 180, 189, 0.8);
+  --pr:     #E0537F;
+  --prh:    #EE6E95;
+  --pc:     #5E1133;
+  --pch:    #742345;
+  --onpc:   #FFD9E2;
+  --ol:     #5E4A51;
+  --ol2:    #9E8C93;
+  --er:     #FFB4AB;
+  --erc:    #4A2124;
+  --erbtn:  #D63C41;
+  --erbtnh: #E85B60;
+  --scrim:  rgba(0, 0, 0, 0.65);
+  --prtint: rgba(224, 83, 127, 0.22);
 }
 
 @layer base {
@@ -24,9 +79,9 @@
     overflow: hidden;
   }
   body {
-    background-color: var(--app-bg);
-    color: #ffffff;
-    font-family: 'Manrope', sans-serif;
+    background-color: var(--bg);
+    color: var(--tx);
+    font-family: 'Roboto', sans-serif;
     direction: ltr;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -45,7 +100,7 @@
   }
   input::placeholder,
   textarea::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--tx3);
     opacity: 1;
   }
 }
@@ -62,14 +117,15 @@
     -webkit-backdrop-filter: blur(20px);
   }
   .grad-accent {
-    background: linear-gradient(90deg, #f43f5e, #ec4067, #a855f7);
+    background: linear-gradient(90deg, var(--prh), var(--pr));
   }
-  .grad-tg {
-    background: linear-gradient(135deg, #2ea6ff, #0088cc);
-  }
+  /* Material 3 filled primary action — pill, on the primary color. */
   .btn-primary {
-    @apply w-full h-14 rounded-2xl text-white font-extrabold text-[18px] transition-opacity disabled:opacity-40;
-    background: linear-gradient(90deg, #f43f5e, #ec4067, #a855f7);
+    @apply w-full h-14 rounded-full text-white font-medium text-[16px] transition-colors disabled:opacity-40;
+    background: var(--pr);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--prh);
   }
 }
 
@@ -89,7 +145,26 @@
 .slot-d { grid-area: d; }
 .slot-e { grid-area: e; }
 
-/* Animations */
+/* ---------------------------------------------------------------------------
+   Animations — "Luma Material" motion set (from the design mockup) plus the
+   two legacy keyframes still referenced by not-yet-restyled components.
+   --------------------------------------------------------------------------- */
+@keyframes lumaSpin { to { transform: rotate(360deg); } }
+@keyframes lumaDot { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+@keyframes lumaBeat {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.12); }
+  45% { transform: scale(1.03); }
+  60% { transform: scale(1.14); }
+}
+@keyframes lumaNavPop { 0% { transform: scale(.6); } 55% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes lumaNavPill { from { transform: scaleX(.4); opacity: .4; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes lumaFloat {
+  0%   { transform: translateY(0) scale(.6) rotate(-8deg); opacity: 0; }
+  15%  { opacity: .8; }
+  100% { transform: translateY(-420px) scale(1.2) rotate(10deg); opacity: 0; }
+}
+
 @keyframes pulse-heart {
   0%, 100% { transform: scale(1);     opacity: 0.7; }
   50%       { transform: scale(1.14); opacity: 1;   }

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { Icon } from './ui/index.js'
 
 export type Photo = { id: string; url: string; position: number }
 
@@ -85,8 +86,8 @@ export function PhotoGrid({
         {sorted.map((photo) => (
           <div
             key={photo.id}
-            className={`relative aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer ${
-              selected === photo.id ? 'ring-2 ring-blue-500 opacity-70' : ''
+            className={`relative aspect-square rounded-m3-lg overflow-hidden bg-surface cursor-pointer ${
+              selected === photo.id ? 'ring-2 ring-primary opacity-70' : ''
             }`}
             onClick={() => handlePhotoTap(photo)}
           >
@@ -94,27 +95,29 @@ export function PhotoGrid({
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete(photo.id) }}
               disabled={deletingId === photo.id}
-              className="absolute top-1 left-1 bg-black/50 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center"
+              aria-label="Delete photo"
+              className="absolute top-1.5 left-1.5 text-white rounded-full w-6 h-6 flex items-center justify-center"
+              style={{ background: 'rgba(0,0,0,.5)' }}
             >
               {deletingId === photo.id
                 ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                : '✕'}
+                : <Icon name="x" size={11} strokeWidth={2.5} />}
             </button>
             {deletingId === photo.id && (
-              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,.3)' }} />
             )}
           </div>
         ))}
 
         {uploading && (
-          <div className="aspect-square rounded-xl bg-gray-100 flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="aspect-square rounded-m3-lg bg-surface flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
         {!uploading && photos.length < maxPhotos && (
-          <label className="aspect-square rounded-xl border-2 border-dashed flex items-center justify-center text-2xl cursor-pointer text-gray-400">
-            +
+          <label className="aspect-square rounded-m3-lg border-2 border-dashed border-outline bg-bg flex items-center justify-center cursor-pointer text-primary">
+            <Icon name="plus" size={22} />
             <input
               ref={inputRef}
               type="file"
@@ -127,9 +130,11 @@ export function PhotoGrid({
       </div>
 
       {error && (
-        <div role="alert" className="text-sm text-red-500 bg-red-50 rounded-xl p-3 flex justify-between items-center">
+        <div role="alert" className="text-sm text-error bg-error-container rounded-m3-md p-3 flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-2 font-bold">✕</button>
+          <button onClick={() => setError(null)} aria-label="Dismiss" className="ml-2 flex">
+            <Icon name="x" size={14} strokeWidth={2.5} />
+          </button>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Cropper from 'react-easy-crop'
 import type { Area, Point } from 'react-easy-crop'
 import { cropImage } from '../utils/cropImage.js'
+import { Button } from './ui/index.js'
 
 export interface PhotoEditorProps {
   file: File
@@ -93,41 +94,43 @@ export function PhotoEditor({ file, onCancel, onConfirm }: PhotoEditorProps) {
         />
       </div>
 
-      {error && (
-        <p role="alert" className="px-5 py-2 text-center text-sm text-rose-400 bg-black">
-          {error}
-        </p>
-      )}
+      <div className="bg-bg rounded-t-m3-xl" style={{ paddingBottom: 'calc(8px + var(--tg-safe-bottom))' }}>
+        {error && (
+          <p role="alert" className="px-5 pt-4 text-center text-sm text-error">
+            {error}
+          </p>
+        )}
 
-      <div className="flex items-center justify-between gap-3 px-5 py-4 bg-black">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={busy}
-          className="px-4 py-2 rounded-full text-white/80 text-sm font-semibold glass-dark"
-        >
-          Cancel
-        </button>
+        <div className="flex items-center justify-between gap-3 px-5 py-4">
+          <Button
+            type="button"
+            variant="text"
+            onClick={onCancel}
+            disabled={busy}
+          >
+            Cancel
+          </Button>
 
-        <button
-          type="button"
-          onClick={rotate}
-          disabled={busy}
-          aria-label="Rotate 90 degrees"
-          className="px-4 py-2 rounded-full text-white text-sm font-semibold glass-dark"
-        >
-          ↻ Rotate
-        </button>
+          <Button
+            type="button"
+            variant="tonal"
+            icon="rotate-ccw"
+            onClick={rotate}
+            disabled={busy}
+            aria-label="Rotate 90 degrees"
+          >
+            Rotate
+          </Button>
 
-        <button
-          type="button"
-          onClick={confirm}
-          disabled={busy}
-          className="px-5 py-2 rounded-full text-white text-sm font-bold"
-          style={{ background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
-        >
-          {busy ? 'Saving…' : 'Use photo'}
-        </button>
+          <Button
+            type="button"
+            variant="filled"
+            onClick={confirm}
+            disabled={busy}
+          >
+            {busy ? 'Saving…' : 'Use photo'}
+          </Button>
+        </div>
       </div>
     </div>
   )

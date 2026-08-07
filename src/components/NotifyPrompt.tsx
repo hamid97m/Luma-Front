@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { t } from '../i18n.js'
 import { api } from '../api.js'
 import { haptic, markWriteAccessDismissed, markWriteAccessPrompted, requestWriteAccess } from '../telegram.js'
+import { Button, Icon, Sheet } from './ui'
 
 interface Props {
   onDone: () => void
@@ -34,23 +35,19 @@ export function NotifyPrompt({ onDone }: Props) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4"
-      style={{ paddingBottom: 'calc(var(--tg-safe-bottom, 0px) + 1rem)' }}
-    >
-      <div className="glass border border-white/15 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
-        <div className="text-4xl mb-3">💌</div>
-        <h2 className="text-xl font-bold text-white mb-2">{t.notify.title}</h2>
-        <p className="text-white/60 mb-5 text-[15px]">{t.notify.body}</p>
-
-        <button onClick={enable} disabled={busy} className="btn-primary w-full mb-2">
-          {t.notify.enable}
-        </button>
-
-        <button onClick={dismiss} className="w-full py-3 text-white/50 font-semibold">
-          {t.notify.later}
-        </button>
+    <Sheet open onClose={dismiss}>
+      <div className="w-14 h-14 rounded-m3-lg bg-primary-container flex items-center justify-center mb-3.5">
+        <Icon name="bell" size={26} className="text-primary" />
       </div>
-    </div>
+      <h2 className="text-[22px] font-medium text-txt mb-1.5">{t.notify.title}</h2>
+      <p className="text-txt2 mb-5 text-[14px] leading-relaxed">{t.notify.body}</p>
+
+      <Button onClick={enable} disabled={busy} block size="lg" className="mb-2">
+        {t.notify.enable}
+      </Button>
+      <Button onClick={dismiss} variant="text" block size="md">
+        {t.notify.later}
+      </Button>
+    </Sheet>
   )
 }

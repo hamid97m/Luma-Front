@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
 import { haptic } from '../telegram.js'
+import { Button, IconButton, Textarea, Icon } from '../components/ui/index.js'
 import type { SupportTicketListItem, SupportMessage } from '../types.js'
 
 type View =
@@ -26,10 +27,17 @@ export function Support({ onClose }: { onClose: () => void }) {
   }, [view, onClose])
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0b0b12] flex flex-col" style={{ paddingTop: 'var(--tg-safe-top)' }}>
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
-        <button onClick={() => (view.name === 'list' ? onClose() : setView({ name: 'list' }))} className="text-white/70 text-xl">‹</button>
-        <h1 className="text-white font-extrabold text-lg">{t.support.title}</h1>
+    <div className="fixed inset-0 z-50 bg-bg text-txt flex flex-col" style={{ paddingTop: 'var(--tg-safe-top)' }}>
+      <div className="flex items-center gap-2 px-3 pt-3 pb-3 bg-surface flex-none">
+        <IconButton
+          icon="arrow-left"
+          tone="ghost"
+          aria-label="Back"
+          className="text-txt"
+          onClick={() => (view.name === 'list' ? onClose() : setView({ name: 'list' }))}
+        />
+        <span className="text-primary flex-none"><Icon name="life-buoy" size={20} /></span>
+        <h1 className="text-txt font-medium text-[20px]">{t.support.title}</h1>
       </div>
       {view.name === 'list' && <TicketList onOpen={(id) => setView({ name: 'thread', id })} onNew={() => setView({ name: 'new' })} />}
       {view.name === 'new' && <NewTicket onCreated={(id) => setView({ name: 'thread', id })} />}
@@ -46,29 +54,26 @@ function TicketList({ onOpen, onNew }: { onOpen: (id: string) => void; onNew: ()
   }, [])
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-      {tickets && tickets.length === 0 && <p className="text-white/50 text-sm text-center mt-8">{t.support.empty}</p>}
+    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5">
+      {tickets && tickets.length === 0 && <p className="text-txt2 text-sm text-center mt-8">{t.support.empty}</p>}
       {(tickets ?? []).map((tk) => (
         <button
           key={tk.id}
           onClick={() => onOpen(tk.id)}
-          className="w-full text-left glass border border-white/12 rounded-2xl p-4"
+          className="w-full text-left bg-surface rounded-m3-lg p-4 transition-colors hover:bg-surface-high"
         >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-white/50">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className={`text-[11px] font-bold uppercase tracking-widest ${tk.status === 'open' ? 'text-primary' : 'text-txt3'}`}>
               {tk.status === 'open' ? t.support.open : t.support.closed}
             </span>
-            {tk.unread && <span className="w-2.5 h-2.5 rounded-full bg-[#ec4067]" />}
+            {tk.unread && <span className="w-2.5 h-2.5 rounded-full bg-primary" />}
           </div>
-          <p className="text-white/80 text-sm truncate">{tk.preview || '…'}</p>
+          <p className="text-txt text-sm truncate">{tk.preview || '…'}</p>
         </button>
       ))}
-      <button
-        onClick={onNew}
-        className="w-full py-3 rounded-2xl bg-[#ec4067] text-white font-bold sticky bottom-2"
-      >
+      <Button variant="filled" block icon="plus" onClick={onNew} className="sticky bottom-2 mt-1">
         {t.support.newTicket}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -94,21 +99,16 @@ function NewTicket({ onCreated }: { onCreated: (id: string) => void }) {
 
   return (
     <div className="flex-1 flex flex-col p-4">
-      <textarea
+      <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         maxLength={2000}
         rows={6}
         placeholder={t.support.composePlaceholder}
-        className="w-full rounded-2xl bg-white/5 border border-white/12 p-3 text-white placeholder:text-white/40"
       />
-      <button
-        onClick={submit}
-        disabled={!body.trim() || busy}
-        className="mt-4 w-full py-3 rounded-2xl bg-[#ec4067] text-white font-bold disabled:opacity-50"
-      >
+      <Button variant="filled" block onClick={submit} disabled={!body.trim() || busy} className="mt-4">
         {busy ? '…' : t.support.submit}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -137,28 +137,26 @@ function Thread({ id }: { id: string }) {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words ${
-              m.sender === 'user' ? 'bg-[#ec4067] text-white' : 'glass border border-white/12 text-white/90'
+            <div className={`max-w-[80%] rounded-m3-lg px-3.5 py-2 text-sm whitespace-pre-wrap break-words ${
+              m.sender === 'user' ? 'bg-primary text-white' : 'bg-surface text-txt'
             }`}>
               {m.body}
             </div>
           </div>
         ))}
       </div>
-      <div className="flex gap-2 p-3 border-t border-white/10" style={{ paddingBottom: 'calc(0.75rem + var(--tg-safe-bottom, 0px))' }}>
+      <div className="flex items-center gap-2 px-3 pt-2.5 bg-surface flex-none" style={{ paddingBottom: 'calc(0.75rem + var(--tg-safe-bottom, 0px))' }}>
         <input
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           maxLength={2000}
           placeholder={t.support.replyPlaceholder}
-          className="flex-1 rounded-full bg-white/5 border border-white/12 px-4 text-white placeholder:text-white/40"
+          className="flex-1 h-11 rounded-full bg-field text-txt px-4 outline-none border border-transparent focus:border-primary transition-colors placeholder:text-txt3"
         />
-        <button onClick={send} disabled={!reply.trim() || busy} className="px-5 rounded-full bg-[#ec4067] text-white font-bold disabled:opacity-50">
-          {t.support.submit}
-        </button>
+        <IconButton icon="send" tone="primary" size={44} iconSize={18} aria-label={t.support.submit} onClick={send} disabled={!reply.trim() || busy} />
       </div>
     </div>
   )

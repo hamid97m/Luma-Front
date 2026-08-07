@@ -51,13 +51,52 @@ function writeSafeAreaVars() {
 }
 
 // ---------------------------------------------------------------------------
+// Theme — mirror Telegram's light/dark choice onto the document so the CSS
+// token layer (index.css) flips, and paint Telegram's own chrome (header,
+// background, bottom bar) to match our resolved app background. Reacts live to
+// the client's `themeChanged` event.
+// ---------------------------------------------------------------------------
+export function applyTheme() {
+  const wa = webApp()
+  // Fall back to the OS preference when running outside Telegram (browser dev).
+  const scheme: 'light' | 'dark' =
+    wa?.colorScheme ??
+    (typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light')
+
+  const root = document.documentElement
+  if (scheme === 'dark') root.dataset.theme = 'dark'
+  else delete root.dataset.theme
+
+  if (!wa) return
+  // Resolve the app background token now that data-theme is set, and hand it to
+  // Telegram so its floating header / status bar / bottom bar blend with us.
+  const bg =
+    getComputedStyle(root).getPropertyValue('--bg').trim() ||
+    (scheme === 'dark' ? '#1C1216' : '#FFF8F8')
+  wa.setBackgroundColor?.(bg)
+  wa.setHeaderColor?.(bg)
+  wa.setBottomBarColor?.(bg)
+}
+
+// ---------------------------------------------------------------------------
 // One-time app init — call once on mount.
 // ---------------------------------------------------------------------------
 export function initTelegram() {
   const wa = webApp()
-  if (!wa) return
+  if (!wa) {
+    // Still honor the OS color scheme in browser/dev so the redesign is testable.
+    applyTheme()
+    return
+  }
   wa.ready?.()
   wa.expand?.()
+
+  // Light/dark: apply now and follow the client's theme changes live.
+  applyTheme()
+  wa.onEvent?.('themeChanged', applyTheme)
 
   // Lock vertical swipes so dragging a card can't accidentally minimize the
   // Mini App (Bot API 7.7+).

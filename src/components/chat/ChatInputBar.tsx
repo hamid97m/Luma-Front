@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { t } from '../../i18n.js'
 import { haptic, mainButtonSupported } from '../../telegram.js'
+import { IconButton, Icon } from '../ui/index.js'
 
 const MAX_LENGTH = 2000
 const COUNTER_THRESHOLD = 1800
@@ -46,41 +47,41 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
 
   return (
     <div
-      className="p-4 border-t border-white/10 flex flex-col gap-1"
+      className="px-3 pt-2.5 bg-surface flex flex-col gap-1"
       style={{ paddingBottom: 'calc(max(var(--tg-safe-bottom), env(safe-area-inset-bottom)) + 16px)' }}
     >
       {editingBody != null && (
         <div className="flex items-center gap-2 pb-1">
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-white/80">{t.chat.editingMessage}</p>
-            <p className="text-[12px] text-white/50 truncate">{editingBody}</p>
+          <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
+            <p className="text-[11px] font-bold text-primary">{t.chat.editingMessage}</p>
+            <p className="text-[12px] text-txt2 truncate">{editingBody}</p>
           </div>
           <button
             onClick={onCancelEdit}
             aria-label={t.chat.cancelAction}
-            className="text-white/50 text-xl leading-none px-1"
+            className="text-txt2 p-1 flex-none"
           >
-            ✕
+            <Icon name="x" size={16} strokeWidth={2.4} />
           </button>
         </div>
       )}
       {editingBody == null && replyingToBody != null && (
         <div className="flex items-center gap-2 pb-1">
-          <div className="flex-1 min-w-0 border-l-2 border-white/40 pl-2">
-            <p className="text-[11px] font-bold text-white/80">{t.chat.replyingLabel}</p>
-            <p className="text-[12px] text-white/50 truncate">{replyingToBody}</p>
+          <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
+            <p className="text-[11px] font-bold text-primary">{t.chat.replyingLabel}</p>
+            <p className="text-[12px] text-txt2 truncate">{replyingToBody}</p>
           </div>
           <button
             onClick={onCancelReply}
             aria-label={t.chat.cancelAction}
-            className="text-white/50 text-xl leading-none px-1"
+            className="text-txt2 p-1 flex-none"
           >
-            ✕
+            <Icon name="x" size={16} strokeWidth={2.4} />
           </button>
         </div>
       )}
       {draft.length >= COUNTER_THRESHOLD && (
-        <p className="text-[11px] text-white/40 text-right">{MAX_LENGTH - draft.length}</p>
+        <p className="text-[11px] text-txt3 text-right">{MAX_LENGTH - draft.length}</p>
       )}
       <div className="flex items-end gap-2">
         <button
@@ -90,9 +91,9 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
             haptic.selection()
             onGiftClick?.()
           }}
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 text-lg"
+          className="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center flex-none transition-colors hover:brightness-95"
         >
-          🎁
+          <Icon name="gift" size={18} />
         </button>
         <textarea
           ref={boxRef}
@@ -107,18 +108,17 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
             }
           }}
           placeholder={t.chat.placeholder}
-          className="flex-1 bg-white/10 rounded-[16px] px-4 py-2 text-white text-[15px] outline-none resize-none"
+          className="flex-1 bg-field text-txt text-[15px] rounded-[22px] px-4 py-2.5 outline-none resize-none border border-transparent focus:border-primary transition-colors placeholder:text-txt3"
         />
         {!mainButtonSupported() && !!draft.trim() && (
-          <button
+          <IconButton
             aria-label={editingBody != null ? t.chat.save : t.chat.send}
             onClick={onSend}
-            className="grad-tg w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M3 11.5L21 3l-8.5 18-2.5-7-7-2.5z" fill="white" />
-            </svg>
-          </button>
+            icon="send"
+            tone="primary"
+            size={44}
+            iconSize={18}
+          />
         )}
       </div>
     </div>

@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { IntrosSection } from '../components/gifts/IntrosSection.js'
+import { Avatar, Badge, Icon } from '../components/ui/index.js'
 import type { Match } from '../types.js'
-
-const PaperPlaneSVG = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-  </svg>
-)
 
 function formatDate(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
@@ -67,43 +62,31 @@ export function Matches({ onOpenChat, refreshKey }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <h1 className="text-2xl font-extrabold px-5 pt-12 pb-5 text-white">
-        Matches 💬
-      </h1>
+    <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt">
+      <h1 className="text-2xl font-medium px-5 pt-12 pb-4 text-txt">Matches</h1>
 
       <IntrosSection onOpenChat={openChatById} refreshKey={refreshKey} />
 
       {matches.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center p-8">
-          <div className="text-[72px]">💫</div>
-          <h2 className="text-xl font-extrabold text-white">No matches yet</h2>
-          <p className="text-[15px] text-white/50">Keep swiping to find your match!</p>
+          <div className="w-20 h-20 rounded-full bg-surface flex items-center justify-center text-primary">
+            <Icon name="message" size={36} />
+          </div>
+          <h2 className="text-xl font-medium text-txt">No matches yet</h2>
+          <p className="text-[15px] text-txt2">Keep swiping to find your match!</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 px-4 pb-6">
+        <div className="flex flex-col gap-2 px-4 pb-6">
           {matches.map((match) => (
             <div
               key={match.id}
-              className="glass border border-white/12 rounded-[24px] shadow-2xl flex items-center gap-4 p-4"
+              className="bg-surface rounded-m3-lg flex items-center gap-3 px-3.5 py-3"
             >
               {/* Avatar */}
-              <div className="relative flex-shrink-0">
-                {match.user.photos[0]
-                  ? <img
-                      src={match.user.photos[0]}
-                      alt={match.user.name}
-                      className="w-16 h-16 rounded-full object-cover ring-2 ring-white/20"
-                    />
-                  : <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl ring-2 ring-white/20">
-                      👤
-                    </div>
-                }
+              <div className="relative flex-none">
+                <Avatar src={match.user.photos[0]} alt={match.user.name} size={56} />
                 {isNewMatch(match.matchedAt) && (
-                  <span
-                    className="absolute -top-1 -right-1 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full"
-                    style={{ background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
-                  >
+                  <span className="absolute -top-1 -right-1.5 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary">
                     NEW
                   </span>
                 )}
@@ -111,35 +94,27 @@ export function Matches({ onOpenChat, refreshKey }: Props) {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-[18px] text-white truncate">{match.user.name}</p>
-                <p className="text-[14px] text-white/55 truncate">
-                  {match.lastMessage ? match.lastMessage.body : 'Say hi! 👋'}
+                <p className="font-medium text-[16px] text-txt truncate">{match.user.name}</p>
+                <p className="text-[13px] text-txt2 truncate">
+                  {match.lastMessage ? match.lastMessage.body : 'Say hi!'}
                 </p>
               </div>
 
               {/* Time + unread */}
-              <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <p className="text-[11px] text-white/40">
+              <div className="flex flex-col items-end gap-1 flex-none">
+                <p className="text-[11px] text-txt3">
                   {formatDate(match.lastMessage ? match.lastMessage.createdAt : match.matchedAt)}
                 </p>
-                {match.unreadCount > 0 && (
-                  <span
-                    className="text-white text-[11px] font-extrabold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center"
-                    style={{ background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
-                  >
-                    {match.unreadCount}
-                  </span>
-                )}
+                {match.unreadCount > 0 && <Badge>{match.unreadCount}</Badge>}
               </div>
 
-              {/* Chat button */}
+              {/* Open chat */}
               <button
                 onClick={() => onOpenChat(match)}
-                className="grad-tg text-white text-[14px] font-bold px-4 py-2 rounded-[16px] flex items-center gap-2 flex-shrink-0"
-                style={{ boxShadow: '0 8px 22px rgba(0,136,204,.45)' }}
+                aria-label="Open chat"
+                className="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center flex-none transition-colors hover:brightness-95"
               >
-                <PaperPlaneSVG />
-                Chat
+                <Icon name="message" size={18} />
               </button>
             </div>
           ))}

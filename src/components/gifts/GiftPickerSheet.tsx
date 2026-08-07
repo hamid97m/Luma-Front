@@ -3,6 +3,7 @@ import { api } from '../../api.js'
 import { t } from '../../i18n.js'
 import { openInvoice, haptic } from '../../telegram.js'
 import type { GiftCatalogItem } from '../../types.js'
+import { Button, Icon, Sheet, Textarea } from '../ui'
 
 interface GiftPickerSheetProps {
   open: boolean
@@ -174,81 +175,84 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
   const selectedGift = gifts?.find((g) => g.giftId === selectedGiftId) ?? null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4" onClick={handleClose}>
-      <div
-        className="glass border border-white/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl max-h-[85vh] overflow-y-auto"
-        style={{ paddingBottom: 'calc(1.5rem + var(--tg-safe-bottom, 0px))' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-extrabold text-white">{t.gifts.title(recipientName)}</h2>
-          <button onClick={handleClose} aria-label={t.gifts.close} className="text-white/50 text-2xl leading-none">
-            ✕
-          </button>
+    <Sheet open onClose={handleClose} title={t.gifts.title(recipientName)}>
+      {phase === 'refunded' && (
+        <p className="text-error text-[14px] mb-4">{t.gifts.refunded}</p>
+      )}
+      {phase === 'error' && (
+        <p className="text-error text-[14px] mb-4">{t.gifts.error}</p>
+      )}
+
+      {phase === 'sending' ? (
+        <div className="flex flex-col items-center justify-center py-10">
+          <div
+            className="w-7 h-7 border-[3px] border-primary-container border-t-primary rounded-full mb-3"
+            style={{ animation: 'lumaSpin .8s linear infinite' }}
+          />
+          <p className="text-txt2 text-[14px]">{t.gifts.sending}</p>
         </div>
-
-        {phase === 'refunded' && (
-          <p className="text-rose-400 text-[14px] mb-4">{t.gifts.refunded}</p>
-        )}
-        {phase === 'error' && (
-          <p className="text-rose-400 text-[14px] mb-4">{t.gifts.error}</p>
-        )}
-
-        {phase === 'sending' ? (
-          <div className="flex flex-col items-center justify-center py-10">
-            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-white/70 text-[14px]">{t.gifts.sending}</p>
+      ) : gifts === null ? (
+        <div className="flex items-center justify-center py-10">
+          <div
+            className="w-7 h-7 border-[3px] border-primary-container border-t-primary rounded-full"
+            style={{ animation: 'lumaSpin .8s linear infinite' }}
+          />
+        </div>
+      ) : gifts.length === 0 ? (
+        <p className="text-txt2 text-[14px] text-center py-10">{t.gifts.unavailable}</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-2 mb-3.5 max-h-[40vh] overflow-y-auto">
+            {gifts.map((gift) => {
+              const selected = gift.giftId === selectedGiftId
+              return (
+                <button
+                  key={gift.giftId}
+                  type="button"
+                  onClick={() => selectGift(gift)}
+                  disabled={busy}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-m3-md p-3 transition-colors disabled:opacity-50 ${
+                    selected ? 'bg-primary-container text-on-primary-container' : 'bg-surface text-txt2'
+                  }`}
+                >
+                  {gift.emoji ? (
+                    <span className="text-3xl">{gift.emoji}</span>
+                  ) : (
+                    <Icon name="gift" size={30} />
+                  )}
+                  <span className="text-[12px] font-medium flex items-center gap-1">
+                    <Icon name="star" size={13} className="text-primary" />
+                    {gift.chargedStars}
+                  </span>
+                </button>
+              )
+            })}
           </div>
-        ) : gifts === null ? (
-          <div className="flex items-center justify-center py-10">
-            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : gifts.length === 0 ? (
-          <p className="text-white/60 text-[14px] text-center py-10">{t.gifts.unavailable}</p>
-        ) : (
-          <>
-            <div className="grid grid-cols-3 gap-3 mb-4 max-h-[40vh] overflow-y-auto">
-              {gifts.map((gift) => {
-                const selected = gift.giftId === selectedGiftId
-                return (
-                  <button
-                    key={gift.giftId}
-                    type="button"
-                    onClick={() => selectGift(gift)}
-                    disabled={busy}
-                    className={`flex flex-col items-center justify-center gap-1 rounded-2xl border p-3 transition-colors disabled:opacity-50 ${
-                      selected ? 'border-[#ec4067] bg-[#ec4067]/15' : 'border-white/12 bg-white/5'
-                    }`}
-                  >
-                    <span className="text-3xl">{gift.emoji ?? '🎁'}</span>
-                    <span className="text-white/80 text-[12px] font-semibold">⭐ {gift.chargedStars}</span>
-                  </button>
-                )
-              })}
-            </div>
 
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              maxLength={128}
-              placeholder={t.gifts.notePlaceholder}
-              rows={2}
-              disabled={busy}
-              className="w-full rounded-2xl bg-white/5 border border-white/12 p-3 text-[14px] text-white placeholder:text-white/40 mb-4 disabled:opacity-50"
-            />
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            maxLength={128}
+            placeholder={t.gifts.notePlaceholder}
+            rows={2}
+            disabled={busy}
+            className="mb-3.5"
+          />
 
-            <button onClick={handleSend} disabled={!selectedGift || busy} className="btn-primary flex items-center justify-center gap-2">
-              {busy ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : selectedGift ? (
-                t.gifts.send(selectedGift.emoji ?? '🎁', selectedGift.chargedStars)
-              ) : (
-                t.gifts.selectPrompt
-              )}
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+          <Button onClick={handleSend} disabled={!selectedGift || busy} block size="lg">
+            {busy ? (
+              <span
+                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                style={{ animation: 'lumaSpin .8s linear infinite' }}
+              />
+            ) : selectedGift ? (
+              t.gifts.send(selectedGift.emoji ?? '🎁', selectedGift.chargedStars)
+            ) : (
+              t.gifts.selectPrompt
+            )}
+          </Button>
+        </>
+      )}
+    </Sheet>
   )
 }

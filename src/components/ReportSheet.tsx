@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
 import { haptic } from '../telegram.js'
+import { Button, Icon, Sheet, Textarea } from './ui'
 
 const REASONS = ['fake', 'inappropriate', 'harassment', 'spam', 'other'] as const
 type Reason = (typeof REASONS)[number]
@@ -47,19 +48,20 @@ export function ReportSheet({ reportedUserId, context, matchId, onClose, onSubmi
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4" onClick={onClose}>
-      <div
-        className="glass border border-white/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl"
-        style={{ paddingBottom: 'calc(1.5rem + var(--tg-safe-bottom, 0px))' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-extrabold text-white">{t.report.title}</h2>
-          <button onClick={onClose} aria-label={t.report.cancel} className="text-white/50 text-2xl leading-none">✕</button>
-        </div>
-
-        <div className="space-y-2 mb-4">
-          {REASONS.map((r) => (
+    <Sheet
+      open
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2.5">
+          <Icon name="flag" size={20} className="text-error" />
+          {t.report.title}
+        </span>
+      }
+    >
+      <div className="flex flex-col gap-2 mb-3.5">
+        {REASONS.map((r) => {
+          const selected = reason === r
+          return (
             <button
               key={r}
               type="button"
@@ -67,37 +69,41 @@ export function ReportSheet({ reportedUserId, context, matchId, onClose, onSubmi
                 haptic.selection()
                 setReason(r)
               }}
-              className={`w-full text-left px-4 py-3 rounded-2xl border transition-colors ${
-                reason === r
-                  ? 'border-[#ec4067] bg-[#ec4067]/15 text-white'
-                  : 'border-white/12 bg-white/5 text-white/80'
+              className={`w-full flex items-center justify-between gap-2 text-left px-4 py-3 rounded-m3-md transition-colors ${
+                selected
+                  ? 'bg-primary-container text-on-primary-container'
+                  : 'bg-surface text-txt2'
               }`}
             >
-              {REASON_LABEL[r]}
+              <span className="text-[14px]">{REASON_LABEL[r]}</span>
+              {selected && <Icon name="check" size={18} className="flex-none" />}
             </button>
-          ))}
-        </div>
-
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          maxLength={500}
-          placeholder={t.report.notePlaceholder}
-          rows={2}
-          className="w-full rounded-2xl bg-white/5 border border-white/12 p-3 text-[14px] text-white placeholder:text-white/40 mb-4"
-        />
-
-        <button
-          onClick={submit}
-          disabled={!reason || busy}
-          className="w-full py-3 rounded-2xl bg-rose-500 text-white font-bold mb-3 disabled:opacity-50"
-        >
-          {busy ? '…' : t.report.submit}
-        </button>
-        <button onClick={onClose} disabled={busy} className="w-full py-3 text-white/50 font-semibold">
-          {t.report.cancel}
-        </button>
+          )
+        })}
       </div>
-    </div>
+
+      <Textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        maxLength={500}
+        placeholder={t.report.notePlaceholder}
+        rows={2}
+        className="mb-3.5"
+      />
+
+      <Button
+        onClick={submit}
+        disabled={!reason || busy}
+        variant="destructive"
+        block
+        size="lg"
+        className="mb-2"
+      >
+        {busy ? '…' : t.report.submit}
+      </Button>
+      <Button onClick={onClose} disabled={busy} variant="text" block>
+        {t.report.cancel}
+      </Button>
+    </Sheet>
   )
 }

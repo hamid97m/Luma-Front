@@ -80,6 +80,11 @@ interface TelegramWebApp {
   ready: () => void
   expand: () => void
   close: () => void
+  // Chrome color controls — accept a hex string; the *_color variants also
+  // accept a theme-param keyword. Absent on older clients.
+  setHeaderColor?: (color: string) => void
+  setBackgroundColor?: (color: string) => void
+  setBottomBarColor?: (color: string) => void
   showAlert: (message: string, callback?: () => void) => void
   onEvent: (event: string, callback: () => void) => void
   offEvent: (event: string, callback: () => void) => void

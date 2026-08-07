@@ -3,6 +3,7 @@ import { api } from '../../api.js'
 import { haptic } from '../../telegram.js'
 import { t } from '../../i18n.js'
 import type { GiftIntro } from '../../types.js'
+import { Avatar, Button, Card, Icon } from '../ui'
 
 interface Props {
   /** Opens the chat for a matchId, reusing the Matches screen's existing navigation. */
@@ -14,7 +15,10 @@ type BusyAction = 'accept' | 'dismiss'
 type Busy = { id: string; action: BusyAction } | null
 
 const Spinner = () => (
-  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+  <span
+    className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+    style={{ animation: 'lumaSpin .8s linear infinite' }}
+  />
 )
 
 export function IntrosSection({ onOpenChat, refreshKey }: Props) {
@@ -65,65 +69,56 @@ export function IntrosSection({ onOpenChat, refreshKey }: Props) {
 
   return (
     <div className="flex flex-col gap-3 px-4 pt-4">
-      <h2 className="text-[13px] font-bold uppercase tracking-widest text-white/50 px-1">
+      <h2 className="text-[13px] font-bold uppercase tracking-widest text-txt2 px-1">
         {t.gifts.introsTitle}
       </h2>
 
-      {error && <p className="text-rose-400 text-[13px] px-1">{error}</p>}
+      {error && <p className="text-error text-[13px] px-1">{error}</p>}
 
       {intros.map((intro) => {
         const isBusy = busy?.id === intro.id
         const disabled = busy !== null
 
         return (
-          <div
-            key={intro.id}
-            className="glass border border-white/12 rounded-[24px] shadow-2xl flex flex-col gap-3 p-4"
-          >
+          <Card key={intro.id} variant="filled" elevated className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              {intro.buyer.photo
-                ? <img
-                    src={intro.buyer.photo}
-                    alt={intro.buyer.name}
-                    className="w-14 h-14 rounded-full object-cover ring-2 ring-white/20"
-                  />
-                : <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl ring-2 ring-white/20">
-                    👤
-                  </div>
-              }
+              <Avatar src={intro.buyer.photo} size={56} alt={intro.buyer.name} />
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-[16px] text-white truncate">{intro.buyer.name}</p>
-                <p className="text-[13px] text-white/55">{t.gifts.introSubtitle}</p>
+                <p className="font-medium text-[16px] text-txt truncate">{intro.buyer.name}</p>
+                <p className="text-[13px] text-txt2">{t.gifts.introSubtitle}</p>
               </div>
-              <span className="text-3xl flex-shrink-0">{intro.emoji ?? '🎁'}</span>
+              {intro.emoji ? (
+                <span className="text-3xl flex-shrink-0">{intro.emoji}</span>
+              ) : (
+                <Icon name="gift" size={28} className="text-primary flex-shrink-0" />
+              )}
             </div>
 
             {intro.note && (
-              <p className="text-white/80 text-[14px] border border-white/10 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,.06)' }}>
+              <p className="text-txt text-[14px] rounded-m3-md p-3 bg-surface-high">
                 {intro.note}
               </p>
             )}
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                variant="tonal"
                 onClick={() => handleDismiss(intro)}
                 disabled={disabled}
-                className="flex-1 flex items-center justify-center rounded-[16px] bg-white/10 border border-white/15 py-2.5 text-white/80 font-semibold text-[14px] disabled:opacity-50"
+                className="flex-1"
               >
                 {isBusy && busy?.action === 'dismiss' ? <Spinner /> : t.gifts.dismiss}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="filled"
                 onClick={() => handleAccept(intro)}
                 disabled={disabled}
-                className="flex-1 grad-tg flex items-center justify-center text-white font-bold text-[14px] py-2.5 rounded-[16px] disabled:opacity-50"
-                style={{ boxShadow: '0 8px 22px rgba(0,136,204,.45)' }}
+                className="flex-1"
               >
                 {isBusy && busy?.action === 'accept' ? <Spinner /> : t.gifts.accept}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         )
       })}
     </div>

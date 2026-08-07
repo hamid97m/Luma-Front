@@ -5,6 +5,7 @@ import type { UserProfile } from '../types.js'
 import { SettingsSheet } from '../components/SettingsSheet.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
 import { PremiumCard } from '../components/premium/PremiumCard.js'
+import { Card, IconButton, Icon } from '../components/ui/index.js'
 
 const ALL_TAGS = [
   '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
@@ -24,23 +25,17 @@ const PROMPTS = [
 
 const SLOT_IDS = ['p', 'a', 'b', 'c', 'd', 'e'] as const
 
-const VerifiedSVG = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ea6ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline ml-1">
-    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-  </svg>
-)
-
 function InfoCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="glass border border-white/12 rounded-[24px] p-4">
+    <Card variant="filled" className="rounded-m3-lg">
       {children}
-    </div>
+    </Card>
   )
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest mb-1">{children}</p>
+    <p className="text-[11px] font-medium text-txt2 tracking-wide mb-1.5 flex items-center gap-1.5">{children}</p>
   )
 }
 
@@ -156,25 +151,25 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto pb-6">
-      <div className="flex items-center justify-between px-5 pt-12 pb-5">
-        <h1 className="text-2xl font-extrabold text-white">My Profile 👤</h1>
-        <button
+      <div className="flex items-center justify-between px-5 pt-12 pb-4">
+        <h1 className="text-2xl font-medium text-txt">My Profile</h1>
+        <IconButton
+          icon="settings"
           onClick={() => setSettingsOpen(true)}
           aria-label="Settings"
-          className="text-2xl text-white/60"
-        >
-          ⚙️
-        </button>
+          tone="surface"
+          iconSize={18}
+        />
       </div>
 
-      <div className="flex flex-col gap-4 px-4">
+      <div className="flex flex-col gap-3 px-4">
 
         {/* Photo grid */}
         <div className="photo-grid">
           {SLOT_IDS.map((slotId, i) => {
             const photo = photos[i]
             return (
-              <div key={slotId} className={`slot-${slotId} relative rounded-2xl overflow-hidden`}>
+              <div key={slotId} className={`slot-${slotId} relative rounded-m3-md overflow-hidden`}>
                 {photo ? (
                   <>
                     <img
@@ -184,7 +179,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                       className="w-full h-full object-cover cursor-pointer"
                     />
                     {slotId === 'p' && (
-                      <span className="absolute bottom-2 left-2 glass-dark text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <span className="absolute bottom-2 left-2 text-white text-[10px] font-medium px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(6px)' }}>
                         Primary
                       </span>
                     )}
@@ -192,37 +187,38 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                       onClick={() => handlePhotoDelete(photo.id)}
                       disabled={deletingId === photo.id}
                       aria-label="Delete photo"
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center"
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full text-white flex items-center justify-center"
+                      style={{ background: 'rgba(0,0,0,.5)' }}
                     >
                       {deletingId === photo.id
                         ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        : '✕'}
+                        : <Icon name="x" size={11} strokeWidth={2.5} />}
                     </button>
                     {deletingId === photo.id && (
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,.45)' }}>
                         <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
                   </>
                 ) : uploading?.slotId === slotId ? (
-                  <div className="w-full h-full border-2 border-dashed border-white/25 rounded-2xl flex flex-col items-center justify-center gap-2 px-4">
+                  <div className="w-full h-full bg-surface rounded-m3-md flex flex-col items-center justify-center gap-2 px-4">
                     {uploading.phase === 'processing' ? (
-                      <span className="text-[11px] text-white/50 animate-pulse">Resizing…</span>
+                      <span className="text-[11px] text-primary font-medium animate-pulse">Resizing…</span>
                     ) : (
                       <>
-                        <div className="w-full h-1.5 rounded-full bg-white/15 overflow-hidden">
+                        <div className="w-full h-1 rounded-full bg-surface-high overflow-hidden">
                           <div
-                            className="h-full rounded-full transition-[width]"
-                            style={{ width: `${uploading.progress}%`, background: 'linear-gradient(90deg,#f43f5e,#ec4067)' }}
+                            className="h-full rounded-full bg-primary transition-[width]"
+                            style={{ width: `${uploading.progress}%` }}
                           />
                         </div>
-                        <span className="text-[11px] text-white/50">{uploading.progress}%</span>
+                        <span className="text-[11px] text-txt2">{uploading.progress}%</span>
                       </>
                     )}
                   </div>
                 ) : (
-                  <label className={`w-full h-full border-2 border-dashed border-white/25 rounded-2xl flex items-center justify-center ${uploading ? 'opacity-40' : 'cursor-pointer'}`}>
-                    <span className="text-2xl text-white/40">＋</span>
+                  <label className={`w-full h-full border-2 border-dashed border-outline rounded-m3-md bg-bg flex items-center justify-center text-primary ${uploading ? 'opacity-40' : 'cursor-pointer'}`}>
+                    <Icon name="plus" size={22} />
                     <input
                       type="file"
                       accept="image/*"
@@ -241,12 +237,12 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
 
         {/* Name */}
         <InfoCard>
-          <FieldLabel>NAME <VerifiedSVG /></FieldLabel>
+          <FieldLabel>Name <Icon name="verified" size={13} className="text-primary" /></FieldLabel>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={() => save({ name })}
-            className="w-full text-[20px] font-bold border-b border-white/20 focus:border-[#ec4067] outline-none pb-1 transition-colors"
+            className="w-full text-[18px] font-medium bg-transparent text-txt border-b border-outline focus:border-primary outline-none pb-1.5 transition-colors"
           />
         </InfoCard>
 
@@ -254,23 +250,23 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
         <InfoCard>
           <div className="flex gap-4">
             <div className="flex-1">
-              <FieldLabel>AGE</FieldLabel>
+              <FieldLabel>Age</FieldLabel>
               <input
                 type="number"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 onBlur={() => { const n = Number(age); if (n >= 18 && n <= 99) save({ age: n }) }}
-                className="w-full text-[20px] font-bold border-b border-white/20 focus:border-[#ec4067] outline-none pb-1 transition-colors"
+                className="w-full text-[18px] font-medium bg-transparent text-txt border-b border-outline focus:border-primary outline-none pb-1.5 transition-colors"
               />
             </div>
             <div className="flex-1">
-              <FieldLabel>LOCATION</FieldLabel>
+              <FieldLabel>Location</FieldLabel>
               <input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 onBlur={() => save({ location: location || null })}
                 placeholder="City"
-                className="w-full text-[20px] font-bold border-b border-white/20 focus:border-[#ec4067] outline-none pb-1 transition-colors"
+                className="w-full text-[18px] font-medium bg-transparent text-txt placeholder:text-txt3 border-b border-outline focus:border-primary outline-none pb-1.5 transition-colors"
               />
             </div>
           </div>
@@ -278,16 +274,17 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
 
         {/* Interests */}
         <InfoCard>
-          <FieldLabel>INTERESTS</FieldLabel>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <FieldLabel>Interests</FieldLabel>
+          <div className="flex flex-wrap gap-1.5 mt-2.5">
             {tags.map((tag) => (
-              <span key={tag} className="glass border border-white/20 rounded-full px-4 py-2 text-sm flex items-center gap-1 text-white/90">
+              <span key={tag} className="bg-primary-container text-on-primary-container rounded-m3-sm px-2.5 py-[7px] text-[13px] font-medium flex items-center gap-1.5">
                 {tag}
                 <button
                   onClick={() => removeTag(tag)}
-                  className="text-white/40 hover:text-white ml-1 leading-none"
+                  aria-label="Remove"
+                  className="text-on-primary-container/60 hover:text-on-primary-container leading-none flex"
                 >
-                  ✕
+                  <Icon name="x" size={11} strokeWidth={2.5} />
                 </button>
               </span>
             ))}
@@ -295,7 +292,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
               <button
                 key={tag}
                 onClick={() => addTag(tag)}
-                className="border-2 border-dashed border-white/25 rounded-full px-4 py-2 text-sm text-white/50 transition-all hover:border-white/50"
+                className="border border-outline rounded-m3-sm px-2.5 py-[7px] text-[13px] text-txt2 transition-colors hover:bg-primary-container hover:text-on-primary-container hover:border-transparent"
               >
                 {tag}
               </button>
@@ -305,7 +302,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                 if (tagPicker) save({ interests: tags })
                 setTagPicker((v) => !v)
               }}
-              className="border-2 border-dashed border-white/30 rounded-full px-4 py-2 text-sm text-white/60"
+              className="border border-dashed border-primary text-primary rounded-m3-sm px-2.5 py-[7px] text-[13px] font-medium"
             >
               {tagPicker ? '− Done' : '+ Add'}
             </button>
@@ -314,7 +311,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
 
         {/* About me */}
         <InfoCard>
-          <FieldLabel>ABOUT ME</FieldLabel>
+          <FieldLabel>About me</FieldLabel>
           <textarea
             rows={4}
             maxLength={200}
@@ -322,31 +319,22 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             onChange={(e) => setBio(e.target.value)}
             onBlur={() => save({ bio: bio.trim() || null })}
             placeholder="Tell people about yourself…"
-            className="w-full resize-none outline-none text-[15px] text-white/90 mt-1"
+            className="w-full resize-none outline-none bg-transparent text-[14px] text-txt placeholder:text-txt3 mt-1.5 leading-relaxed"
           />
-          <p className="text-right text-[11px] text-white/35 mt-1">{bio.length}/200</p>
+          <p className="text-right text-[11px] text-txt3 mt-1">{bio.length}/200</p>
         </InfoCard>
 
         {/* Icebreaker */}
-        <div
-          className="rounded-[24px] p-4 border border-[#ec4067]/40"
-          style={{ background: 'rgba(236,64,103,.08)' }}
-        >
-          {/* Gradient strip */}
-          <div
-            className="h-1 rounded-full mb-4 -mx-4 -mt-4"
-            style={{ background: 'linear-gradient(90deg,#f43f5e,#ec4067,#a855f7)' }}
-          />
-          <FieldLabel>ICEBREAKER</FieldLabel>
+        <div className="rounded-m3-lg p-4 bg-primary-container text-on-primary-container">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-on-primary-container">Icebreaker</p>
           <select
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onBlur={() => save({ icebreaker_prompt: prompt })}
-            className="w-full text-[15px] font-semibold text-white mt-1 mb-3 outline-none cursor-pointer"
-            style={{ background: 'transparent' }}
+            className="w-full text-[15px] font-medium text-on-primary-container mt-2 mb-2.5 outline-none cursor-pointer bg-transparent border-none"
           >
             {PROMPTS.map((p) => (
-              <option key={p} value={p} style={{ background: '#1a1024', color: 'white' }}>{p}</option>
+              <option key={p} value={p}>{p}</option>
             ))}
           </select>
           <textarea
@@ -356,9 +344,9 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             onChange={(e) => setAnswer(e.target.value)}
             onBlur={() => save({ icebreaker_answer: answer.trim() || null })}
             placeholder="Your answer…"
-            className="w-full resize-none outline-none text-[14px] text-white/80 border-t border-white/15 pt-3"
+            className="w-full resize-none outline-none bg-transparent text-[13px] text-on-primary-container placeholder:text-on-primary-container/50 border-t border-on-primary-container/20 pt-2.5 leading-relaxed"
           />
-          <p className="text-right text-[11px] text-white/35 mt-1">{answer.length}/140</p>
+          <p className="text-right text-[11px] text-on-primary-container/50 mt-1">{answer.length}/140</p>
         </div>
 
       </div>

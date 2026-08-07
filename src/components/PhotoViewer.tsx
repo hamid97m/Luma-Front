@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { haptic } from '../telegram.js'
+import { Icon } from './ui/index.js'
 
 interface Props {
   photos: string[]
@@ -294,9 +295,9 @@ export function PhotoViewer({ photos, initialIndex, alt, onClose }: Props) {
           type="button"
           onClick={() => onClose(idx)}
           aria-label="Close"
-          className="w-9 h-9 rounded-full glass-dark flex items-center justify-center text-white/90 text-[18px]"
+          className="w-9 h-9 rounded-full glass-dark flex items-center justify-center text-white/90"
         >
-          ✕
+          <Icon name="x" size={18} strokeWidth={2.5} />
         </button>
       </div>
 

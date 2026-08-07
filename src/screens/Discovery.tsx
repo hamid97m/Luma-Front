@@ -6,6 +6,7 @@ import { MatchPopup } from '../components/MatchPopup.js'
 import { NotifyPrompt } from '../components/NotifyPrompt.js'
 import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
 import { shouldPromptWriteAccess } from '../telegram.js'
+import { Icon } from '../components/ui/index.js'
 import type { DiscoveryProfile, SwipeResult, Match } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
@@ -75,18 +76,20 @@ export function Discovery({ onOpenChat }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <img src="/luma-icon.png" alt="" className="w-14 h-14 rounded-2xl animate-pulse-heart select-none" />
+      <div className="flex items-center justify-center h-full bg-bg text-txt">
+        <img src="/luma-icon.png" alt="" className="w-14 h-14 rounded-m3-lg animate-pulse-heart select-none" />
       </div>
     )
   }
 
   if (exhausted && queue.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
-        <div className="text-5xl">🕊️</div>
-        <h2 className="text-xl font-bold">{t.discovery.empty}</h2>
-        <p className="opacity-60">{t.discovery.emptyHint}</p>
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8 bg-bg text-txt">
+        <div className="w-[72px] h-[72px] rounded-m3-xl bg-primary-container text-primary flex items-center justify-center">
+          <Icon name="flame" size={32} />
+        </div>
+        <h2 className="text-[22px] font-medium">{t.discovery.empty}</h2>
+        <p className="text-txt2 text-[14px]">{t.discovery.emptyHint}</p>
       </div>
     )
   }
