@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus } from './types.js'
 import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
@@ -88,7 +88,7 @@ export const api = {
   },
   discovery: {
     feed: () =>
-      request<{ profiles: DiscoveryProfile[]; exhausted: boolean }>('/discovery'),
+      request<{ profiles: DiscoveryProfile[]; exhausted: boolean; swipeLimit?: SwipeLimitStatus }>('/discovery'),
   },
   swipes: {
     swipe: (targetUserId: string, direction: 'like' | 'pass') =>

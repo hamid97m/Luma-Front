@@ -1,6 +1,15 @@
 export const t = {
   appName: 'Luma',
   welcomeSubtitle: 'Find your person',
+  splash: {
+    messages: [
+      'Find your person',
+      'Real photos only — every profile is verified',
+      '8 out of 10 members end up matching',
+      'Your chats stay private, always',
+      'Pause or delete your account anytime',
+    ],
+  },
   next: 'Continue',
   save: 'Save',
   skip: 'Skip',
@@ -129,7 +138,8 @@ export const t = {
   },
   blocked: {
     title: 'Your account has been blocked',
-    body: 'Your account was blocked for violating our community guidelines.',
+    body: 'Your account was blocked for violating our community guidelines. If you think this is a mistake, contact support.',
+    support: 'Contact support',
   },
   gifts: {
     title: (name: string) => `Send a gift to ${name}`,
@@ -170,5 +180,13 @@ export const t = {
     pitch: 'Unlock unlimited messaging and more with Luma Premium.',
     getButton: 'Get Premium',
     endsIn: (time: string) => `Ends in ${time}`,
+  },
+  swipeLimit: {
+    title: "You're out of likes",
+    body: 'Free members get 20 swipes every 4 hours. Your next batch unlocks when the timer ends.',
+    untilRefill: 'until refill',
+    pitchTitle: 'Swipe without limits',
+    pitchBody: 'Premium removes the 4-hour cap — plus unlimited chats and more.',
+    paywallSubtitle: 'Go Premium to swipe without limits',
   },
 } as const

@@ -101,6 +101,12 @@ export interface SwipeResult {
     id: string
     user: { id: string; name: string; telegramId: number; username: string | null }
   }
+  swipeLimit?: { remaining: number; resetAt: string }
+}
+
+export interface SwipeLimitStatus {
+  limited: boolean
+  resetAt: string | null
 }
 
 export interface SupportMessage {

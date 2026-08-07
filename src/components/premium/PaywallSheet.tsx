@@ -9,6 +9,8 @@ import { Button, Icon, Sheet } from '../ui'
 interface PaywallSheetProps {
   open: boolean
   onClose: () => void
+  /** Context-specific pitch line; defaults to the chat-gate subtitle. */
+  subtitle?: string
 }
 
 type Phase = 'idle' | 'activating' | 'refunded' | 'error'
@@ -16,7 +18,7 @@ type Phase = 'idle' | 'activating' | 'refunded' | 'error'
 const POLL_INTERVAL_MS = 1500
 const POLL_MAX_TRIES = 8
 
-export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
+export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   const status = usePremiumStore((s) => s.status)
   const plans = status?.plans ?? []
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -166,7 +168,7 @@ export function PaywallSheet({ open, onClose }: PaywallSheetProps) {
 
   return (
     <Sheet open onClose={handleClose} title={t.premium.title}>
-      <p className="text-txt2 text-[14px] mb-4 -mt-1">{t.premium.subtitle}</p>
+      <p className="text-txt2 text-[14px] mb-4 -mt-1">{subtitle ?? t.premium.subtitle}</p>
 
       {phase === 'refunded' && <p className="text-error text-[14px] mb-4">{t.premium.refunded}</p>}
       {phase === 'error' && <p className="text-error text-[14px] mb-4">{t.premium.error}</p>}
