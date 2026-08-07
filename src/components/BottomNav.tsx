@@ -36,16 +36,37 @@ export function BottomNav({ active, onChange, matchesBadge }: Props) {
           >
             {/* M3 active pill indicator */}
             <span
-              className={`w-16 h-8 rounded-m3-md flex items-center justify-center transition-colors ${
+              className={`w-16 h-8 rounded-m3-md flex items-center justify-center transition-colors duration-200 ${
                 isActive ? 'bg-primary-container' : 'bg-transparent'
               }`}
               style={isActive ? { animation: 'lumaNavPill .25s ease' } : undefined}
             >
+              {/* Outlined + filled copies stacked; active state cross-fades to the
+                  filled glyph with a springy scale-in, per the Luma Material mockup. */}
               <span
-                className="relative flex"
+                className="relative flex w-5 h-5"
                 style={isActive ? { animation: 'lumaNavPop .35s ease' } : undefined}
               >
-                <Icon name={tab.icon} size={20} />
+                <Icon
+                  name={tab.icon}
+                  size={20}
+                  filled={false}
+                  style={{ transition: 'opacity .25s', opacity: isActive ? 0 : 1 }}
+                />
+                <Icon
+                  name={tab.icon}
+                  size={20}
+                  filled
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    stroke: 'currentColor',
+                    strokeWidth: 1,
+                    transition: 'opacity .25s, transform .3s cubic-bezier(.2,.8,.3,1.4)',
+                    opacity: isActive ? 1 : 0,
+                    transform: `scale(${isActive ? 1 : 0.4})`,
+                  }}
+                />
                 {tab.id === 'matches' && !!matchesBadge && matchesBadge > 0 && (
                   <Badge className="absolute -top-[7px] -right-[11px]">{matchesBadge}</Badge>
                 )}
