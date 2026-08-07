@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
 import { haptic, useBackButton } from '../telegram.js'
-import { Button, IconButton, Textarea, Icon } from '../components/ui/index.js'
+import { Button, Icon, IconButton, Textarea } from '../components/ui/index.js'
 import type { SupportTicketListItem, SupportMessage } from '../types.js'
 
 type View =
@@ -21,17 +21,6 @@ export function Support({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-bg text-txt flex flex-col" style={{ paddingTop: 'var(--tg-safe-top)' }}>
-      <div className="flex items-center gap-2 px-3 pt-3 pb-3 bg-surface flex-none">
-        <IconButton
-          icon="arrow-left"
-          tone="ghost"
-          aria-label="Back"
-          className="text-txt"
-          onClick={() => (view.name === 'list' ? onClose() : setView({ name: 'list' }))}
-        />
-        <span className="text-primary flex-none"><Icon name="life-buoy" size={20} /></span>
-        <h1 className="text-txt font-medium text-[20px]">{t.support.title}</h1>
-      </div>
       {view.name === 'list' && <TicketList onOpen={(id) => setView({ name: 'thread', id })} onNew={() => setView({ name: 'new' })} />}
       {view.name === 'new' && <NewTicket onCreated={(id) => setView({ name: 'thread', id })} />}
       {view.name === 'thread' && <Thread id={view.id} />}
@@ -46,10 +35,21 @@ function TicketList({ onOpen, onNew }: { onOpen: (id: string) => void; onNew: ()
     api.support.list().then((d) => setTickets(d.tickets)).catch(() => setTickets([]))
   }, [])
 
+  if (!tickets) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <span
+          className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full"
+          style={{ animation: 'lumaSpin .8s linear infinite' }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5">
-      {tickets && tickets.length === 0 && <p className="text-txt2 text-sm text-center mt-8">{t.support.empty}</p>}
-      {(tickets ?? []).map((tk) => (
+      {tickets.length === 0 && <TicketsEmpty />}
+      {tickets.map((tk) => (
         <button
           key={tk.id}
           onClick={() => onOpen(tk.id)}
@@ -67,6 +67,31 @@ function TicketList({ onOpen, onNew }: { onOpen: (id: string) => void; onNew: ()
       <Button variant="filled" block icon="plus" onClick={onNew} className="sticky bottom-2 mt-1">
         {t.support.newTicket}
       </Button>
+    </div>
+  )
+}
+
+// "No tickets yet" empty state — matches the Luma Material mockup: a bobbing
+// message tile with a floating check badge, then heading and reassurance copy.
+function TicketsEmpty() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center px-6 pt-6 pb-8">
+      <div className="relative w-[120px] h-[120px] flex items-center justify-center flex-none mb-1">
+        <div
+          className="w-[84px] h-[84px] rounded-m3-xl bg-primary-container text-primary flex items-center justify-center"
+          style={{ animation: 'lumaBob 3.2s ease-in-out infinite' }}
+        >
+          <Icon name="message-dots" size={36} />
+        </div>
+        <span
+          className="absolute top-[10px] right-[14px] w-[26px] h-[26px] rounded-full bg-surface text-txt2 flex items-center justify-center"
+          style={{ animation: 'lumaBob 2.8s ease-in-out 1.2s infinite' }}
+        >
+          <Icon name="check" size={14} />
+        </span>
+      </div>
+      <h2 className="text-[20px] font-medium text-txt">{t.support.emptyTitle}</h2>
+      <p className="text-txt2 text-[14px] leading-relaxed max-w-[230px]">{t.support.empty}</p>
     </div>
   )
 }

@@ -115,7 +115,8 @@ export const t = {
   },
   support: {
     title: 'Support',
-    empty: 'No tickets yet. Tap below to ask us anything.',
+    emptyTitle: 'All clear',
+    empty: "No support tickets yet. If something isn't working, tell us — we usually reply within a day.",
     newTicket: 'New ticket',
     composePlaceholder: 'Describe your issue…',
     submit: 'Send',
