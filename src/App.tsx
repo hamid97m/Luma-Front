@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
-import { initTelegram, shouldPromptWriteAccessOnLaunch } from './telegram.js'
+import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
 import { useAuthStore, usePremiumStore } from './store.js'
 import { isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
@@ -53,21 +53,10 @@ export function App() {
     setMatchesRefreshKey((k) => k + 1)
   }
 
-  useEffect(() => {
-    const backButton = window.Telegram?.WebApp?.BackButton
-    if (!backButton) return
-    if (showSupport) return            // Support overlay owns the back button while open
-    if (!activeChatMatch) {
-      backButton.hide()
-      return
-    }
-    backButton.onClick(closeChat)
-    backButton.show()
-    return () => {
-      backButton.offClick(closeChat)
-      backButton.hide()
-    }
-  }, [activeChatMatch, showSupport])
+  // Back-press closes the chat overlay. Sheets/Support push their own handler
+  // on top of this via the shared back-button stack (see telegram.ts), so
+  // whichever overlay is topmost gets the back-press.
+  useBackButton(!!activeChatMatch, closeChat)
 
   useEffect(() => {
     if (screen !== 'main') return

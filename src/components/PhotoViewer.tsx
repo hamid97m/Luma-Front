@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { haptic } from '../telegram.js'
+import { haptic, useBackButton } from '../telegram.js'
 import { Icon } from './ui/index.js'
 
 interface Props {
@@ -51,18 +51,8 @@ export function PhotoViewer({ photos, initialIndex, alt, onClose }: Props) {
   const onCloseRef = useRef(onClose)
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
-  // Map the Telegram BackButton to closing the viewer while it's open.
-  useEffect(() => {
-    const back = window.Telegram?.WebApp?.BackButton
-    if (!back) return
-    const handleBack = () => onCloseRef.current(idxRef.current)
-    back.onClick(handleBack)
-    back.show()
-    return () => {
-      back.offClick(handleBack)
-      back.hide()
-    }
-  }, [])
+  // Map a back-press to closing the viewer while it's open.
+  useBackButton(true, () => onCloseRef.current(idxRef.current))
 
   const size = () => {
     const el = containerRef.current

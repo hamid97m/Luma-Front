@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { IntrosSection } from '../components/gifts/IntrosSection.js'
-import { Avatar, Badge, Icon } from '../components/ui/index.js'
+import { Avatar, Badge, EmptyState, Icon } from '../components/ui/index.js'
 import type { Match } from '../types.js'
 
 function formatDate(iso: string): string {
@@ -68,13 +68,7 @@ export function Matches({ onOpenChat, refreshKey }: Props) {
       <IntrosSection onOpenChat={openChatById} refreshKey={refreshKey} />
 
       {matches.length === 0 ? (
-        <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center p-8">
-          <div className="w-[72px] h-[72px] rounded-3xl bg-primary-container flex items-center justify-center text-primary">
-            <Icon name="heart" size={32} filled={false} />
-          </div>
-          <h2 className="text-[22px] font-medium text-txt">No matches yet</h2>
-          <p className="text-[14px] text-txt2">Keep swiping to find your match!</p>
-        </div>
+        <EmptyState icon="heart" title="No matches yet" subtitle="Keep swiping to find your match!" />
       ) : (
         <div className="flex flex-col gap-2 px-4 pb-6">
           {matches.map((match) => (

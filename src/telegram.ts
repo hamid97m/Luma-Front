@@ -4,7 +4,7 @@
 // Every function here safely no-ops when running outside Telegram (browser
 // dev, unit tests) or on an older client that lacks a given feature, so the
 // rest of the app can call these unconditionally.
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 type ImpactStyle = 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'
 type NotificationType = 'error' | 'success' | 'warning'
@@ -111,6 +111,64 @@ export function initTelegram() {
     wa.onEvent?.('fullscreenChanged', writeSafeAreaVars)
   }
   writeSafeAreaVars()
+}
+
+// ---------------------------------------------------------------------------
+// Back button — a single shared stack over Telegram's one native BackButton.
+// Any overlay (chat, a bottom sheet, a full-screen editor) pushes a handler
+// while it's open; the top of the stack is what a back-press (header arrow OR
+// the Android hardware/again-swipe back, which Telegram routes to BackButton
+// while it's visible) runs. The button shows whenever the stack is non-empty
+// and hides when it empties. This is what stops a back-press from closing the
+// whole Mini App while a sheet is open — it dismisses the sheet instead.
+// ---------------------------------------------------------------------------
+type BackHandler = () => void
+const backStack: BackHandler[] = []
+let backClickWired = false
+
+function dispatchBack() {
+  backStack[backStack.length - 1]?.()
+}
+
+function syncBackButton() {
+  const bb = webApp()?.BackButton
+  if (!bb) return
+  if (backStack.length > 0) bb.show?.()
+  else bb.hide?.()
+}
+
+/**
+ * Register a back-press handler while an overlay is open. Returns an
+ * unregister function — call it on close/unmount. LIFO: the most recently
+ * pushed handler wins, and popping it restores the one beneath.
+ */
+export function pushBackHandler(handler: BackHandler): () => void {
+  backStack.push(handler)
+  const bb = webApp()?.BackButton
+  if (bb && !backClickWired) {
+    bb.onClick?.(dispatchBack) // wired once; dispatchBack always reads the top
+    backClickWired = true
+  }
+  syncBackButton()
+  return () => {
+    const i = backStack.lastIndexOf(handler)
+    if (i !== -1) backStack.splice(i, 1)
+    syncBackButton()
+  }
+}
+
+/**
+ * Hook form: registers `handler` as the active back action whenever `active`
+ * is true. The handler is read through a ref so its identity can change every
+ * render without re-subscribing.
+ */
+export function useBackButton(active: boolean, handler: BackHandler): void {
+  const ref = useRef(handler)
+  ref.current = handler
+  useEffect(() => {
+    if (!active) return
+    return pushBackHandler(() => ref.current())
+  }, [active])
 }
 
 // ---------------------------------------------------------------------------

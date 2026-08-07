@@ -3,6 +3,7 @@
 // surface panel that slides up from the bottom, respecting the Telegram
 // bottom safe-area inset.
 import { useEffect, type ReactNode } from 'react'
+import { useBackButton } from '../../telegram.js'
 
 export interface SheetProps {
   open: boolean
@@ -16,6 +17,10 @@ export interface SheetProps {
 }
 
 export function Sheet({ open, onClose, title, children, hideHandle, className = '' }: SheetProps) {
+  // A back-press (incl. Android hardware back) dismisses the sheet instead of
+  // closing the Mini App, while it's open.
+  useBackButton(open, onClose)
+
   // Close on Escape for browser/dev ergonomics.
   useEffect(() => {
     if (!open) return
@@ -72,6 +77,7 @@ export interface DialogProps {
 }
 
 export function Dialog({ open, onClose, children, className = '', dismissOnScrim = true }: DialogProps) {
+  useBackButton(open, onClose)
   if (!open) return null
   const onScrim = (e: { target: EventTarget | null; currentTarget: EventTarget | null }) => {
     if (dismissOnScrim && e.target === e.currentTarget) onClose()

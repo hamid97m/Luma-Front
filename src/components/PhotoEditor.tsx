@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Cropper from 'react-easy-crop'
 import type { Area, Point } from 'react-easy-crop'
 import { cropImage } from '../utils/cropImage.js'
+import { useBackButton } from '../telegram.js'
 import { Button } from './ui/index.js'
 
 export interface PhotoEditorProps {
@@ -37,24 +38,13 @@ export function PhotoEditor({ file, onCancel, onConfirm }: PhotoEditorProps) {
     busyRef.current = busy
   }, [busy])
 
-  // Map the Telegram BackButton to Cancel while the editor is open. Registered
-  // once (not per-render) so it doesn't churn, and ignores presses while a
-  // crop is in flight so a back-press can't unmount the editor out from under
+  // Map a back-press to Cancel while the editor is open. Ignores presses while
+  // a crop is in flight so a back-press can't unmount the editor out from under
   // an in-progress confirm() that would still call onConfirm.
-  useEffect(() => {
-    const back = window.Telegram?.WebApp?.BackButton
-    if (!back) return
-    const handleBack = () => {
-      if (busyRef.current) return
-      onCancelRef.current()
-    }
-    back.onClick(handleBack)
-    back.show()
-    return () => {
-      back.offClick(handleBack)
-      back.hide()
-    }
-  }, [])
+  useBackButton(true, () => {
+    if (busyRef.current) return
+    onCancelRef.current()
+  })
 
   const rotate = () => {
     haptic()

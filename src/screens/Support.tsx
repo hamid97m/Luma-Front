@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
-import { haptic } from '../telegram.js'
+import { haptic, useBackButton } from '../telegram.js'
 import { Button, IconButton, Textarea, Icon } from '../components/ui/index.js'
 import type { SupportTicketListItem, SupportMessage } from '../types.js'
 
@@ -13,18 +13,11 @@ type View =
 export function Support({ onClose }: { onClose: () => void }) {
   const [view, setView] = useState<View>({ name: 'list' })
 
-  // Telegram BackButton: go back within the overlay, or close it from the list.
-  useEffect(() => {
-    const bb = window.Telegram?.WebApp?.BackButton
-    if (!bb) return
-    const handler = () => {
-      if (view.name === 'list') onClose()
-      else setView({ name: 'list' })
-    }
-    bb.onClick(handler)
-    bb.show()
-    return () => { bb.offClick(handler); bb.hide() }
-  }, [view, onClose])
+  // Telegram back-press: go back within the overlay, or close it from the list.
+  useBackButton(true, () => {
+    if (view.name === 'list') onClose()
+    else setView({ name: 'list' })
+  })
 
   return (
     <div className="fixed inset-0 z-50 bg-bg text-txt flex flex-col" style={{ paddingTop: 'var(--tg-safe-top)' }}>
