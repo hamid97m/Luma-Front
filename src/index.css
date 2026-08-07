@@ -164,6 +164,15 @@
   15%  { opacity: .8; }
   100% { transform: translateY(-420px) scale(1.2) rotate(10deg); opacity: 0; }
 }
+@keyframes lumaRipple {
+  0%   { transform: scale(.55); opacity: .55; }
+  70%  { opacity: .18; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes lumaBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
 
 @keyframes pulse-heart {
   0%, 100% { transform: scale(1);     opacity: 0.7; }

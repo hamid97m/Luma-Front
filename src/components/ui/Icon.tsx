@@ -49,6 +49,7 @@ export type IconName =
   | 'reply'
   | 'arrow-down'
   | 'chevron-down'
+  | 'sparkle'
 
 // Each entry is the inner markup of a 24x24 Lucide glyph. `fill` glyphs (heart,
 // star, verified) are noted; everything else is stroked.
@@ -97,10 +98,11 @@ const PATHS: Record<IconName, JSX.Element> = {
   reply: <><polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" /></>,
   'arrow-down': <><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></>,
   'chevron-down': <path d="m6 9 6 6 6-6" />,
+  sparkle: <path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4Z" />,
 }
 
 // Glyphs drawn as fills rather than strokes.
-const FILLED: ReadonlySet<IconName> = new Set(['heart', 'flame', 'star', 'verified'])
+const FILLED: ReadonlySet<IconName> = new Set(['heart', 'flame', 'star', 'verified', 'sparkle'])
 
 export interface IconProps {
   name: IconName

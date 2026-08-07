@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { IntrosSection } from '../components/gifts/IntrosSection.js'
-import { Avatar, Badge, EmptyState, Icon } from '../components/ui/index.js'
+import { Avatar, Badge, Icon } from '../components/ui/index.js'
+import { MatchesEmpty } from '../components/MatchesEmpty.js'
 import type { Match } from '../types.js'
 
 function formatDate(iso: string): string {
@@ -19,10 +20,11 @@ function isNewMatch(iso: string): boolean {
 
 interface Props {
   onOpenChat: (match: Match) => void
+  onStartDiscovering: () => void
   refreshKey: number
 }
 
-export function Matches({ onOpenChat, refreshKey }: Props) {
+export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -68,7 +70,7 @@ export function Matches({ onOpenChat, refreshKey }: Props) {
       <IntrosSection onOpenChat={openChatById} refreshKey={refreshKey} />
 
       {matches.length === 0 ? (
-        <EmptyState icon="heart" title="No matches yet" subtitle="Keep swiping to find your match!" />
+        <MatchesEmpty onStartDiscovering={onStartDiscovering} />
       ) : (
         <div className="flex flex-col gap-2 px-4 pb-6">
           {matches.map((match) => (

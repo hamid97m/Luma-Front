@@ -6,7 +6,7 @@ import { MatchPopup } from '../components/MatchPopup.js'
 import { NotifyPrompt } from '../components/NotifyPrompt.js'
 import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
 import { shouldPromptWriteAccess } from '../telegram.js'
-import { EmptyState } from '../components/ui/index.js'
+import { DiscoveryEmpty } from '../components/DiscoveryEmpty.js'
 import type { DiscoveryProfile, SwipeResult, Match } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
@@ -38,6 +38,14 @@ export function Discovery({ onOpenChat }: Props) {
   }, [])
 
   useEffect(() => { fetchBatch() }, [fetchBatch])
+
+  // "Review profiles again" — re-check the feed (e.g. new people joined).
+  const refresh = useCallback(() => {
+    setLoading(true)
+    setExhausted(false)
+    setQueue([])
+    fetchBatch()
+  }, [fetchBatch])
 
   const swipe = async (direction: 'like' | 'pass') => {
     const [current, ...rest] = queue
@@ -85,7 +93,7 @@ export function Discovery({ onOpenChat }: Props) {
   if (exhausted && queue.length === 0) {
     return (
       <div className="h-full bg-bg text-txt flex flex-col">
-        <EmptyState icon="flame" title={t.discovery.empty} subtitle={t.discovery.emptyHint} />
+        <DiscoveryEmpty onReview={refresh} />
       </div>
     )
   }

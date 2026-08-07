@@ -162,7 +162,7 @@ export function App() {
           )}
           {visited.matches && (
             <div className={`h-full ${tab === 'matches' ? '' : 'hidden'}`}>
-              <Matches onOpenChat={setActiveChatMatch} refreshKey={matchesRefreshKey} />
+              <Matches onOpenChat={setActiveChatMatch} onStartDiscovering={() => setTab('discovery')} refreshKey={matchesRefreshKey} />
             </div>
           )}
           {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile onOpenSupport={() => setShowSupport(true)} /></div>}

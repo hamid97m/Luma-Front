@@ -23,12 +23,12 @@ describe('Matches', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
-  it('shows "Say hi! 👋" when there is no message yet', async () => {
+  it('shows "Say hi!" when there is no message yet', async () => {
     vi.mocked(api.matches.list).mockResolvedValue({
       matches: [{ ...BASE_MATCH, lastMessage: null, unreadCount: 0 }],
     })
-    render(<Matches onOpenChat={vi.fn()} refreshKey={0} />)
-    await waitFor(() => screen.getByText('Say hi! 👋'))
+    render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
+    await waitFor(() => screen.getByText('Say hi!'))
   })
 
   it('shows the last message body when one exists', async () => {
@@ -39,7 +39,7 @@ describe('Matches', () => {
         unreadCount: 0,
       }],
     })
-    render(<Matches onOpenChat={vi.fn()} refreshKey={0} />)
+    render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
     await waitFor(() => screen.getByText('hey there'))
   })
 
@@ -47,27 +47,27 @@ describe('Matches', () => {
     vi.mocked(api.matches.list).mockResolvedValue({
       matches: [{ ...BASE_MATCH, lastMessage: null, unreadCount: 2 }],
     })
-    render(<Matches onOpenChat={vi.fn()} refreshKey={0} />)
+    render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
     await waitFor(() => screen.getByText('2'))
   })
 
-  it('calls onOpenChat with the match when the Chat button is clicked', async () => {
+  it('calls onOpenChat with the match when the open-chat button is clicked', async () => {
     vi.mocked(api.matches.list).mockResolvedValue({
       matches: [{ ...BASE_MATCH, lastMessage: null, unreadCount: 0 }],
     })
     const onOpenChat = vi.fn()
-    render(<Matches onOpenChat={onOpenChat} refreshKey={0} />)
-    await waitFor(() => screen.getByText('Chat'))
-    fireEvent.click(screen.getByText('Chat'))
+    render(<Matches onOpenChat={onOpenChat} onStartDiscovering={vi.fn()} refreshKey={0} />)
+    await waitFor(() => screen.getByLabelText('Open chat'))
+    fireEvent.click(screen.getByLabelText('Open chat'))
     expect(onOpenChat).toHaveBeenCalledWith(expect.objectContaining({ id: 'match-1' }))
   })
 
   it('refetches matches when refreshKey changes', async () => {
     vi.mocked(api.matches.list).mockResolvedValue({ matches: [] })
-    const { rerender } = render(<Matches onOpenChat={vi.fn()} refreshKey={0} />)
+    const { rerender } = render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
     await waitFor(() => expect(api.matches.list).toHaveBeenCalledTimes(1))
 
-    rerender(<Matches onOpenChat={vi.fn()} refreshKey={1} />)
+    rerender(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={1} />)
     await waitFor(() => expect(api.matches.list).toHaveBeenCalledTimes(2))
   })
 })
