@@ -282,7 +282,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                 <button
                   onClick={() => removeTag(tag)}
                   aria-label="Remove"
-                  className="text-on-primary-container/60 hover:text-on-primary-container leading-none flex"
+                  className="text-on-primary-container opacity-60 hover:opacity-100 leading-none flex"
                 >
                   <Icon name="x" size={11} strokeWidth={2.5} />
                 </button>
@@ -344,9 +344,9 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             onChange={(e) => setAnswer(e.target.value)}
             onBlur={() => save({ icebreaker_answer: answer.trim() || null })}
             placeholder="Your answer…"
-            className="w-full resize-none outline-none bg-transparent text-[13px] text-on-primary-container placeholder:text-on-primary-container/50 border-t border-on-primary-container/20 pt-2.5 leading-relaxed"
+            className="w-full resize-none outline-none bg-transparent text-[13px] text-on-primary-container placeholder:text-[color-mix(in_srgb,var(--onpc)_50%,transparent)] border-t border-[color-mix(in_srgb,var(--onpc)_20%,transparent)] pt-2.5 leading-relaxed"
           />
-          <p className="text-right text-[11px] text-on-primary-container/50 mt-1">{answer.length}/140</p>
+          <p className="text-right text-[11px] text-on-primary-container opacity-50 mt-1">{answer.length}/140</p>
         </div>
 
       </div>

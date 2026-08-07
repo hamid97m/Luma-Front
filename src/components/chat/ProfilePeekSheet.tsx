@@ -39,7 +39,7 @@ export function ProfilePeekSheet({ user, onClose, onReport, onSendGift }: Profil
 
       {user.icebreakerPrompt && user.icebreakerAnswer && (
         <div className="bg-primary-container rounded-m3-lg p-4 mb-4">
-          <p className="text-on-primary-container/70 text-[11px] font-bold uppercase tracking-widest mb-1">{user.icebreakerPrompt}</p>
+          <p className="text-on-primary-container opacity-70 text-[11px] font-bold uppercase tracking-widest mb-1">{user.icebreakerPrompt}</p>
           <p className="text-on-primary-container text-[14px]">{user.icebreakerAnswer}</p>
         </div>
       )}

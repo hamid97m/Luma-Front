@@ -26,20 +26,26 @@ export function Sheet({ open, onClose, title, children, hideHandle, className = 
 
   if (!open) return null
 
+  // Dismiss only when the tap lands on the scrim itself, not on content that
+  // bubbled up. `cursor-pointer` is load-bearing: iOS/Telegram webviews don't
+  // reliably fire `click` on a plain <div> without it.
+  const onScrim = (e: { target: EventTarget | null; currentTarget: EventTarget | null }) => {
+    if (e.target === e.currentTarget) onClose()
+  }
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
+      className="fixed inset-0 z-50 flex items-end justify-center cursor-pointer"
       style={{ background: 'var(--scrim)' }}
-      onClick={onClose}
+      onClick={onScrim}
     >
       <div
         className={[
-          'w-full max-w-md bg-bg text-txt rounded-t-m3-xl',
+          'w-full max-w-md bg-bg text-txt rounded-t-m3-xl cursor-auto',
           'animate-fade-up flex flex-col max-h-[92vh]',
           className,
         ].join(' ')}
         style={{ paddingBottom: 'calc(16px + var(--tg-safe-bottom))' }}
-        onClick={(e) => e.stopPropagation()}
       >
         {!hideHandle && (
           <div className="flex justify-center pt-3 pb-1">
@@ -67,15 +73,17 @@ export interface DialogProps {
 
 export function Dialog({ open, onClose, children, className = '', dismissOnScrim = true }: DialogProps) {
   if (!open) return null
+  const onScrim = (e: { target: EventTarget | null; currentTarget: EventTarget | null }) => {
+    if (dismissOnScrim && e.target === e.currentTarget) onClose()
+  }
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-6 ${dismissOnScrim ? 'cursor-pointer' : ''}`}
       style={{ background: 'var(--scrim)' }}
-      onClick={dismissOnScrim ? onClose : undefined}
+      onClick={onScrim}
     >
       <div
-        className={['w-full max-w-sm bg-bg text-txt rounded-m3-xl shadow-m3-1 p-6 animate-fade-up', className].join(' ')}
-        onClick={(e) => e.stopPropagation()}
+        className={['w-full max-w-sm bg-bg text-txt rounded-m3-xl shadow-m3-1 p-6 animate-fade-up cursor-auto', className].join(' ')}
       >
         {children}
       </div>

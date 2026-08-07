@@ -24,7 +24,7 @@ export function Splash({ onDone }: Props) {
   return (
     <div
       className="flex flex-col items-center justify-center h-screen gap-4 relative overflow-hidden"
-      style={{ background: 'linear-gradient(165deg, var(--pr) 0%, var(--prh) 100%)' }}
+      style={{ background: 'linear-gradient(165deg, var(--pr) 0%, #8C2E68 60%, #5E2A62 100%)' }}
     >
       {/* Floating hearts */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -52,7 +52,7 @@ export function Splash({ onDone }: Props) {
         <Icon name="heart" size={44} className="text-white" />
       </div>
 
-      <h1 className="text-[40px] font-medium text-white tracking-tight">Luma</h1>
+      <h1 className="text-[40px] font-medium text-white">Luma</h1>
       <p className="text-[14px] text-white/85">Find your person</p>
 
       {/* Loader dots */}

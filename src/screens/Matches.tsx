@@ -69,11 +69,11 @@ export function Matches({ onOpenChat, refreshKey }: Props) {
 
       {matches.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center p-8">
-          <div className="w-20 h-20 rounded-full bg-surface flex items-center justify-center text-primary">
-            <Icon name="message" size={36} />
+          <div className="w-[72px] h-[72px] rounded-3xl bg-primary-container flex items-center justify-center text-primary">
+            <Icon name="heart" size={32} filled={false} />
           </div>
-          <h2 className="text-xl font-medium text-txt">No matches yet</h2>
-          <p className="text-[15px] text-txt2">Keep swiping to find your match!</p>
+          <h2 className="text-[22px] font-medium text-txt">No matches yet</h2>
+          <p className="text-[14px] text-txt2">Keep swiping to find your match!</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2 px-4 pb-6">
