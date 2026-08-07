@@ -64,9 +64,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt">
-      <h1 className="text-2xl font-medium px-5 pt-12 pb-4 text-txt">Matches</h1>
-
+    <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt pt-6">
       <IntrosSection onOpenChat={openChatById} refreshKey={refreshKey} />
 
       {matches.length === 0 ? (

@@ -29,10 +29,10 @@ export function MatchesEmpty({ onStartDiscovering }: Props) {
         >
           <Avatar src={myPhoto} alt="You" size={72} />
         </div>
-        {/* Center: the spark between */}
+        {/* Center: the spark, sitting between the two avatars */}
         <div
-          className="absolute w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center"
-          style={{ left: '50%', top: 2, transform: 'translateX(-50%)', boxShadow: '0 4px 12px rgba(176,41,92,.35)', animation: 'lumaBeat 1.6s ease-in-out infinite' }}
+          className="absolute z-10 w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center"
+          style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)', boxShadow: '0 4px 12px rgba(176,41,92,.35)', animation: 'lumaBeat 1.6s ease-in-out infinite' }}
         >
           <Icon name="heart" size={16} />
         </div>
