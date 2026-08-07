@@ -5,15 +5,19 @@ import { CardStack } from '../components/CardStack.js'
 import { MatchPopup } from '../components/MatchPopup.js'
 import { NotifyPrompt } from '../components/NotifyPrompt.js'
 import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
-import { shouldPromptWriteAccess } from '../telegram.js'
+import { shouldPromptWriteAccess, haptic } from '../telegram.js'
 import { DiscoveryEmpty } from '../components/DiscoveryEmpty.js'
 import { SwipeLimited } from '../components/SwipeLimited.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { usePremiumStore } from '../store.js'
-import { haptic } from '../telegram.js'
 import type { DiscoveryProfile, SwipeResult, Match } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
+
+// Server resetAt with a floor: a device clock ahead of the server would
+// otherwise mount SwipeLimited already-expired and refetch-loop; the floor
+// degrades that worst case into a gentle 5s poll.
+const floorResetAt = (iso: string) => new Date(Math.max(Date.parse(iso), Date.now() + 5000)).toISOString()
 
 interface Props {
   onOpenChat: (match: Match) => void
@@ -45,7 +49,7 @@ export function Discovery({ onOpenChat }: Props) {
       return [...q, ...profiles.filter((p) => !seen.has(p.id) && !swipedIds.current.has(p.id))]
     })
     setExhausted(done)
-    if (swipeLimit?.limited && swipeLimit.resetAt) setLimitResetAt(swipeLimit.resetAt)
+    if (swipeLimit?.limited && swipeLimit.resetAt) setLimitResetAt(floorResetAt(swipeLimit.resetAt))
     setLoading(false)
   }, [])
 
@@ -69,7 +73,7 @@ export function Discovery({ onOpenChat }: Props) {
 
     try {
       const result = await api.swipes.swipe(current.id, direction)
-      if (result.swipeLimit?.remaining === 0) setLimitResetAt(result.swipeLimit.resetAt)
+      if (result.swipeLimit?.remaining === 0) setLimitResetAt(floorResetAt(result.swipeLimit.resetAt))
       if (result.matched && result.match) {
         // Small delay so card animation can finish before popup
         setTimeout(() => setActiveMatch(result.match!), 400)
@@ -86,7 +90,7 @@ export function Discovery({ onOpenChat }: Props) {
         // request() throws Error(bodyText), so the 403 body's resetAt is parseable.
         let resetAt: string | null = null
         try { resetAt = (JSON.parse(message) as { resetAt?: string }).resetAt ?? null } catch { /* not JSON */ }
-        setLimitResetAt(resetAt ?? new Date(Date.now() + 4 * 3600_000).toISOString())
+        setLimitResetAt(resetAt ? floorResetAt(resetAt) : new Date(Date.now() + 4 * 3600_000).toISOString())
         usePremiumStore.getState().refresh()
       }
       haptic.notification('error')
@@ -110,6 +114,27 @@ export function Discovery({ onOpenChat }: Props) {
     setActiveMatch(null)
   }
 
+  // Rendered on top of both the main card stack and the limited screen: a
+  // like that lands as the 20th swipe can both match AND trip the limit, so
+  // the match popup must still show even while `limited` is true.
+  const matchPopupNode = (
+    <>
+      {activeMatch && (
+        <MatchPopup
+          match={activeMatch}
+          onClose={() => {
+            setActiveMatch(null)
+            // They just matched but the bot still can't reach them — second
+            // (and last) chance this session to ask for notifications.
+            if (shouldPromptWriteAccess()) setShowNotifyPrompt(true)
+          }}
+          onMessage={openMatchChat}
+        />
+      )}
+      {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}
+    </>
+  )
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-bg text-txt">
@@ -131,6 +156,7 @@ export function Discovery({ onOpenChat }: Props) {
           onClose={() => setPaywallOpen(false)}
           subtitle={t.swipeLimit.paywallSubtitle}
         />
+        {matchPopupNode}
       </div>
     )
   }
@@ -164,19 +190,7 @@ export function Discovery({ onOpenChat }: Props) {
           }}
         />
       )}
-      {activeMatch && (
-        <MatchPopup
-          match={activeMatch}
-          onClose={() => {
-            setActiveMatch(null)
-            // They just matched but the bot still can't reach them — second
-            // (and last) chance this session to ask for notifications.
-            if (shouldPromptWriteAccess()) setShowNotifyPrompt(true)
-          }}
-          onMessage={openMatchChat}
-        />
-      )}
-      {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}
+      {matchPopupNode}
     </>
   )
 }
