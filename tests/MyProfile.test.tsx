@@ -30,19 +30,19 @@ describe('MyProfile settings', () => {
     vi.mocked(api.profile.get).mockResolvedValue(PROFILE as any)
     render(<MyProfile onOpenSupport={vi.fn()} />)
 
-    await waitFor(() => screen.getByText('My Profile 👤'))
+    await waitFor(() => screen.getByText('My Profile'))
     fireEvent.click(screen.getByLabelText('Settings'))
 
     expect(screen.getByText('Pause my account')).toBeInTheDocument()
   })
 
-  it('closes the settings sheet when its close button is clicked', async () => {
+  it('closes the settings sheet when dismissed (Escape)', async () => {
     vi.mocked(api.profile.get).mockResolvedValue(PROFILE as any)
     render(<MyProfile onOpenSupport={vi.fn()} />)
 
-    await waitFor(() => screen.getByText('My Profile 👤'))
+    await waitFor(() => screen.getByText('My Profile'))
     fireEvent.click(screen.getByLabelText('Settings'))
-    fireEvent.click(screen.getByLabelText('Close'))
+    fireEvent.keyDown(document.body, { key: 'Escape' })
 
     expect(screen.queryByText('Pause my account')).not.toBeInTheDocument()
   })
@@ -61,7 +61,7 @@ describe('MyProfile settings', () => {
     )
 
     render(<MyProfile onOpenSupport={vi.fn()} />)
-    await waitFor(() => screen.getByText('My Profile 👤'))
+    await waitFor(() => screen.getByText('My Profile'))
 
     const del = await screen.findByLabelText('Delete photo')
     expect(del).not.toBeDisabled()

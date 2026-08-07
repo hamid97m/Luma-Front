@@ -154,7 +154,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
       <div className="flex items-center justify-between px-5 pt-12 pb-4">
         <h1 className="text-2xl font-medium text-txt">My Profile</h1>
         <IconButton
-          icon="settings"
+          icon="settings-2"
           onClick={() => setSettingsOpen(true)}
           aria-label="Settings"
           tone="surface"
@@ -349,6 +349,22 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
           <p className="text-right text-[11px] text-on-primary-container opacity-50 mt-1">{answer.length}/140</p>
         </div>
 
+        {/* Support */}
+        <button
+          type="button"
+          onClick={onOpenSupport}
+          className="w-full text-left bg-surface rounded-m3-lg p-3.5 flex items-center gap-3.5 transition-colors hover:bg-surface-high"
+        >
+          <span className="w-11 h-11 rounded-full bg-primary-container text-primary flex items-center justify-center flex-none">
+            <Icon name="life-buoy" size={20} />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block font-medium text-[15px] text-txt">Support</span>
+            <span className="block text-[12px] text-txt2">Questions, problems, feedback — we answer.</span>
+          </span>
+          <Icon name="chevron-right" size={18} className="text-txt2 flex-none" />
+        </button>
+
       </div>
 
       {settingsOpen && (
@@ -356,7 +372,6 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
           isActive={profile.is_active}
           onPauseChange={handlePauseChange}
           onClose={() => setSettingsOpen(false)}
-          onOpenSupport={() => { setSettingsOpen(false); onOpenSupport() }}
         />
       )}
 

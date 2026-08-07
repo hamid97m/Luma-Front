@@ -50,6 +50,8 @@ export type IconName =
   | 'arrow-down'
   | 'chevron-down'
   | 'sparkle'
+  | 'moon'
+  | 'settings-2'
 
 // Each entry is the inner markup of a 24x24 Lucide glyph. `fill` glyphs (heart,
 // star, verified) are noted; everything else is stroked.
@@ -99,6 +101,8 @@ const PATHS: Record<IconName, JSX.Element> = {
   'arrow-down': <><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></>,
   'chevron-down': <path d="m6 9 6 6 6-6" />,
   sparkle: <path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4Z" />,
+  moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />,
+  'settings-2': <><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></>,
 }
 
 // Glyphs drawn as fills rather than strokes.

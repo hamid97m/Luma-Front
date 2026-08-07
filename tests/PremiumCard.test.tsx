@@ -16,6 +16,7 @@ vi.mock('../src/api.js', () => ({
 vi.mock('../src/telegram.js', () => ({
   openInvoice: vi.fn(),
   haptic: { impact: vi.fn(), selection: vi.fn(), notification: vi.fn() },
+  useBackButton: vi.fn(),
 }))
 
 import { api } from '../src/api.js'

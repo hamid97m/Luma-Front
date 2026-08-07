@@ -14,25 +14,28 @@ vi.mock('../src/api.js', () => ({
   },
 }))
 
+// The pause control is one of two switches in the sheet; target it by name.
+const pauseSwitch = () => screen.getByRole('switch', { name: 'Pause my account' })
+
 describe('SettingsSheet', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
   })
 
-  it('calls onClose when the close button is clicked', () => {
+  it('calls onClose when the sheet is dismissed (Escape)', () => {
     const onClose = vi.fn()
-    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={onClose} onOpenSupport={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText('Close'))
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={onClose} />)
+    fireEvent.keyDown(document.body, { key: 'Escape' })
     expect(onClose).toHaveBeenCalled()
   })
 
   it('pauses the account and calls onPauseChange(false)', async () => {
     vi.mocked(api.profile.update).mockResolvedValue({} as any)
     const onPauseChange = vi.fn()
-    render(<SettingsSheet isActive={true} onPauseChange={onPauseChange} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
+    render(<SettingsSheet isActive={true} onPauseChange={onPauseChange} onClose={vi.fn()} />)
 
-    fireEvent.click(screen.getByRole('switch'))
+    fireEvent.click(pauseSwitch())
 
     await waitFor(() => {
       expect(api.profile.update).toHaveBeenCalledWith({ is_active: false })
@@ -43,9 +46,9 @@ describe('SettingsSheet', () => {
   it('resumes a paused account and calls onPauseChange(true)', async () => {
     vi.mocked(api.profile.update).mockResolvedValue({} as any)
     const onPauseChange = vi.fn()
-    render(<SettingsSheet isActive={false} onPauseChange={onPauseChange} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
+    render(<SettingsSheet isActive={false} onPauseChange={onPauseChange} onClose={vi.fn()} />)
 
-    fireEvent.click(screen.getByRole('switch'))
+    fireEvent.click(pauseSwitch())
 
     await waitFor(() => {
       expect(api.profile.update).toHaveBeenCalledWith({ is_active: true })
@@ -54,37 +57,40 @@ describe('SettingsSheet', () => {
   })
 
   it('reflects the correct aria-checked state (checked means active/enabled, not paused)', () => {
-    const { rerender } = render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
-    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true')
+    const { rerender } = render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    expect(pauseSwitch()).toHaveAttribute('aria-checked', 'true')
 
-    rerender(<SettingsSheet isActive={false} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
-    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
+    rerender(<SettingsSheet isActive={false} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    expect(pauseSwitch()).toHaveAttribute('aria-checked', 'false')
   })
 
-  it('shows a loading spinner while the pause toggle is in flight', async () => {
+  it('disables the pause toggle while the change is in flight', async () => {
     let resolveUpdate: (value?: unknown) => void = () => {}
     vi.mocked(api.profile.update).mockReturnValue(
       new Promise((resolve) => { resolveUpdate = resolve }) as any
     )
-    const { container } = render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
 
-    fireEvent.click(screen.getByRole('switch'))
+    fireEvent.click(pauseSwitch())
 
-    await waitFor(() => {
-      expect(container.querySelector('.animate-spin')).toBeInTheDocument()
-      expect(screen.getByRole('switch')).toBeDisabled()
-    })
+    await waitFor(() => expect(pauseSwitch()).toBeDisabled())
 
     resolveUpdate({})
 
-    await waitFor(() => {
-      expect(container.querySelector('.animate-spin')).not.toBeInTheDocument()
-      expect(screen.getByRole('switch')).not.toBeDisabled()
-    })
+    await waitFor(() => expect(pauseSwitch()).not.toBeDisabled())
+  })
+
+  it('toggles dark theme and persists the preference', () => {
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+    const darkSwitch = screen.getByRole('switch', { name: 'Dark theme' })
+    fireEvent.click(darkSwitch)
+    expect(localStorage.getItem('luma_theme')).toBe('dark')
+    fireEvent.click(darkSwitch)
+    expect(localStorage.getItem('luma_theme')).toBe('light')
   })
 
   it('shows a confirmation view before deleting, and cancel does not call delete', () => {
-    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
 
     fireEvent.click(screen.getByText('Delete my account'))
     expect(screen.getByText('Delete your account?')).toBeInTheDocument()
@@ -103,7 +109,7 @@ describe('SettingsSheet', () => {
       value: { ...window.location, reload: reloadMock },
     })
 
-    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} onOpenSupport={vi.fn()} />)
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
 
     fireEvent.click(screen.getByText('Delete my account'))
     fireEvent.click(screen.getByText('Yes, delete my account'))

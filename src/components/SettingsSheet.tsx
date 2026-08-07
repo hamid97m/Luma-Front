@@ -1,19 +1,27 @@
 import { useState } from 'react'
 import { api } from '../api.js'
 import { clearReturningUser } from '../utils/returningUser.js'
+import { haptic, isDarkTheme, setThemePref } from '../telegram.js'
 import { Button, Icon, Sheet } from './ui'
 
 interface Props {
   isActive: boolean
   onPauseChange: (isActive: boolean) => void
   onClose: () => void
-  onOpenSupport: () => void
 }
 
-export function SettingsSheet({ isActive, onPauseChange, onClose, onOpenSupport }: Props) {
+export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
   const [view, setView] = useState<'menu' | 'confirmDelete'>('menu')
   const [pausing, setPausing] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [dark, setDark] = useState(isDarkTheme())
+
+  const toggleDark = () => {
+    const next = !dark
+    setThemePref(next ? 'dark' : 'light')
+    setDark(next)
+    haptic.selection()
+  }
 
   const togglePause = async () => {
     setPausing(true)
@@ -42,6 +50,31 @@ export function SettingsSheet({ isActive, onPauseChange, onClose, onOpenSupport 
       {view === 'menu' ? (
         <>
           <h2 className="text-[22px] font-medium text-txt mb-4">Settings</h2>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={dark}
+            aria-label="Dark theme"
+            onClick={toggleDark}
+            className="w-full text-left bg-surface rounded-m3-lg p-4 mb-2.5"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-txt font-medium text-[15px] flex items-center gap-2.5">
+                <Icon name="moon" size={17} className="text-txt2" />
+                Dark theme
+              </span>
+              <span
+                aria-hidden="true"
+                className={`w-12 h-7 rounded-full transition-colors relative inline-block flex-shrink-0 ${dark ? 'bg-primary' : 'bg-[var(--ol2)]'}`}
+              >
+                <span
+                  className="absolute top-0.5 w-6 h-6 rounded-full bg-white transition-transform"
+                  style={{ transform: dark ? 'translateX(22px)' : 'translateX(2px)' }}
+                />
+              </span>
+            </div>
+          </button>
 
           <button
             type="button"
@@ -78,18 +111,6 @@ export function SettingsSheet({ isActive, onPauseChange, onClose, onOpenSupport 
             <p className="text-txt2 text-[13px] font-normal leading-relaxed">
               You won't appear in Discovery. Your existing matches can still reach you.
             </p>
-          </button>
-
-          <button
-            type="button"
-            onClick={onOpenSupport}
-            className="w-full text-left bg-surface rounded-m3-lg p-4 mb-2.5"
-          >
-            <span className="text-txt font-medium text-[15px] flex items-center gap-2.5">
-              <Icon name="life-buoy" size={17} className="text-txt2" />
-              Support
-            </span>
-            <p className="text-txt2 text-[13px] font-normal mt-1">Contact us — questions, problems, feedback.</p>
           </button>
 
           <button

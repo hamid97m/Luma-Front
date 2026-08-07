@@ -56,15 +56,44 @@ function writeSafeAreaVars() {
 // background, bottom bar) to match our resolved app background. Reacts live to
 // the client's `themeChanged` event.
 // ---------------------------------------------------------------------------
+// The user can override the Telegram-driven theme from Settings. 'system'
+// (default) follows Telegram's color scheme; 'light'/'dark' pin it. Persisted
+// so the choice survives reopens.
+export type ThemePref = 'system' | 'light' | 'dark'
+const THEME_KEY = 'luma_theme'
+
+export function getThemePref(): ThemePref {
+  const v = typeof localStorage !== 'undefined' ? localStorage.getItem(THEME_KEY) : null
+  return v === 'light' || v === 'dark' ? v : 'system'
+}
+
+export function setThemePref(pref: ThemePref) {
+  try {
+    if (pref === 'system') localStorage.removeItem(THEME_KEY)
+    else localStorage.setItem(THEME_KEY, pref)
+  } catch {
+    /* storage unavailable — fall through, theme still applies for this session */
+  }
+  applyTheme()
+}
+
+/** True if the app is currently rendering in dark mode. */
+export function isDarkTheme(): boolean {
+  return document.documentElement.dataset.theme === 'dark'
+}
+
 export function applyTheme() {
   const wa = webApp()
-  // Fall back to the OS preference when running outside Telegram (browser dev).
+  const pref = getThemePref()
+  // A pinned preference wins; otherwise follow Telegram, then the OS (browser dev).
   const scheme: 'light' | 'dark' =
-    wa?.colorScheme ??
-    (typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light')
+    pref !== 'system'
+      ? pref
+      : wa?.colorScheme ??
+        (typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light')
 
   const root = document.documentElement
   if (scheme === 'dark') root.dataset.theme = 'dark'
