@@ -39,15 +39,16 @@ export function Sheet({ open, onClose, title, children, hideHandle, className = 
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center cursor-pointer"
-      style={{ background: 'var(--scrim)' }}
-      onClick={onScrim}
-    >
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      <div
+        className="absolute inset-0 cursor-pointer animate-scrim-in"
+        style={{ background: 'var(--scrim)' }}
+        onClick={onScrim}
+      />
       <div
         className={[
-          'w-full max-w-md bg-bg text-txt rounded-t-m3-xl cursor-auto',
-          'animate-fade-up flex flex-col max-h-[92vh]',
+          'relative w-full max-w-md bg-bg text-txt rounded-t-m3-xl',
+          'animate-sheet-up flex flex-col max-h-[92vh]',
           className,
         ].join(' ')}
         style={{ paddingBottom: 'calc(16px + var(--tg-safe-bottom))' }}
