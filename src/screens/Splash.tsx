@@ -44,12 +44,12 @@ export function Splash({ onDone }: Props) {
         ))}
       </div>
 
-      {/* Logo tile */}
+      {/* Logo tile — the Luma brand icon, beating like the mockup's heart */}
       <div
-        className="w-24 h-24 rounded-m3-xl flex items-center justify-center"
+        className="w-24 h-24 rounded-m3-xl flex items-center justify-center overflow-hidden"
         style={{ background: 'rgba(255,255,255,.16)', animation: 'lumaBeat 1.6s ease-in-out infinite' }}
       >
-        <Icon name="heart" size={44} className="text-white" />
+        <img src="/luma-icon.png" alt="Luma" className="w-16 h-16 select-none" />
       </div>
 
       <h1 className="text-[40px] font-medium text-white">Luma</h1>
