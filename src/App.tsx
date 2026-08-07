@@ -31,6 +31,8 @@ export function App() {
   const [matchesBadge, setMatchesBadge] = useState(0)
   const [showNotifyPrompt, setShowNotifyPrompt] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
+  // Bot handle from the banned 401 — the Blocked screen deep-links there.
+  const [supportBot, setSupportBot] = useState<string | null>(null)
   // Once a tab has been visited, keep it mounted (hidden via CSS) instead of
   // unmounting — avoids refetching and a loading flash on every tab switch.
   const [visited, setVisited] = useState<Record<Tab, boolean>>({
@@ -103,6 +105,9 @@ export function App() {
         const status = (err as { status?: number } | null)?.status
         const message = err instanceof Error ? err.message : ''
         if (status === 401 && message.includes('account_banned')) {
+          try {
+            setSupportBot((JSON.parse(message) as { botUsername?: string | null }).botUsername ?? null)
+          } catch { /* older backend: plain-text body, no bot handle */ }
           setAuthResult('blocked')
           return
         }
@@ -115,7 +120,7 @@ export function App() {
   }
 
   if (screen === 'blocked') {
-    return <Blocked />
+    return <Blocked supportBot={supportBot} />
   }
 
   if (screen === 'reconnect') {

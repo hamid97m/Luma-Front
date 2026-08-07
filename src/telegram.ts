@@ -33,6 +33,13 @@ export const haptic = {
   },
 }
 
+/** Open a t.me link inside Telegram; falls back to a new tab outside it. */
+export function openTelegramLink(url: string): void {
+  const wa = webApp()
+  if (wa?.openTelegramLink) wa.openTelegramLink(url)
+  else window.open(url, '_blank')
+}
+
 // ---------------------------------------------------------------------------
 // Safe area — in fullscreen mode the app draws under Telegram's floating
 // controls and the device status bar, so we mirror Telegram's own insets
