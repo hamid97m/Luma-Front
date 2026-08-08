@@ -105,6 +105,18 @@ export const t = {
     discovery: 'Discover',
     matches: 'Matches',
     profile: 'Profile',
+    likes: 'Likes',
+  },
+  likes: {
+    title: 'Likes',
+    empty: 'No likes yet',
+    emptySub: 'When someone likes you, they\'ll show up here.',
+    lockedTitle: 'See who likes you',
+    lockedSub: 'Unlock to reveal everyone who liked you.',
+    lockedCount: (n: number) => (n === 1 ? '1 person likes you' : `${n} people like you`),
+    unlockCta: 'Unlock likes',
+    likeBack: 'Like back',
+    paywallSubtitle: 'Unlock to see everyone who liked you — and like them back.',
   },
   errors: {
     generic: 'Something went wrong',
