@@ -2,21 +2,23 @@ import { t } from '../i18n.js'
 import { haptic } from '../telegram.js'
 import { Icon, Badge, type IconName } from './ui/index.js'
 
-type Tab = 'discovery' | 'matches' | 'profile'
+type Tab = 'discovery' | 'likes' | 'matches' | 'profile'
 
 interface Props {
   active: Tab
   onChange: (tab: Tab) => void
   matchesBadge?: number
+  likesBadge?: number
 }
 
 const TABS: Array<{ id: Tab; icon: IconName; label: string }> = [
   { id: 'discovery', icon: 'flame',   label: t.nav.discovery },
+  { id: 'likes',     icon: 'heart',   label: t.nav.likes     },
   { id: 'matches',   icon: 'message', label: t.nav.matches   },
   { id: 'profile',   icon: 'user',    label: t.nav.profile   },
 ]
 
-export function BottomNav({ active, onChange, matchesBadge }: Props) {
+export function BottomNav({ active, onChange, matchesBadge, likesBadge }: Props) {
   return (
     <nav
       className="bg-surface flex gap-1 px-2 pt-2 flex-none"
@@ -69,6 +71,9 @@ export function BottomNav({ active, onChange, matchesBadge }: Props) {
                 />
                 {tab.id === 'matches' && !!matchesBadge && matchesBadge > 0 && (
                   <Badge className="absolute -top-[7px] -right-[11px]">{matchesBadge}</Badge>
+                )}
+                {tab.id === 'likes' && !!likesBadge && likesBadge > 0 && (
+                  <Badge className="absolute -top-[7px] -right-[11px]">{likesBadge}</Badge>
                 )}
               </span>
             </span>
