@@ -77,11 +77,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
   const isEmpty = visible.length === 0 && lockedCount === 0
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt">
-      <div className="px-5 pt-8 pb-2">
-        <h1 className="text-2xl font-medium text-txt">{t.likes.title}</h1>
-      </div>
-
+    <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt pt-4">
       {isEmpty ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center px-10 pb-12">
           <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center mb-1">
