@@ -15,10 +15,12 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props)
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
 
   return (
-    <div className="absolute inset-0 rounded-m3-xl overflow-hidden select-none shadow-m3-1">
-      {/* Photo */}
+    <div className="absolute inset-0 rounded-m3-xl overflow-hidden select-none shadow-m3-1 bg-surface-high">
+      {/* Photo — keyed by URL so React mounts a fresh <img> per photo instead of
+          reusing the element and repainting the previously-decoded bitmap until
+          the new src decodes (which flashed the previous profile after a swipe). */}
       {photo
-        ? <img src={photo} alt={profile.name} className="w-full h-full object-cover pointer-events-none" draggable={false} />
+        ? <img key={photo} src={photo} alt={profile.name} className="w-full h-full object-cover pointer-events-none" draggable={false} />
         : <div className="w-full h-full bg-surface-high" />
       }
 

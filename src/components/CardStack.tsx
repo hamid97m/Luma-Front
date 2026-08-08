@@ -169,6 +169,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
           </div>
 
           <ProfileCard
+            key={profile.id}
             profile={profile}
             photoIdx={photoIdx}
             onReport={() => !disabled && !flying && setReportUserId(profile.id)}
