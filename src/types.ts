@@ -56,8 +56,14 @@ export interface LikerProfile {
   likedAt: string
 }
 
+/** A locked liker exposes only a photo (rendered blurred) — no identity. */
+export interface LockedLiker {
+  photo: string | null
+}
+
 export interface LikesResponse {
   visible: LikerProfile[]
+  locked: LockedLiker[]
   lockedCount: number
   premiumRequired: boolean
 }

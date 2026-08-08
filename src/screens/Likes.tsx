@@ -7,22 +7,19 @@ import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { MatchPopup } from '../components/MatchPopup.js'
 import { LikerProfileSheet, likedAgo } from '../components/LikerProfileSheet.js'
 import { Icon } from '../components/ui/index.js'
-import type { LikerProfile, Match, SwipeResult } from '../types.js'
+import type { LikerProfile, LockedLiker, Match, SwipeResult } from '../types.js'
 
-// Locked-liker placeholder tiles: no real photo exists for someone the viewer
-// hasn't unlocked, so these are theme-token gradients (never fabricated
-// imagery), blurred behind a lock badge. The count shown tracks `lockedCount`
-// (capped so the grid stays bounded — the banner states the true total).
+// Fallback for a locked liker with no photo — a theme-token gradient (blurred
+// behind the lock badge, same as the real-photo tiles).
 const LOCKED_GRADIENTS = [
   'linear-gradient(135deg, var(--pc), var(--pr))',
   'linear-gradient(150deg, var(--pr), var(--gold))',
   'linear-gradient(120deg, var(--gold), var(--pc))',
 ]
-const LOCKED_TILE_CAP = 6
 
 export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
   const [visible, setVisible] = useState<LikerProfile[]>([])
-  const [lockedCount, setLockedCount] = useState(0)
+  const [locked, setLocked] = useState<LockedLiker[]>([])
   const [loading, setLoading] = useState(true)
   const [payOpen, setPayOpen] = useState(false)
   const [openLiker, setOpenLiker] = useState<LikerProfile | null>(null)
@@ -39,7 +36,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
   const load = () =>
     api.likes
       .list()
-      .then((r) => { setVisible(r.visible); setLockedCount(r.lockedCount) })
+      .then((r) => { setVisible(r.visible); setLocked(r.locked) })
       .finally(() => setLoading(false))
 
   useEffect(() => { load() }, [])
@@ -102,6 +99,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
     )
   }
 
+  const lockedCount = locked.length
   const total = visible.length + lockedCount
   const isEmpty = total === 0
   const subtitle =
@@ -110,7 +108,6 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
       : isPremium
         ? t.likes.subtitleAllVisible(total)
         : t.likes.subtitle(total)
-  const lockedTiles = Math.min(lockedCount, LOCKED_TILE_CAP)
 
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt">
@@ -183,7 +180,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
             </button>
           ))}
 
-          {Array.from({ length: lockedTiles }).map((_, i) => (
+          {locked.map((l, i) => (
             <button
               key={`locked-${i}`}
               type="button"
@@ -191,15 +188,27 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
               aria-label={t.likes.premium}
               className="relative aspect-[3/4] rounded-m3-lg overflow-hidden bg-surface-high"
             >
-              <span
-                className="absolute inset-0"
-                style={{
-                  background: LOCKED_GRADIENTS[i % LOCKED_GRADIENTS.length],
-                  filter: 'blur(6px) saturate(.8)',
-                  transform: 'scale(1.1)',
-                }}
-                aria-hidden="true"
-              />
+              {l.photo ? (
+                // Real photo, lightly blurred client-side (the teaser). The URL is
+                // the unblurred original — see the note in backend/src/routes/likes.ts.
+                <img
+                  src={l.photo}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ filter: 'blur(8px)', transform: 'scale(1.08)' }}
+                />
+              ) : (
+                <span
+                  className="absolute inset-0"
+                  style={{
+                    background: LOCKED_GRADIENTS[i % LOCKED_GRADIENTS.length],
+                    filter: 'blur(8px) saturate(.8)',
+                    transform: 'scale(1.08)',
+                  }}
+                  aria-hidden="true"
+                />
+              )}
               <span className="absolute inset-0" style={{ background: 'rgba(33,26,29,.28)' }} />
               <span className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                 <span
