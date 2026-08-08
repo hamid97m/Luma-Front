@@ -184,10 +184,13 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
 
   // Iran-friendly Stars reseller (asanstar). Opens the referral bot with the
   // selected plan's Star price appended so the user buys the exact amount.
+  // Must use the t.me host: Telegram's openTelegramLink only treats t.me links
+  // as native deep links (passing the ?start= param straight to the bot) — a
+  // telegram.me link is not recognized and opens differently than in a chat.
   const handleAsanstar = () => {
     if (!selected) return
     haptic.impact('medium')
-    openTelegramLink(`https://telegram.me/asanstars_bot?start=ref_24JMEBKK-p${selected.priceStars}`)
+    openTelegramLink(`https://t.me/asanstars_bot?start=ref_24JMEBKK-p${selected.priceStars}`)
   }
 
   const benefits = [
