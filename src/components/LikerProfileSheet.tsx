@@ -53,15 +53,6 @@ export function LikerProfileSheet({ liker, busy, onClose, onPass, onLikeBack }: 
           className="absolute inset-0"
           style={{ background: 'linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,0) 34%,rgba(0,0,0,.6) 100%)' }}
         />
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Back"
-          className="absolute left-3 w-11 h-11 rounded-full flex items-center justify-center text-white"
-          style={{ top: 'calc(var(--tg-safe-top) + 8px)', background: 'rgba(0,0,0,.35)' }}
-        >
-          <Icon name="arrow-left" size={20} />
-        </button>
         <div className="absolute left-5 right-5 bottom-[18px]">
           <span
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-primary text-[10.5px] font-bold uppercase tracking-wide mb-2"
