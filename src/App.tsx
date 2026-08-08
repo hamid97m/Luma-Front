@@ -8,6 +8,7 @@ import { Reconnect } from './screens/Reconnect.js'
 import { Blocked } from './screens/Blocked.js'
 import { Onboarding } from './screens/Onboarding.js'
 import { Discovery } from './screens/Discovery.js'
+import { Likes } from './screens/Likes.js'
 import { Matches } from './screens/Matches.js'
 import { MyProfile } from './screens/MyProfile.js'
 import { Chat } from './screens/Chat.js'
@@ -17,7 +18,7 @@ import { NotifyPrompt } from './components/NotifyPrompt.js'
 import type { Match, UserProfile } from './types.js'
 
 type Screen = 'splash' | 'onboarding' | 'main' | 'reconnect' | 'blocked'
-type Tab = 'discovery' | 'matches' | 'profile'
+type Tab = 'discovery' | 'likes' | 'matches' | 'profile'
 
 export function App() {
   const initDataRaw = window.Telegram?.WebApp?.initData ?? null
@@ -29,6 +30,7 @@ export function App() {
   const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null)
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0)
   const [matchesBadge, setMatchesBadge] = useState(0)
+  const [likesBadge, setLikesBadge] = useState(0)
   const [showNotifyPrompt, setShowNotifyPrompt] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   // Bot handle from the banned 401 — the Blocked screen deep-links there.
@@ -37,6 +39,7 @@ export function App() {
   // unmounting — avoids refetching and a loading flash on every tab switch.
   const [visited, setVisited] = useState<Record<Tab, boolean>>({
     discovery: true,
+    likes: false,
     matches: false,
     profile: false,
   })
@@ -63,7 +66,8 @@ export function App() {
   useEffect(() => {
     if (screen !== 'main') return
     api.matches.unreadCount().then(({ count }) => setMatchesBadge(count))
-  }, [screen, matchesRefreshKey])
+    api.likes.unreadCount().then(({ count }) => setLikesBadge(count))
+  }, [screen, matchesRefreshKey, tab])
 
   // Premium gate status (toggle + own expiry + plans) — needed before the
   // user first hits send in a gated chat; refreshed by the paywall on purchase.
@@ -165,6 +169,11 @@ export function App() {
               <Discovery onOpenChat={setActiveChatMatch} />
             </div>
           )}
+          {visited.likes && (
+            <div className={`h-full ${tab === 'likes' ? '' : 'hidden'}`}>
+              <Likes onOpenChat={setActiveChatMatch} />
+            </div>
+          )}
           {visited.matches && (
             <div className={`h-full ${tab === 'matches' ? '' : 'hidden'}`}>
               <Matches onOpenChat={setActiveChatMatch} onStartDiscovering={() => setTab('discovery')} refreshKey={matchesRefreshKey} />
@@ -172,7 +181,7 @@ export function App() {
           )}
           {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile onOpenSupport={() => setShowSupport(true)} /></div>}
         </div>
-        <BottomNav active={tab} onChange={setTab} matchesBadge={matchesBadge} />
+        <BottomNav active={tab} onChange={setTab} matchesBadge={matchesBadge} likesBadge={likesBadge} />
         {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}
       </div>
     </>
