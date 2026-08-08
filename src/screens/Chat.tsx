@@ -270,14 +270,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
 
   return (
     <div className="flex flex-col h-full bg-bg text-txt" style={{ paddingTop: 'var(--tg-safe-top)' }}>
-      <div className="flex items-center gap-2 px-3 pt-12 pb-3 bg-surface w-full flex-none">
-        <IconButton
-          icon="arrow-left"
-          tone="ghost"
-          aria-label="Back"
-          onClick={onBack}
-          className="text-txt"
-        />
+      <div className="flex items-center gap-2 px-3 pt-3 pb-2 bg-surface w-full flex-none">
         <button
           type="button"
           aria-label={t.chat.viewProfile}

@@ -3,6 +3,7 @@ import { api } from '../api.js'
 import { IntrosSection } from '../components/gifts/IntrosSection.js'
 import { Avatar, Badge, Icon } from '../components/ui/index.js'
 import { MatchesEmpty } from '../components/MatchesEmpty.js'
+import { haptic } from '../telegram.js'
 import type { Match } from '../types.js'
 
 function formatDate(iso: string): string {
@@ -72,9 +73,12 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
       ) : (
         <div className="flex flex-col gap-2 px-4 pb-6">
           {matches.map((match) => (
-            <div
+            <button
               key={match.id}
-              className="bg-surface rounded-m3-lg flex items-center gap-3 px-3.5 py-3"
+              type="button"
+              onClick={() => { haptic.selection(); onOpenChat(match) }}
+              aria-label={`Open chat with ${match.user.name}`}
+              className="w-full text-left bg-surface rounded-m3-lg flex items-center gap-3 px-3.5 py-3 transition-colors active:brightness-95"
             >
               {/* Avatar */}
               <div className="relative flex-none">
@@ -102,15 +106,9 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
                 {match.unreadCount > 0 && <Badge>{match.unreadCount}</Badge>}
               </div>
 
-              {/* Open chat */}
-              <button
-                onClick={() => onOpenChat(match)}
-                aria-label="Open chat"
-                className="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center flex-none transition-colors hover:brightness-95"
-              >
-                <Icon name="message" size={18} />
-              </button>
-            </div>
+              {/* Chevron cue */}
+              <Icon name="chevron-right" size={20} className="text-txt3 flex-none" />
+            </button>
           ))}
         </div>
       )}
