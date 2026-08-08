@@ -40,6 +40,11 @@ export function openTelegramLink(url: string): void {
   else window.open(url, '_blank')
 }
 
+/** Close the Mini App (no-op outside Telegram). */
+export function closeMiniApp(): void {
+  webApp()?.close?.()
+}
+
 // ---------------------------------------------------------------------------
 // Safe area — in fullscreen mode the app draws under Telegram's floating
 // controls and the device status bar, so we mirror Telegram's own insets
