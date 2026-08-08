@@ -167,6 +167,7 @@ export const t = {
     subtitle: 'Go Premium to send her a message',
     days: (n: number) => `${n} days`,
     buy: (stars: number) => `Continue — ⭐${stars}`,
+    asanstar: 'خرید امن برای ایرانیان',
     selectPrompt: 'Choose a plan',
     activating: 'Activating Premium…',
     refunded: "Payment refunded — Premium couldn't be activated",

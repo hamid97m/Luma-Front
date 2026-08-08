@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api.js'
 import { t } from '../../i18n.js'
-import { openInvoice, haptic } from '../../telegram.js'
+import { openInvoice, openTelegramLink, haptic } from '../../telegram.js'
 import { usePremiumStore } from '../../store.js'
 import { formatCountdown } from '../../utils/premium.js'
 import { Icon, Sheet } from '../ui'
@@ -182,6 +182,14 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
 
   const selected = plans.find((p) => p.id === selectedId) ?? null
 
+  // Iran-friendly Stars reseller (asanstar). Opens the referral bot with the
+  // selected plan's Star price appended so the user buys the exact amount.
+  const handleAsanstar = () => {
+    if (!selected) return
+    haptic.impact('medium')
+    openTelegramLink(`https://telegram.me/asanstars_bot?start=ref_24JMEBKK-p${selected.priceStars}`)
+  }
+
   const benefits = [
     { icon: 'heart', label: t.premium.benefitSwipes },
     { icon: 'message', label: t.premium.benefitChat },
@@ -303,6 +311,16 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             ) : (
               t.premium.selectPrompt
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleAsanstar}
+            disabled={!selected || busy}
+            dir="rtl"
+            className="w-full h-12 mt-2.5 rounded-full border-2 border-primary text-primary font-medium text-[15px] flex items-center justify-center transition-opacity disabled:opacity-45"
+          >
+            {t.premium.asanstar}
           </button>
 
           <div className="flex items-center justify-center gap-1.5 mt-3">
