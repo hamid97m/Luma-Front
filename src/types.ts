@@ -49,6 +49,8 @@ export interface LikerProfile {
   name: string
   age: number | null
   bio: string | null
+  location: string | null
+  interests: string[]
   telegramId: number
   photos: string[]
   likedAt: string

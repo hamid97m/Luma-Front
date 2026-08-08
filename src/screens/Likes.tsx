@@ -2,14 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
 import { haptic } from '../telegram.js'
+import { usePremiumStore } from '../store.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
+import { MatchPopup } from '../components/MatchPopup.js'
+import { LikerProfileSheet, likedAgo } from '../components/LikerProfileSheet.js'
 import { Icon } from '../components/ui/index.js'
-import type { LikerProfile, Match } from '../types.js'
+import type { LikerProfile, Match, SwipeResult } from '../types.js'
 
 // Locked-liker placeholder tiles: no real photo exists for someone the viewer
 // hasn't unlocked, so these are theme-token gradients (never fabricated
-// imagery), heavily blurred and overlaid with the unlock CTA below. The
-// rendered count tracks `lockedCount` (capped so the grid stays bounded).
+// imagery), blurred behind a lock badge. The count shown tracks `lockedCount`
+// (capped so the grid stays bounded — the banner states the true total).
 const LOCKED_GRADIENTS = [
   'linear-gradient(135deg, var(--pc), var(--pr))',
   'linear-gradient(150deg, var(--pr), var(--gold))',
@@ -22,14 +25,22 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
   const [lockedCount, setLockedCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [payOpen, setPayOpen] = useState(false)
-  const [likingId, setLikingId] = useState<string | null>(null)
-  // Tracks the previous payOpen value so the close-effect below only
-  // re-fetches on a real true -> false transition, not on the initial
-  // mount (where payOpen is already false and the mount effect already loads).
+  const [openLiker, setOpenLiker] = useState<LikerProfile | null>(null)
+  const [acting, setActing] = useState(false)
+  const [matchPopup, setMatchPopup] = useState<SwipeResult['match'] | null>(null)
+
+  const premiumUntil = usePremiumStore((s) => s.status?.premiumUntil)
+  const isPremium = !!premiumUntil && new Date(premiumUntil).getTime() > Date.now()
+
+  // Tracks the previous payOpen value so the close-effect only re-fetches on a
+  // real true -> false transition, not on the initial mount.
   const prevPayOpenRef = useRef(false)
 
   const load = () =>
-    api.likes.list().then((r) => { setVisible(r.visible); setLockedCount(r.lockedCount) }).finally(() => setLoading(false))
+    api.likes
+      .list()
+      .then((r) => { setVisible(r.visible); setLockedCount(r.lockedCount) })
+      .finally(() => setLoading(false))
 
   useEffect(() => { load() }, [])
   // Re-fetch when the paywall closes — a purchase may have unlocked likers.
@@ -38,32 +49,49 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
     prevPayOpenRef.current = payOpen
   }, [payOpen])
 
+  const openPaywall = () => { haptic.impact('medium'); setPayOpen(true) }
+
+  const pass = async (l: LikerProfile) => {
+    if (acting) return
+    haptic.impact('light')
+    setActing(true)
+    try { await api.swipes.swipe(l.id, 'pass') } catch { /* optimistic — drop anyway */ }
+    setVisible((v) => v.filter((x) => x.id !== l.id))
+    setOpenLiker(null)
+    setActing(false)
+  }
+
   const likeBack = async (l: LikerProfile) => {
-    if (likingId) return
+    if (acting) return
     haptic.impact('medium')
-    setLikingId(l.id)
+    setActing(true)
     try {
       const res = await api.swipes.swipe(l.id, 'like')
-      if (res.matched && res.match) {
-        // Mirrors Discovery.tsx's openMatchChat: the swipe response only
-        // carries a minimal match shape (id + counterpart identity, no
-        // photos/timestamps) — synthesize the fields Chat needs with safe
-        // defaults for a match that (by definition) has no messages yet.
-        onOpenChat({
-          id: res.match.id,
-          matchedAt: new Date().toISOString(),
-          user: { ...res.match.user, photos: [], age: null, bio: null, icebreakerPrompt: null, icebreakerAnswer: null },
-          lastMessage: null,
-          unreadCount: 0,
-        })
-      }
-      // Either way, they're no longer a pending "liker" — drop the card.
       setVisible((v) => v.filter((x) => x.id !== l.id))
+      setOpenLiker(null)
+      // A liker liking back is by definition a mutual like → a match. Fire the
+      // existing "It's a Match" dialog rather than opening chat directly.
+      if (res.matched && res.match) setMatchPopup(res.match)
     } catch {
       haptic.notification('error')
     } finally {
-      setLikingId(null)
+      setActing(false)
     }
+  }
+
+  // MatchPopup "Send a message" → build the minimal Match the chat needs from the
+  // swipe response (mirrors Discovery.tsx) and open the chat.
+  const openMatchChat = () => {
+    const m = matchPopup
+    if (!m) return
+    setMatchPopup(null)
+    onOpenChat({
+      id: m.id,
+      matchedAt: new Date().toISOString(),
+      user: { ...m.user, photos: [], age: null, bio: null, icebreakerPrompt: null, icebreakerAnswer: null },
+      lastMessage: null,
+      unreadCount: 0,
+    })
   }
 
   if (loading) {
@@ -74,99 +102,136 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
     )
   }
 
-  const isEmpty = visible.length === 0 && lockedCount === 0
+  const total = visible.length + lockedCount
+  const isEmpty = total === 0
+  const subtitle =
+    lockedCount > 0
+      ? t.likes.subtitleHidden(total, lockedCount)
+      : isPremium
+        ? t.likes.subtitleAllVisible(total)
+        : t.likes.subtitle(total)
+  const lockedTiles = Math.min(lockedCount, LOCKED_TILE_CAP)
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt pt-4">
+    <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt">
+      {!isEmpty && <p className="px-5 pt-6 pb-1 text-[13px] text-txt2">{subtitle}</p>}
+
+      {lockedCount > 0 && (
+        <button
+          type="button"
+          onClick={openPaywall}
+          className="mx-4 mt-3 mb-1 rounded-[20px] p-4 flex items-center gap-3 text-left bg-primary-container"
+        >
+          <span className="w-11 h-11 rounded-full flex items-center justify-center flex-none bg-primary">
+            <Icon name="lock" size={20} className="text-white" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[15px] font-medium text-on-primary-container">{t.likes.bannerCount(lockedCount)}</span>
+            <span className="block mt-0.5 text-[12.5px] leading-snug text-on-primary-container" style={{ opacity: 0.7 }}>
+              {t.likes.bannerSub}
+            </span>
+          </span>
+          <Icon name="chevron-right" size={18} className="text-on-primary-container flex-none" />
+        </button>
+      )}
+
       {isEmpty ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center px-10 pb-12">
-          <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center mb-1">
-            <Icon name="heart" size={28} className="text-primary" />
+          <div className="w-[76px] h-[76px] rounded-full bg-surface flex items-center justify-center mb-1.5">
+            <Icon name="heart" size={30} className="text-primary" />
           </div>
           <h2 className="text-[22px] font-medium text-txt">{t.likes.empty}</h2>
-          <p className="text-txt2 text-[14px] leading-relaxed max-w-[240px]">{t.likes.emptySub}</p>
+          <p className="text-txt2 text-[14px] leading-relaxed max-w-[250px]">{t.likes.emptySub}</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4 px-4 pb-6 mt-2">
-          {visible.length > 0 && (
-            <div className="grid grid-cols-2 gap-3">
-              {visible.map((l) => (
-                <div key={l.id} className="bg-surface rounded-m3-lg overflow-hidden flex flex-col">
-                  <div className="relative aspect-[3/4] bg-surface-high">
-                    {l.photos[0] ? (
-                      <img src={l.photos[0]} alt={l.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Icon name="user" size={28} className="text-txt3" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-2.5 flex flex-col gap-2">
-                    <p className="text-[14px] font-medium text-txt truncate">
-                      {l.name}
-                      {l.age != null ? `, ${l.age}` : ''}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => likeBack(l)}
-                      disabled={likingId === l.id}
-                      aria-label={`${t.likes.likeBack} ${l.name}`}
-                      className="w-full h-9 rounded-full bg-primary text-white text-[13px] font-medium flex items-center justify-center gap-1.5 transition-opacity disabled:opacity-60"
-                    >
-                      {likingId === l.id ? (
-                        <span
-                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                          style={{ animation: 'lumaSpin .8s linear infinite' }}
-                        />
-                      ) : (
-                        <>
-                          <Icon name="heart" size={13} />
-                          {t.likes.likeBack}
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="grid grid-cols-2 gap-3 p-4">
+          {visible.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => { haptic.selection(); setOpenLiker(l) }}
+              className="relative aspect-[3/4] rounded-m3-lg overflow-hidden bg-surface-high"
+            >
+              {l.photos[0] ? (
+                <img src={l.photos[0]} alt={l.name} className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <Icon name="user" size={30} className="text-txt3" />
+                </span>
+              )}
+              <span
+                className="absolute inset-0"
+                style={{ background: 'linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.62) 100%)' }}
+              />
+              <span className="absolute left-2.5 right-2.5 bottom-2.5 flex items-end justify-between gap-2">
+                <span className="min-w-0 text-left">
+                  <span className="block text-[15px] font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis">
+                    {l.name}
+                    {l.age != null ? `, ${l.age}` : ''}
+                  </span>
+                  <span className="block text-[11px] text-white/80">{likedAgo(l.likedAt)}</span>
+                </span>
+                {!isPremium && (
+                  <span
+                    className="text-[9.5px] font-bold uppercase tracking-wide px-[7px] py-[3px] rounded-full text-primary flex-none"
+                    style={{ background: 'rgba(255,255,255,.92)' }}
+                  >
+                    {t.likes.free}
+                  </span>
+                )}
+              </span>
+            </button>
+          ))}
 
-          {lockedCount > 0 && (
-            <div className="relative rounded-m3-lg overflow-hidden">
-              <div
-                className="grid grid-cols-3 gap-1.5 p-1.5"
-                style={{ filter: 'blur(14px)' }}
+          {Array.from({ length: lockedTiles }).map((_, i) => (
+            <button
+              key={`locked-${i}`}
+              type="button"
+              onClick={openPaywall}
+              aria-label={t.likes.premium}
+              className="relative aspect-[3/4] rounded-m3-lg overflow-hidden bg-surface-high"
+            >
+              <span
+                className="absolute inset-0"
+                style={{
+                  background: LOCKED_GRADIENTS[i % LOCKED_GRADIENTS.length],
+                  filter: 'blur(16px) saturate(.7)',
+                  transform: 'scale(1.2)',
+                }}
                 aria-hidden="true"
-              >
-                {Array.from({ length: Math.min(lockedCount, LOCKED_TILE_CAP) }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-square rounded-m3-md"
-                    style={{ background: LOCKED_GRADIENTS[i % LOCKED_GRADIENTS.length] }}
-                  />
-                ))}
-              </div>
-              <div
-                className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 text-center px-6"
-                style={{ background: 'rgba(0,0,0,.34)' }}
-              >
-                <Icon name="lock" size={22} className="text-white" />
-                <div className="flex flex-col gap-1">
-                  <p className="text-white font-medium text-[16px] leading-snug">{t.likes.lockedTitle}</p>
-                  <p className="text-white/80 text-[12px] leading-snug">{t.likes.lockedSub}</p>
-                </div>
-                <p className="text-white font-semibold text-[13px] mt-0.5">{t.likes.lockedCount(lockedCount)}</p>
-                <button
-                  type="button"
-                  onClick={() => { haptic.impact('medium'); setPayOpen(true) }}
-                  className="h-10 px-5 rounded-full bg-gold-btn text-[#241A00] font-medium text-[13px] mt-0.5"
+              />
+              <span className="absolute inset-0" style={{ background: 'rgba(33,26,29,.28)' }} />
+              <span className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                <span
+                  className="w-[38px] h-[38px] rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(255,255,255,.92)', boxShadow: '0 3px 10px rgba(0,0,0,.2)' }}
                 >
-                  {t.likes.unlockCta}
-                </button>
-              </div>
-            </div>
-          )}
+                  <Icon name="lock" size={17} className="text-primary" />
+                </span>
+                <span
+                  className="text-[11px] font-semibold uppercase tracking-wide text-white"
+                  style={{ textShadow: '0 1px 4px rgba(0,0,0,.5)' }}
+                >
+                  {t.likes.premium}
+                </span>
+              </span>
+            </button>
+          ))}
         </div>
+      )}
+
+      {openLiker && (
+        <LikerProfileSheet
+          liker={openLiker}
+          busy={acting}
+          onClose={() => setOpenLiker(null)}
+          onPass={() => pass(openLiker)}
+          onLikeBack={() => likeBack(openLiker)}
+        />
+      )}
+
+      {matchPopup && (
+        <MatchPopup match={matchPopup} onClose={() => setMatchPopup(null)} onMessage={openMatchChat} />
       )}
 
       <PaywallSheet open={payOpen} onClose={() => setPayOpen(false)} subtitle={t.likes.paywallSubtitle} />
