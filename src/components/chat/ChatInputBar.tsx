@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { t } from '../../i18n.js'
-import { haptic, mainButtonSupported } from '../../telegram.js'
+import { haptic } from '../../telegram.js'
 import { IconButton, Icon } from '../ui/index.js'
 
 const MAX_LENGTH = 2000
@@ -110,7 +110,7 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
           placeholder={t.chat.placeholder}
           className="flex-1 bg-field text-txt text-[15px] rounded-[22px] px-4 py-2.5 outline-none resize-none border border-transparent focus:border-primary transition-colors placeholder:text-txt3"
         />
-        {!mainButtonSupported() && !!draft.trim() && (
+        {!!draft.trim() && (
           <IconButton
             aria-label={editingBody != null ? t.chat.save : t.chat.send}
             onClick={onSend}

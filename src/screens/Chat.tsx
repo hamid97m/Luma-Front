@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api.js'
-import { haptic, useMainButton } from '../telegram.js'
+import { haptic } from '../telegram.js'
 import { buildChatItems } from '../utils/chatFormat.js'
 import { MessageBubble } from '../components/chat/MessageBubble.js'
 import { ChatInputBar } from '../components/chat/ChatInputBar.js'
@@ -247,16 +247,6 @@ export function Chat({ match, myUserId, onBack }: Props) {
     if (!parent) return { author: '', text: t.chat.replyDeleted }
     return { author: parent.senderId === myUserId ? t.chat.replyYou : match.user.name, text: parent.body }
   }, [byId, myUserId, match.user.name])
-
-  // Native Telegram Send button — docks above the keyboard. Hidden when the
-  // draft is empty or the match is gone; the in-page button below is the
-  // fallback when Telegram provides no MainButton (browser/dev/tests).
-  useMainButton({
-    text: editingId ? t.chat.save : t.chat.send,
-    visible: loadState === 'ready' && !!draft.trim(),
-    enabled: !!draft.trim(),
-    onClick: submit,
-  })
 
   const lastMineId = [...messages].reverse().find((m) => m.senderId === myUserId && !m.status)?.id ?? null
 
