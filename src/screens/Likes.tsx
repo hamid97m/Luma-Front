@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
 import { haptic } from '../telegram.js'
@@ -8,13 +8,14 @@ import type { LikerProfile, Match } from '../types.js'
 
 // Locked-liker placeholder tiles: no real photo exists for someone the viewer
 // hasn't unlocked, so these are theme-token gradients (never fabricated
-// imagery), heavily blurred and overlaid with the unlock CTA below.
+// imagery), heavily blurred and overlaid with the unlock CTA below. The
+// rendered count tracks `lockedCount` (capped so the grid stays bounded).
 const LOCKED_GRADIENTS = [
   'linear-gradient(135deg, var(--pc), var(--pr))',
   'linear-gradient(150deg, var(--pr), var(--gold))',
   'linear-gradient(120deg, var(--gold), var(--pc))',
 ]
-const LOCKED_TILE_COUNT = 6
+const LOCKED_TILE_CAP = 6
 
 export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
   const [visible, setVisible] = useState<LikerProfile[]>([])
@@ -22,13 +23,20 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
   const [loading, setLoading] = useState(true)
   const [payOpen, setPayOpen] = useState(false)
   const [likingId, setLikingId] = useState<string | null>(null)
+  // Tracks the previous payOpen value so the close-effect below only
+  // re-fetches on a real true -> false transition, not on the initial
+  // mount (where payOpen is already false and the mount effect already loads).
+  const prevPayOpenRef = useRef(false)
 
   const load = () =>
     api.likes.list().then((r) => { setVisible(r.visible); setLockedCount(r.lockedCount) }).finally(() => setLoading(false))
 
   useEffect(() => { load() }, [])
   // Re-fetch when the paywall closes — a purchase may have unlocked likers.
-  useEffect(() => { if (!payOpen) load() }, [payOpen])
+  useEffect(() => {
+    if (prevPayOpenRef.current && !payOpen) load()
+    prevPayOpenRef.current = payOpen
+  }, [payOpen])
 
   const likeBack = async (l: LikerProfile) => {
     if (likingId) return
@@ -134,7 +142,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
                 style={{ filter: 'blur(14px)' }}
                 aria-hidden="true"
               >
-                {Array.from({ length: LOCKED_TILE_COUNT }).map((_, i) => (
+                {Array.from({ length: Math.min(lockedCount, LOCKED_TILE_CAP) }).map((_, i) => (
                   <div
                     key={i}
                     className="aspect-square rounded-m3-md"
@@ -143,15 +151,19 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
                 ))}
               </div>
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-6"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 text-center px-6"
                 style={{ background: 'rgba(0,0,0,.34)' }}
               >
                 <Icon name="lock" size={22} className="text-white" />
-                <p className="text-white font-medium text-[15px] leading-snug">{t.likes.lockedCount(lockedCount)}</p>
+                <div className="flex flex-col gap-1">
+                  <p className="text-white font-medium text-[16px] leading-snug">{t.likes.lockedTitle}</p>
+                  <p className="text-white/80 text-[12px] leading-snug">{t.likes.lockedSub}</p>
+                </div>
+                <p className="text-white font-semibold text-[13px] mt-0.5">{t.likes.lockedCount(lockedCount)}</p>
                 <button
                   type="button"
                   onClick={() => { haptic.impact('medium'); setPayOpen(true) }}
-                  className="h-10 px-5 rounded-full bg-gold-btn text-[#241A00] font-medium text-[13px]"
+                  className="h-10 px-5 rounded-full bg-gold-btn text-[#241A00] font-medium text-[13px] mt-0.5"
                 >
                   {t.likes.unlockCta}
                 </button>
