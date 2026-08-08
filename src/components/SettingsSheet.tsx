@@ -79,7 +79,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
           <button
             type="button"
             role="switch"
-            aria-checked={isActive}
+            aria-checked={!isActive}
             aria-label="Pause my account"
             disabled={pausing}
             onClick={togglePause}
@@ -99,11 +99,11 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
               ) : (
                 <span
                   aria-hidden="true"
-                  className={`w-12 h-7 rounded-full transition-colors relative inline-block flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-[var(--ol2)]'}`}
+                  className={`w-12 h-7 rounded-full transition-colors relative inline-block flex-shrink-0 ${!isActive ? 'bg-primary' : 'bg-[var(--ol2)]'}`}
                 >
                   <span
                     className="absolute top-0.5 w-6 h-6 rounded-full bg-white transition-transform"
-                    style={{ transform: isActive ? 'translateX(22px)' : 'translateX(2px)' }}
+                    style={{ transform: !isActive ? 'translateX(22px)' : 'translateX(2px)' }}
                   />
                 </span>
               )}
