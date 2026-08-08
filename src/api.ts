@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse } from './types.js'
 import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
@@ -100,6 +100,10 @@ export const api = {
   matches: {
     list: () => request<{ matches: Match[] }>('/matches'),
     unreadCount: () => request<{ count: number }>('/matches/unread-count'),
+  },
+  likes: {
+    list: () => request<LikesResponse>('/likes'),
+    unreadCount: () => request<{ count: number }>('/likes/unread-count'),
   },
   messages: {
     list: (matchId: string) => request<{ messages: Message[] }>(`/matches/${matchId}/messages`),

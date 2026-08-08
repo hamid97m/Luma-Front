@@ -44,6 +44,22 @@ export interface Match {
   premiumRequired?: boolean
 }
 
+export interface LikerProfile {
+  id: string
+  name: string
+  age: number | null
+  bio: string | null
+  telegramId: number
+  photos: string[]
+  likedAt: string
+}
+
+export interface LikesResponse {
+  visible: LikerProfile[]
+  lockedCount: number
+  premiumRequired: boolean
+}
+
 export interface PremiumPlan {
   id: string
   title: string
