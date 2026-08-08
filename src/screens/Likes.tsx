@@ -195,8 +195,8 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
                 className="absolute inset-0"
                 style={{
                   background: LOCKED_GRADIENTS[i % LOCKED_GRADIENTS.length],
-                  filter: 'blur(16px) saturate(.7)',
-                  transform: 'scale(1.2)',
+                  filter: 'blur(6px) saturate(.8)',
+                  transform: 'scale(1.1)',
                 }}
                 aria-hidden="true"
               />
