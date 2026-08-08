@@ -317,10 +317,13 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             type="button"
             onClick={handleAsanstar}
             disabled={!selected || busy}
-            dir="rtl"
-            className="w-full h-12 mt-2.5 rounded-full border-2 border-primary text-primary font-medium text-[15px] flex items-center justify-center transition-opacity disabled:opacity-45"
+            className="w-full mt-2.5 rounded-m3-md bg-surface px-4 py-3 flex items-center gap-2.5 transition-opacity disabled:opacity-45"
           >
-            {t.premium.asanstar}
+            <Icon name="star" size={16} className="text-gold flex-none" />
+            <span className="flex-1 min-w-0 truncate text-right text-[13px] font-medium text-txt2">
+              {t.premium.asanstar}
+            </span>
+            <Icon name="external-link" size={15} className="text-txt3 flex-none" />
           </button>
 
           <div className="flex items-center justify-center gap-1.5 mt-3">
