@@ -42,6 +42,11 @@
   --purple:   var(--pr);
   --app-bg:   var(--bg);
 
+  /* Max width of the app column. On a phone the viewport is narrower than this
+     so it's a no-op; on desktop Telegram (a wide window) it keeps the app at
+     mobile size — a centered column — instead of stretching edge to edge. */
+  --app-max-width: 420px;
+
   /* Telegram fullscreen safe-area insets, written from JS (see telegram.ts).
      Default to 0 so non-fullscreen / non-Telegram layouts are unchanged. */
   --tg-safe-top:    0px;
@@ -82,6 +87,18 @@
     padding: 0;
     overflow: hidden;
   }
+  /* Phone-width app frame. `transform` makes #root the containing block for the
+     app's many `position: fixed` overlays (chat, sheets, photo viewer/editor,
+     support) so they stay inside this column on desktop instead of spanning the
+     whole Telegram window. On a real phone the viewport is narrower than
+     --app-max-width, so the max-width and centering are a no-op there. */
+  #root {
+    width: 100%;
+    max-width: var(--app-max-width);
+    margin-inline: auto;
+    position: relative;
+    transform: translateZ(0);
+  }
   body {
     background-color: var(--bg);
     color: var(--tx);
@@ -89,6 +106,13 @@
     direction: ltr;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  /* Desktop only: tint the letterbox area beside the column and give the frame
+     a subtle edge/shadow so it reads as a centered mobile surface. Placed after
+     the base `body` rule so this background override wins by source order. */
+  @media (min-width: 440px) {
+    body { background-color: var(--sc); }
+    #root { box-shadow: 0 0 0 1px var(--ol), 0 8px 40px rgba(0, 0, 0, 0.14); }
   }
   /* Hide scrollbars everywhere (scroll still works, just no visible bar) */
   * {

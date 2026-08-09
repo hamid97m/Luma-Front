@@ -145,7 +145,12 @@ export function initTelegram() {
 
   // True fullscreen + safe-area tracking (Bot API 8.0+). Falls back silently
   // to the expanded (non-fullscreen) state on failure or older clients.
-  if (supports('8.0')) {
+  // Only request fullscreen on real phones — on desktop/web clients it blows
+  // the Mini App up to fill the whole Telegram window; there we keep the
+  // default window size and let the CSS phone-width frame (index.css #root) do
+  // the constraining so the app reads as a centered mobile column instead.
+  const isMobile = wa.platform === 'android' || wa.platform === 'ios'
+  if (supports('8.0') && isMobile) {
     wa.requestFullscreen?.()
     wa.onEvent?.('safeAreaChanged', writeSafeAreaVars)
     wa.onEvent?.('contentSafeAreaChanged', writeSafeAreaVars)
