@@ -5,7 +5,9 @@ import type { UserProfile } from '../types.js'
 import { SettingsSheet } from '../components/SettingsSheet.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
 import { PremiumCard } from '../components/premium/PremiumCard.js'
-import { Card, IconButton, Icon } from '../components/ui/index.js'
+import { Card, IconButton, Icon, Sheet } from '../components/ui/index.js'
+import type { IconName } from '../components/ui/index.js'
+import { haptic } from '../telegram.js'
 
 const ALL_TAGS = [
   '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
@@ -14,14 +16,38 @@ const ALL_TAGS = [
   '🍷 Wine', '🧘 Yoga', '📷 Photography', '🎮 Gaming',
 ]
 
-const PROMPTS = [
-  'My ideal Sunday…',
-  'Two truths and a lie…',
-  'The way to win me over is…',
-  'I geek out about…',
-  'A perfect first date…',
-  'My most controversial opinion…',
+// Icebreaker prompts shown in the picker. `prompt` is stored verbatim on the
+// profile (free-text column), `icon` is the glyph tile, and `hint` is the
+// one-line coaching nudge the picker shows under each option.
+interface Icebreaker {
+  prompt: string
+  icon: IconName
+  hint: string
+}
+
+const ICEBREAKERS: Icebreaker[] = [
+  { prompt: 'My ideal Sunday…', icon: 'sun', hint: 'Paint the scene — easy to picture, easy to reply.' },
+  { prompt: 'Two truths and a lie…', icon: 'help-circle', hint: 'Make them guess — great reply rate.' },
+  { prompt: 'The way to win me over is…', icon: 'heart', hint: 'Tell them exactly how — no guessing.' },
+  { prompt: 'I geek out about…', icon: 'zap', hint: 'Passion is magnetic. Go niche.' },
+  { prompt: 'A perfect first date…', icon: 'coffee', hint: 'Set the vibe for date one.' },
+  { prompt: 'My most controversial opinion…', icon: 'flag', hint: 'Spark a friendly debate.' },
+  // Newer additions
+  { prompt: "We'll get along if…", icon: 'sparkles', hint: 'Filter for your kind of person.' },
+  { prompt: 'My simple pleasures…', icon: 'star', hint: 'Small joys are surprisingly attractive.' },
+  { prompt: "I'm weirdly good at…", icon: 'flame', hint: 'A little humble-brag goes a long way.' },
+  { prompt: "A trip I'd take you on…", icon: 'map-pin', hint: 'Adventure bait — where are we going?' },
+  { prompt: 'The last thing that made me laugh…', icon: 'message-dots', hint: 'Show off your sense of humor.' },
+  { prompt: 'Green flags I look for…', icon: 'verified', hint: 'Say what you actually value.' },
 ]
+
+// Resolve a stored prompt string to its metadata. Falls back gracefully for
+// legacy/custom prompts that aren't in the current list.
+function icebreakerFor(prompt: string | null | undefined): Icebreaker {
+  const match = ICEBREAKERS.find((i) => i.prompt === prompt)
+  if (match) return match
+  return { prompt: prompt || ICEBREAKERS[0].prompt, icon: 'sparkle', hint: '' }
+}
 
 const SLOT_IDS = ['p', 'a', 'b', 'c', 'd', 'e'] as const
 
@@ -50,8 +76,9 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const [bio, setBio] = useState(storeUser?.bio ?? '')
   const [tags, setTags] = useState<string[]>(storeUser?.interests ?? [])
   const [tagPicker, setTagPicker] = useState(false)
-  const [prompt, setPrompt] = useState(storeUser?.icebreaker_prompt ?? PROMPTS[0])
+  const [prompt, setPrompt] = useState(storeUser?.icebreaker_prompt ?? ICEBREAKERS[0].prompt)
   const [answer, setAnswer] = useState(storeUser?.icebreaker_answer ?? '')
+  const [promptPicker, setPromptPicker] = useState(false)
   const [uploading, setUploading] = useState<{ slotId: string; phase: 'processing' | 'uploading'; progress: number } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editing, setEditing] = useState<{ file: File; slotId: string } | null>(null)
@@ -66,7 +93,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
       setLocation(p.location ?? '')
       setBio(p.bio ?? '')
       setTags(p.interests)
-      setPrompt(p.icebreaker_prompt ?? PROMPTS[0])
+      setPrompt(p.icebreaker_prompt ?? ICEBREAKERS[0].prompt)
       setAnswer(p.icebreaker_answer ?? '')
     })
   }, [])
@@ -327,16 +354,21 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
         {/* Icebreaker */}
         <div className="rounded-m3-lg p-4 bg-primary-container text-on-primary-container">
           <p className="text-[11px] font-bold uppercase tracking-wider text-on-primary-container">Icebreaker</p>
-          <select
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onBlur={() => save({ icebreaker_prompt: prompt })}
-            className="w-full text-[15px] font-medium text-on-primary-container mt-2 mb-2.5 outline-none cursor-pointer bg-transparent border-none"
+          {/* Tappable prompt row → opens the picker bottom sheet */}
+          <button
+            type="button"
+            onClick={() => { haptic.selection(); setPromptPicker(true) }}
+            className="w-full flex items-center gap-3 mt-2.5 mb-2.5 text-left"
           >
-            {PROMPTS.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+            <span className="w-10 h-10 rounded-m3-sm bg-[color-mix(in_srgb,var(--onpc)_12%,transparent)] flex items-center justify-center flex-none">
+              <Icon name={icebreakerFor(prompt).icon} size={20} />
+            </span>
+            <span className="flex-1 min-w-0 text-[15px] font-medium text-on-primary-container truncate">{prompt}</span>
+            <span className="flex items-center gap-0.5 text-[13px] font-medium opacity-80 flex-none">
+              Change
+              <Icon name="chevron-right" size={16} />
+            </span>
+          </button>
           <textarea
             rows={3}
             maxLength={140}
@@ -366,6 +398,42 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
         </button>
 
       </div>
+
+      <Sheet open={promptPicker} onClose={() => setPromptPicker(false)} title="Choose an icebreaker">
+        <div className="flex flex-col gap-2 pb-2">
+          {ICEBREAKERS.map((ib) => {
+            const active = ib.prompt === prompt
+            return (
+              <button
+                key={ib.prompt}
+                type="button"
+                onClick={() => {
+                  haptic.selection()
+                  setPrompt(ib.prompt)
+                  save({ icebreaker_prompt: ib.prompt })
+                  setPromptPicker(false)
+                }}
+                className={`w-full flex items-center gap-3 rounded-m3-lg p-3 text-left transition-colors ${active ? 'bg-primary-container' : 'bg-surface hover:bg-surface-high'}`}
+              >
+                <span
+                  className={`w-11 h-11 rounded-m3-sm flex items-center justify-center flex-none ${active ? 'bg-primary text-white' : 'bg-primary-container text-primary'}`}
+                >
+                  <Icon name={ib.icon} size={20} />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className={`block text-[15px] font-medium ${active ? 'text-on-primary-container' : 'text-txt'}`}>{ib.prompt}</span>
+                  <span className={`block text-[12px] leading-snug ${active ? 'text-on-primary-container opacity-70' : 'text-txt2'}`}>{ib.hint}</span>
+                </span>
+                {active && (
+                  <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-none">
+                    <Icon name="check" size={15} />
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </Sheet>
 
       {settingsOpen && (
         <SettingsSheet
