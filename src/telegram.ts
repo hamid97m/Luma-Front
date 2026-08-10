@@ -83,15 +83,46 @@ function writeAppHeight() {
   document.documentElement.style.setProperty('--app-height', `${Math.round(h)}px`)
 }
 
+// Bring the currently-focused text field into view (centered) within its
+// scroll container, so it isn't left hidden behind the keyboard after the
+// viewport shrinks. No-op when nothing text-like is focused.
+function scrollActiveFieldIntoView() {
+  const el = document.activeElement
+  if (
+    el instanceof HTMLElement &&
+    (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)
+  ) {
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }
+}
+
 function initViewportHeight() {
   writeAppHeight()
   const vv = window.visualViewport
   if (vv) {
-    vv.addEventListener('resize', writeAppHeight)
+    // Keyboard open/close resizes the visual viewport: resize the frame, then
+    // scroll the focused field into the (now smaller) visible area.
+    vv.addEventListener('resize', () => {
+      writeAppHeight()
+      scrollActiveFieldIntoView()
+    })
     vv.addEventListener('scroll', writeAppHeight)
   } else {
     window.addEventListener('resize', writeAppHeight)
   }
+
+  // Also handle focusing a field while the keyboard is already open (tapping
+  // from one input to another fires no viewport resize). Defer so the keyboard
+  // has settled before we measure/scroll.
+  document.addEventListener('focusin', (e) => {
+    const t = e.target
+    if (
+      t instanceof HTMLElement &&
+      (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
+    ) {
+      setTimeout(scrollActiveFieldIntoView, 300)
+    }
+  })
 }
 
 // ---------------------------------------------------------------------------
