@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api.js'
 import { t } from '../../i18n.js'
-import { openInvoice, openTelegramLink, closeMiniApp, haptic } from '../../telegram.js'
+import { openInvoice, openLink, haptic } from '../../telegram.js'
 import { usePremiumStore } from '../../store.js'
 import { formatCountdown } from '../../utils/premium.js'
 import { Icon, Sheet } from '../ui'
@@ -182,23 +182,12 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
 
   const selected = plans.find((p) => p.id === selectedId) ?? null
 
-  // Iran-friendly Stars reseller (asanstar). Opens the referral bot with the
-  // selected plan's Star price appended so the user buys the exact amount.
-  //
-  // Two Telegram gotchas handled here:
-  //  1. Host must be t.me — openTelegramLink only treats t.me links as native
-  //     deep links (a telegram.me link is not recognized).
-  //  2. Telegram drops the ?start= parameter when the target bot is opened via
-  //     openTelegramLink while THIS Mini App stays in the foreground (known
-  //     client bug: the bot opens at its default state instead of the deep
-  //     link). Closing Luma as we hand off lets Telegram foreground the
-  //     asanstar bot fresh so ?start= resolves — same as tapping the link in a
-  //     chat. The user is leaving to buy Stars anyway, then returns to pay.
+  // Iran-friendly Stars reseller (asanstar). Opens the shop in the browser with
+  // the selected plan's Star amount so the user buys the exact package.
   const handleAsanstar = () => {
     if (!selected) return
     haptic.impact('medium')
-    openTelegramLink(`https://t.me/asanstars_bot?start=ref_24JMEBKK-p${selected.priceStars}`)
-    closeMiniApp()
+    openLink(`https://hub.asanstars.com/shop/stars?ref=24JMEBKK&package=${selected.priceStars}`)
   }
 
   const benefits = [

@@ -40,6 +40,13 @@ export function openTelegramLink(url: string): void {
   else window.open(url, '_blank')
 }
 
+/** Open an external URL in the browser; falls back to a new tab outside Telegram. */
+export function openLink(url: string): void {
+  const wa = webApp()
+  if (wa?.openLink) wa.openLink(url)
+  else window.open(url, '_blank')
+}
+
 /** Close the Mini App (no-op outside Telegram). */
 export function closeMiniApp(): void {
   webApp()?.close?.()
