@@ -98,6 +98,10 @@
     margin-inline: auto;
     position: relative;
     transform: translateZ(0);
+    /* Sized to the live visual-viewport height (set from JS in telegram.ts) so
+       the frame shrinks when the soft keyboard opens; falls back to full height
+       before JS runs. */
+    height: var(--app-height, 100%);
   }
   body {
     background-color: var(--bg);

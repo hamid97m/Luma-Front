@@ -52,7 +52,7 @@ export function Splash({ onDone }: Props) {
 
   return (
     <div
-      className="flex flex-col items-center justify-center h-screen gap-4 relative overflow-hidden"
+      className="flex flex-col items-center justify-center h-full gap-4 relative overflow-hidden"
       style={{ background: 'linear-gradient(165deg, var(--pr) 0%, #8C2E68 60%, #5E2A62 100%)' }}
     >
       {/* Floating hearts */}

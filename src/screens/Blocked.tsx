@@ -8,7 +8,7 @@ import { Button, Icon } from '../components/ui'
 // (the in-app ticket API is unreachable for banned accounts).
 export function Blocked({ supportBot }: { supportBot?: string | null }) {
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-4 px-8 text-center bg-bg text-txt">
+    <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center bg-bg text-txt">
       <div className="w-[72px] h-[72px] rounded-m3-lg bg-error-container flex items-center justify-center">
         <Icon name="x-circle" size={32} className="text-error" />
       </div>

@@ -116,7 +116,7 @@ export function Onboarding({ onComplete }: Props) {
 
   return (
     <div
-      className="flex flex-col h-screen relative overflow-hidden bg-bg text-txt"
+      className="flex flex-col h-full relative overflow-hidden bg-bg text-txt"
       style={{ paddingTop: 'var(--tg-safe-top)' }}
     >
       {/* Top bar */}

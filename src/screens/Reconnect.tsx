@@ -9,7 +9,7 @@ interface Props {
 // instead of being sent back through onboarding.
 export function Reconnect({ onRetry }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-4 px-8 text-center bg-bg text-txt">
+    <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center bg-bg text-txt">
       <div className="w-[72px] h-[72px] rounded-m3-lg bg-primary-container flex items-center justify-center">
         <Icon name="refresh" size={32} className="text-primary" />
       </div>

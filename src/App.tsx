@@ -160,7 +160,7 @@ export function App() {
         />
       )}
       <div
-        className={`flex-col h-screen bg-bg ${activeChatMatch ? 'hidden' : 'flex'}`}
+        className={`flex-col h-full bg-bg ${activeChatMatch ? 'hidden' : 'flex'}`}
         style={{ paddingTop: 'var(--tg-safe-top)' }}
       >
         <div className="flex-1 overflow-hidden">

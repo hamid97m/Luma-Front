@@ -63,6 +63,31 @@ function writeSafeAreaVars() {
 }
 
 // ---------------------------------------------------------------------------
+// Viewport height — the soft keyboard shrinks the *visual* viewport but not the
+// layout viewport, so a fixed `100vh` / `height:100%` app frame keeps its full
+// height and hides any focused input behind the keyboard. Mirror the live
+// visual-viewport height into `--app-height` and size the app frame (#root)
+// from it, so the frame shrinks with the keyboard and the focused field can
+// scroll into view above it. Works on every client (WKWebView on iOS, Chromium
+// on Android/desktop) since it reads the engine's visualViewport directly.
+// ---------------------------------------------------------------------------
+function writeAppHeight() {
+  const h = window.visualViewport?.height ?? window.innerHeight
+  document.documentElement.style.setProperty('--app-height', `${Math.round(h)}px`)
+}
+
+function initViewportHeight() {
+  writeAppHeight()
+  const vv = window.visualViewport
+  if (vv) {
+    vv.addEventListener('resize', writeAppHeight)
+    vv.addEventListener('scroll', writeAppHeight)
+  } else {
+    window.addEventListener('resize', writeAppHeight)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Theme — mirror Telegram's light/dark choice onto the document so the CSS
 // token layer (index.css) flips, and paint Telegram's own chrome (header,
 // background, bottom bar) to match our resolved app background. Reacts live to
@@ -126,6 +151,10 @@ export function applyTheme() {
 // One-time app init — call once on mount.
 // ---------------------------------------------------------------------------
 export function initTelegram() {
+  // Track the visual-viewport height on every client (incl. browser dev) so the
+  // app frame follows the keyboard.
+  initViewportHeight()
+
   const wa = webApp()
   if (!wa) {
     // Still honor the OS color scheme in browser/dev so the redesign is testable.
