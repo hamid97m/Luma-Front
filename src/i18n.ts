@@ -216,8 +216,8 @@ export const t = {
       'استار (Star) واحد پرداخت داخل تلگرام است. با استار می‌توانید اشتراک پرمیوم لوما و سایر خدمات داخل تلگرام را بخرید. استارها به حساب تلگرام شما اضافه می‌شوند و خرید با آن‌ها سریع و امن است.',
     resellersLabel: 'سایت‌های خرید استار با پرداخت ریالی',
     resellers: [
-      { name: 'ایرانی کارت', domain: 'iranicard.ir', url: 'https://iranicard.ir' },
-      { name: 'نامبرلند', domain: 'numberland.ir', url: 'https://numberland.ir' },
+      { name: 'ایرانی کارت', domain: 'iranicard.ir', url: 'https://www.iranicard.ir/payments/foreign-services/telegram-stars/' },
+      { name: 'نامبرلند', domain: 'numberland.ir', url: 'https://numberland.ir/account/telegram-stars' },
     ],
     recommendTitle: 'پیشنهاد ما: آسان استار',
     recommendBody: 'خرید سریع و امن برای ایرانیان، بدون نیاز به کارت ارزی.',
