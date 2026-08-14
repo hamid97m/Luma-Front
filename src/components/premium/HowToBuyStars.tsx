@@ -39,18 +39,10 @@ export function HowToBuyStars({ onClose, packageStars }: HowToBuyStarsProps) {
       className="fixed inset-0 z-50 bg-bg text-txt font-fa flex flex-col overflow-y-auto"
       style={{ paddingTop: 'var(--tg-safe-top)' }}
     >
-      {/* Header — back chevron (RTL) + centered title, balanced by a spacer */}
-      <div className="flex items-center px-2 h-14 flex-none">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={c.title}
-          className="w-10 h-10 flex items-center justify-center rounded-full text-txt2 transition-colors hover:bg-surface"
-        >
-          <Icon name="chevron-right" size={24} />
-        </button>
-        <h1 className="flex-1 text-center text-[18px] font-bold text-txt m-0">{c.title}</h1>
-        <div className="w-10 flex-none" aria-hidden />
+      {/* Header — centered title. Back is handled by Telegram's native back
+          button (useBackButton), so no in-page chevron in the toolbar. */}
+      <div className="flex items-center justify-center px-4 h-14 flex-none">
+        <h1 className="text-center text-[18px] font-bold text-txt m-0">{c.title}</h1>
       </div>
 
       <div
