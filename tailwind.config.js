@@ -30,6 +30,7 @@ export default {
       },
       fontFamily: {
         sans: ['Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        fa: ['Vazirmatn', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         // Material 3 shape scale used across the redesign.

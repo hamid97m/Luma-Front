@@ -204,21 +204,24 @@ export const t = {
     perWeek: (stars: number) => `≈ ⭐${stars}/week`,
     payHint: 'Pay with Telegram Stars · Cancel anytime',
     socialProof: '8 out of 10 Premium members match within a month',
-    starsHelpToggle: "Don't have Stars? See how to buy",
-    starsHelpSteps: [
-      {
-        title: 'Inside Telegram',
-        body: 'Settings → My Stars → Buy More Stars. Needs an international payment method.',
-      },
-      {
-        title: 'With TON on Fragment',
-        body: 'Buy TON from a local crypto exchange, then get Stars on fragment.com — no foreign card needed.',
-      },
-      {
-        title: 'From a local reseller',
-        body: 'Many trusted local shops sell Stars as a gift to your Telegram account. Pay in rials — check reviews before buying.',
-      },
+    // Entry row on the paywall that opens the full "How to buy Stars" page.
+    howToBuyRow: 'چجوری استار تهیه کنم؟',
+  },
+  // Persian/RTL "How to buy Stars" page — explains Telegram Stars and points
+  // Iranian users at rial resellers, highlighting Asan Star as the pick.
+  howToBuyStars: {
+    title: 'چجوری استار تهیه کنم؟',
+    whatTitle: 'استار تلگرام چیست؟',
+    whatBody:
+      'استار (Star) واحد پرداخت داخل تلگرام است. با استار می‌توانید اشتراک پرمیوم لوما و سایر خدمات داخل تلگرام را بخرید. استارها به حساب تلگرام شما اضافه می‌شوند و خرید با آن‌ها سریع و امن است.',
+    resellersLabel: 'سایت‌های خرید استار با پرداخت ریالی',
+    resellers: [
+      { name: 'ایرانی کارت', domain: 'iranicard.ir', url: 'https://iranicard.ir' },
+      { name: 'نامبرلند', domain: 'numberland.ir', url: 'https://numberland.ir' },
     ],
+    recommendTitle: 'پیشنهاد ما: آسان استار',
+    recommendBody: 'خرید سریع و امن برای ایرانیان، بدون نیاز به کارت ارزی.',
+    recommendButton: 'خرید از آسان استار',
   },
   swipeLimit: {
     title: "You're out of likes",

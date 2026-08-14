@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api.js'
 import { t } from '../../i18n.js'
-import { openInvoice, openLink, haptic } from '../../telegram.js'
+import { openInvoice, haptic } from '../../telegram.js'
 import { usePremiumStore } from '../../store.js'
 import { formatCountdown } from '../../utils/premium.js'
 import { Icon, Sheet } from '../ui'
+import { HowToBuyStars } from './HowToBuyStars.js'
 
 interface PaywallSheetProps {
   open: boolean
@@ -25,7 +26,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [busy, setBusy] = useState(false)
   const [now, setNow] = useState(() => Date.now())
-  const [helpOpen, setHelpOpen] = useState(false)
+  const [showHowTo, setShowHowTo] = useState(false)
 
   const mountedRef = useRef(true)
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -62,7 +63,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
     setSelectedId(null)
     setPhase('idle')
     setBusy(false)
-    setHelpOpen(false)
+    setShowHowTo(false)
     setNow(Date.now())
     expiredRefreshFiredKeysRef.current = new Set()
     usePremiumStore.getState().refresh()
@@ -182,14 +183,6 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
 
   const selected = plans.find((p) => p.id === selectedId) ?? null
 
-  // Iran-friendly Stars reseller (asanstar). Opens the shop in the browser with
-  // the selected plan's Star amount so the user buys the exact package.
-  const handleAsanstar = () => {
-    if (!selected) return
-    haptic.impact('medium')
-    openLink(`https://hub.asanstars.com/shop/stars?ref=24JMEBKK&package=${selected.priceStars}`)
-  }
-
   const benefits = [
     { icon: 'heart', label: t.premium.benefitSwipes },
     { icon: 'message', label: t.premium.benefitChat },
@@ -197,6 +190,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   ] as const
 
   return (
+    <>
     <Sheet
       open
       onClose={handleClose}
@@ -315,15 +309,14 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
 
           <button
             type="button"
-            onClick={handleAsanstar}
-            disabled={!selected || busy}
-            className="w-full mt-2.5 rounded-m3-md bg-surface px-4 py-3 flex items-center gap-2.5 transition-opacity disabled:opacity-45"
+            onClick={() => { haptic.selection(); setShowHowTo(true) }}
+            className="w-full mt-2.5 rounded-m3-md bg-surface px-4 py-3 flex items-center gap-2.5 transition-colors hover:bg-surface-high"
           >
-            <Icon name="star" size={16} className="text-gold flex-none" />
-            <span className="flex-1 min-w-0 truncate text-right text-[13px] font-medium text-txt2">
-              {t.premium.asanstar}
+            <Icon name="help-circle" size={16} className="text-primary flex-none" />
+            <span className="flex-1 min-w-0 truncate text-right text-[13px] font-medium text-txt2 font-fa">
+              {t.premium.howToBuyRow}
             </span>
-            <Icon name="external-link" size={15} className="text-txt3 flex-none" />
+            <Icon name="chevron-left" size={16} className="text-txt3 flex-none" />
           </button>
 
           <div className="flex items-center justify-center gap-1.5 mt-3">
@@ -331,37 +324,12 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             <span className="text-[12px] text-txt3">{t.premium.payHint}</span>
           </div>
           <p className="text-center text-[12px] text-txt2 mt-2.5 mb-0">{t.premium.socialProof}</p>
-
-          <button
-            type="button"
-            onClick={() => setHelpOpen((v) => !v)}
-            className="w-full mt-3.5 py-2 flex items-center justify-center gap-1.5 text-primary text-[13px] font-medium"
-          >
-            <Icon name="help-circle" size={14} />
-            {t.premium.starsHelpToggle}
-            <Icon
-              name="chevron-down"
-              size={14}
-              className={`transition-transform ${helpOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-          {helpOpen && (
-            <div className="bg-surface rounded-m3-lg p-4 mt-1 flex flex-col gap-3.5">
-              {t.premium.starsHelpSteps.map((step, i) => (
-                <div key={step.title} className="flex gap-3 items-start">
-                  <span className="w-6 h-6 rounded-full bg-primary-container text-primary text-[12px] font-bold flex items-center justify-center flex-none">
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="m-0 text-[13px] font-medium text-txt">{step.title}</p>
-                    <p className="mt-0.5 mb-0 text-[12px] leading-relaxed text-txt2">{step.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </>
       )}
     </Sheet>
+    {showHowTo && (
+      <HowToBuyStars packageStars={selected?.priceStars} onClose={() => setShowHowTo(false)} />
+    )}
+    </>
   )
 }
