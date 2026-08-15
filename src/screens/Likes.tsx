@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
+import { relativeTime } from '../i18n/format.js'
 import { haptic } from '../telegram.js'
 import { usePremiumStore } from '../store.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { MatchPopup } from '../components/MatchPopup.js'
-import { LikerProfileSheet, likedAgo } from '../components/LikerProfileSheet.js'
+import { LikerProfileSheet } from '../components/LikerProfileSheet.js'
 import { Icon } from '../components/ui/index.js'
 import type { LikerProfile, LockedLiker, Match, SwipeResult } from '../types.js'
 
@@ -166,7 +167,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
                     {l.name}
                     {l.age != null ? `, ${l.age}` : ''}
                   </span>
-                  <span className="block text-[11px] text-white/80">{likedAgo(l.likedAt)}</span>
+                  <span className="block text-[11px] text-white/80">{relativeTime(l.likedAt)}</span>
                 </span>
                 {!isPremium && (
                   <span

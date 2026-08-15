@@ -1,23 +1,8 @@
 import { t } from '../i18n.js'
+import { relativeTime } from '../i18n/format.js'
 import { useBackButton } from '../telegram.js'
 import { Icon } from './ui/index.js'
 import type { LikerProfile } from '../types.js'
-
-/** Relative time for "Liked you {when}" — words come from t.time. */
-export function likedAgo(iso: string): string {
-  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
-  if (s < 60) return t.time.justNow
-  const m = Math.floor(s / 60)
-  if (m < 60) return t.time.minutesAgo(m)
-  const h = Math.floor(m / 60)
-  if (h < 24) return t.time.hoursAgo(h)
-  const d = Math.floor(h / 24)
-  if (d === 1) return t.time.yesterday
-  if (d < 7) return t.time.daysAgo(d)
-  const w = Math.floor(d / 7)
-  if (w < 5) return t.time.weeksAgo(w)
-  return t.time.monthsAgo(Math.floor(d / 30))
-}
 
 interface Props {
   liker: LikerProfile
@@ -59,7 +44,7 @@ export function LikerProfileSheet({ liker, busy, onClose, onPass, onLikeBack }: 
             style={{ background: 'rgba(255,255,255,.92)' }}
           >
             <Icon name="heart" size={11} />
-            {t.likes.likedYou(likedAgo(liker.likedAt))}
+            {t.likes.likedYou(relativeTime(liker.likedAt))}
           </span>
           <h1 className="text-[28px] font-medium text-white m-0">
             {liker.name}

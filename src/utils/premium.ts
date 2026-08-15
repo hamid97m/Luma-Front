@@ -11,7 +11,7 @@ export function premiumSendBlocked(match: Match, status: PremiumStatus | null): 
   return !status.premiumUntil || new Date(status.premiumUntil).getTime() <= Date.now()
 }
 
-/** Formats a millisecond duration as a countdown string: "Xd HH:MM:SS" once the
+/** Formats a millisecond duration as a countdown string: "X روز HH:MM:SS" once the
  * remaining time reaches 24h, otherwise "HH:MM:SS". Negative/zero clamps to 00:00:00. */
 export function formatCountdown(msRemaining: number): string {
   const totalSeconds = Math.max(0, Math.floor(msRemaining / 1000))
@@ -21,5 +21,5 @@ export function formatCountdown(msRemaining: number): string {
   const seconds = totalSeconds % 60
   const pad = (n: number) => String(n).padStart(2, '0')
   const hms = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
-  return days > 0 ? `${days}d ${hms}` : hms
+  return days > 0 ? `${days} روز ${hms}` : hms
 }

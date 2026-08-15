@@ -1,4 +1,5 @@
 import { t } from '../i18n.js'
+import { formatShortDate, formatTime as formatTimeFa } from '../i18n/format.js'
 import type { LocalMessage } from '../types.js'
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000
@@ -8,7 +9,7 @@ export type ChatItem =
   | { kind: 'message'; message: LocalMessage; first: boolean; last: boolean }
 
 export function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return formatTimeFa(new Date(iso))
 }
 
 function sameDay(a: Date, b: Date): boolean {
@@ -17,11 +18,11 @@ function sameDay(a: Date, b: Date): boolean {
 
 export function formatDayLabel(iso: string, now: Date = new Date()): string {
   const d = new Date(iso)
-  if (sameDay(d, now)) return t.chat.today
+  if (sameDay(d, now)) return t.time.today
   const yesterday = new Date(now)
   yesterday.setDate(now.getDate() - 1)
-  if (sameDay(d, yesterday)) return t.chat.yesterday
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  if (sameDay(d, yesterday)) return t.time.yesterday
+  return formatShortDate(d)
 }
 
 function grouped(a: LocalMessage, b: LocalMessage): boolean {

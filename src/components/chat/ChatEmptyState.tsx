@@ -1,4 +1,5 @@
 import { t } from '../../i18n.js'
+import { formatLongDate } from '../../i18n/format.js'
 import { Avatar, Button, Chip } from '../ui/index.js'
 import type { Match } from '../../types.js'
 
@@ -9,7 +10,7 @@ interface ChatEmptyStateProps {
 
 export function ChatEmptyState({ match, onPrefill }: ChatEmptyStateProps) {
   const { user } = match
-  const matchedDate = new Date(match.matchedAt).toLocaleDateString([], { month: 'long', day: 'numeric' })
+  const matchedDate = formatLongDate(new Date(match.matchedAt))
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 py-4 text-center overflow-y-auto">

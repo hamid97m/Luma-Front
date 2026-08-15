@@ -5,6 +5,7 @@ import { Avatar, Badge, Icon } from '../components/ui/index.js'
 import { MatchesEmpty } from '../components/MatchesEmpty.js'
 import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
+import { formatShortDate } from '../i18n/format.js'
 import type { Match } from '../types.js'
 
 function formatDate(iso: string): string {
@@ -13,7 +14,7 @@ function formatDate(iso: string): string {
   if (days === 0) return t.time.today
   if (days === 1) return t.time.yesterday
   if (days < 7) return t.time.daysAgo(days)
-  return new Date(iso).toLocaleDateString()
+  return formatShortDate(new Date(iso))
 }
 
 function isNewMatch(iso: string): boolean {
