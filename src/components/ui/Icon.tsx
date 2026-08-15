@@ -17,7 +17,6 @@ export type IconName =
   | 'camera'
   | 'image'
   | 'check'
-  | 'arrow-left'
   | 'arrow-right'
   | 'refresh'
   | 'alert-triangle'
@@ -76,7 +75,6 @@ const PATHS: Record<IconName, JSX.Element> = {
   camera: <><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></>,
   image: <><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></>,
   check: <path d="M20 6 9 17l-5-5" />,
-  'arrow-left': <><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></>,
   'arrow-right': <><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></>,
   refresh: <><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></>,
   'alert-triangle': <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></>,

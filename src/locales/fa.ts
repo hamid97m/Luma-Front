@@ -4,7 +4,6 @@
 
 export const fa = {
   appName: 'Luma',
-  welcomeSubtitle: 'نیمه گمشده‌ات را پیدا کن',
   splash: {
     messages: [
       'نیمه گمشده‌ات را پیدا کن',
@@ -16,7 +15,6 @@ export const fa = {
   },
   next: 'ادامه',
   save: 'ذخیره',
-  skip: 'رد شدن',
   discovery: {
     empty: 'همه را دیده‌ای',
     emptyHint: 'همه افراد اطرافت را دیده‌ای. هر روز افراد جدیدی می‌آیند — خبرت می‌کنیم.',
@@ -44,7 +42,6 @@ export const fa = {
     emptyHint:
       'وقتی تو و کسی همدیگر را لایک کنید، اینجا همدیگر را می‌بینید. مچ بعدی‌ات یک سوایپ فاصله دارد.',
     startDiscovering: 'شروع دیسکاوری',
-    message: 'چت',
     newBadge: 'جدید',
     sayHi: 'سلام کن!',
   },
@@ -247,12 +244,13 @@ export const fa = {
     error: (msg: string) => `خطا: ${msg}`,
   },
   // The 16 interest tags — the single shared source for both the Onboarding
-  // picker and the MyProfile tag picker. Design maps Wine→چای (emoji kept).
+  // picker and the MyProfile tag picker. Design maps Wine→چای (emoji remapped
+  // to tea, since a wine glass doesn't fit the Iranian audience).
   interests: [
     '☕ قهوه', '✈️ سفر', '🎵 موسیقی', '🎨 هنر',
     '📚 کتاب', '🥾 کوهنوردی', '🍳 آشپزی', '🎬 فیلم',
     '🐕 سگ‌ها', '🏄 موج‌سواری', '💃 رقص', '🎸 گیتار',
-    '🍷 چای', '🧘 یوگا', '📷 عکاسی', '🎮 گیم',
+    '🍵 چای', '🧘 یوگا', '📷 عکاسی', '🎮 گیم',
   ],
   // Icebreaker prompts + coaching hints for the MyProfile picker. Order is
   // paired 1:1 with the icon list in MyProfile. The prompt text is stored
