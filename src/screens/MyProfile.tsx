@@ -196,7 +196,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                       className="w-full h-full object-cover cursor-pointer"
                     />
                     {slotId === 'p' && (
-                      <span className="absolute bottom-2 left-2 text-white text-[10px] font-medium px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(6px)' }}>
+                      <span className="absolute bottom-2 start-2 text-white text-[10px] font-medium px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(6px)' }}>
                         {t.myProfile.primary}
                       </span>
                     )}
@@ -204,7 +204,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                       onClick={() => handlePhotoDelete(photo.id)}
                       disabled={deletingId === photo.id}
                       aria-label={t.aria.deletePhoto}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full text-white flex items-center justify-center"
+                      className="absolute top-1.5 end-1.5 w-6 h-6 rounded-full text-white flex items-center justify-center"
                       style={{ background: 'rgba(0,0,0,.5)' }}
                     >
                       {deletingId === photo.id
@@ -338,7 +338,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             placeholder={t.profile.aboutPlaceholder}
             className="w-full resize-none outline-none bg-transparent text-[14px] text-txt placeholder:text-txt3 mt-1.5 leading-relaxed"
           />
-          <p className="text-right text-[11px] text-txt3 mt-1">{bio.length}/200</p>
+          <p className="text-end text-[11px] text-txt3 mt-1">{bio.length}/200</p>
         </InfoCard>
 
         {/* Icebreaker */}
@@ -348,7 +348,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
           <button
             type="button"
             onClick={() => { haptic.selection(); setPromptPicker(true) }}
-            className="w-full flex items-center gap-3 mt-2.5 mb-2.5 text-left"
+            className="w-full flex items-center gap-3 mt-2.5 mb-2.5 text-start"
           >
             <span className="w-10 h-10 rounded-m3-sm bg-[color-mix(in_srgb,var(--onpc)_12%,transparent)] flex items-center justify-center flex-none">
               <Icon name={icebreakerFor(prompt).icon} size={20} />
@@ -356,7 +356,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             <span className="flex-1 min-w-0 text-[15px] font-medium text-on-primary-container truncate">{prompt}</span>
             <span className="flex items-center gap-0.5 text-[13px] font-medium opacity-80 flex-none">
               {t.myProfile.change}
-              <Icon name="chevron-right" size={16} />
+              <Icon name="chevron-left" size={16} />
             </span>
           </button>
           <textarea
@@ -368,14 +368,14 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             placeholder={t.myProfile.answerPlaceholder}
             className="w-full resize-none outline-none bg-transparent text-[13px] text-on-primary-container placeholder:text-[color-mix(in_srgb,var(--onpc)_50%,transparent)] border-t border-[color-mix(in_srgb,var(--onpc)_20%,transparent)] pt-2.5 leading-relaxed"
           />
-          <p className="text-right text-[11px] text-on-primary-container opacity-50 mt-1">{answer.length}/140</p>
+          <p className="text-end text-[11px] text-on-primary-container opacity-50 mt-1">{answer.length}/140</p>
         </div>
 
         {/* Support */}
         <button
           type="button"
           onClick={onOpenSupport}
-          className="w-full text-left bg-surface rounded-m3-lg p-3.5 flex items-center gap-3.5 transition-colors hover:bg-surface-high"
+          className="w-full text-start bg-surface rounded-m3-lg p-3.5 flex items-center gap-3.5 transition-colors hover:bg-surface-high"
         >
           <span className="w-11 h-11 rounded-full bg-primary-container text-primary flex items-center justify-center flex-none">
             <Icon name="life-buoy" size={20} />
@@ -384,7 +384,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             <span className="block font-medium text-[15px] text-txt">{t.support.title}</span>
             <span className="block text-[12px] text-txt2">{t.myProfile.supportSub}</span>
           </span>
-          <Icon name="chevron-right" size={18} className="text-txt2 flex-none" />
+          <Icon name="chevron-left" size={18} className="text-txt2 flex-none" />
         </button>
 
       </div>
@@ -403,7 +403,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                   save({ icebreaker_prompt: ib.prompt })
                   setPromptPicker(false)
                 }}
-                className={`w-full flex items-center gap-3 rounded-m3-lg p-3 text-left transition-colors ${active ? 'bg-primary-container' : 'bg-surface hover:bg-surface-high'}`}
+                className={`w-full flex items-center gap-3 rounded-m3-lg p-3 text-start transition-colors ${active ? 'bg-primary-container' : 'bg-surface hover:bg-surface-high'}`}
               >
                 <span
                   className={`w-11 h-11 rounded-m3-sm flex items-center justify-center flex-none ${active ? 'bg-primary text-white' : 'bg-primary-container text-primary'}`}

@@ -232,7 +232,10 @@ export function PhotoViewer({ photos, initialIndex, alt, onClose }: Props) {
   const zoomed = zoom.scale > 1
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    // dir="ltr": the strip's flex order + translateX math and the thumbnail
+    // pager are physical-pixel logic; under the app's global RTL the flex row
+    // would lay photos right-to-left and break the -idx*100% offset.
+    <div className="fixed inset-0 z-50 bg-black" dir="ltr">
       {/* Full-screen swipeable photo strip — bars overlay it, so the image
           centers on the actual screen like Telegram's media viewer. */}
       <div
@@ -279,7 +282,7 @@ export function PhotoViewer({ photos, initialIndex, alt, onClose }: Props) {
           background: 'linear-gradient(to bottom, rgba(0,0,0,.6), transparent)',
         }}
       >
-        <span className="text-[14px] text-white/80 font-semibold">
+        <span dir="rtl" className="text-[14px] text-white/80 font-semibold">
           {photos.length > 1 ? t.viewer.counter(idx + 1, photos.length) : ''}
         </span>
         <button

@@ -80,13 +80,13 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
               type="button"
               onClick={() => { haptic.selection(); onOpenChat(match) }}
               aria-label={t.aria.openChatWith(match.user.name)}
-              className="w-full text-left bg-surface rounded-m3-lg flex items-center gap-3 px-3.5 py-3 transition-colors active:brightness-95"
+              className="w-full text-start bg-surface rounded-m3-lg flex items-center gap-3 px-3.5 py-3 transition-colors active:brightness-95"
             >
               {/* Avatar */}
               <div className="relative flex-none">
                 <Avatar src={match.user.photos[0]} alt={match.user.name} size={56} />
                 {isNewMatch(match.matchedAt) && (
-                  <span className="absolute -top-1 -right-1.5 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary">
+                  <span className="absolute -top-1 -end-1.5 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary">
                     {t.matches.newBadge}
                   </span>
                 )}
@@ -109,7 +109,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
               </div>
 
               {/* Chevron cue */}
-              <Icon name="chevron-right" size={20} className="text-txt3 flex-none" />
+              <Icon name="chevron-left" size={20} className="text-txt3 flex-none" />
             </button>
           ))}
         </div>

@@ -69,7 +69,7 @@ export function ReportSheet({ reportedUserId, context, matchId, onClose, onSubmi
                 haptic.selection()
                 setReason(r)
               }}
-              className={`w-full flex items-center justify-between gap-2 text-left px-4 py-3 rounded-m3-md transition-colors ${
+              className={`w-full flex items-center justify-between gap-2 text-start px-4 py-3 rounded-m3-md transition-colors ${
                 selected
                   ? 'bg-primary-container text-on-primary-container'
                   : 'bg-surface text-txt2'

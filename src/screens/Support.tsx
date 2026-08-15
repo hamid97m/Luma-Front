@@ -53,7 +53,7 @@ function TicketList({ onOpen, onNew }: { onOpen: (id: string) => void; onNew: ()
         <button
           key={tk.id}
           onClick={() => onOpen(tk.id)}
-          className="w-full text-left bg-surface rounded-m3-lg p-4 transition-colors hover:bg-surface-high"
+          className="w-full text-start bg-surface rounded-m3-lg p-4 transition-colors hover:bg-surface-high"
         >
           <div className="flex items-center justify-between mb-1.5">
             <span className={`text-[11px] font-bold uppercase tracking-widest ${tk.status === 'open' ? 'text-primary' : 'text-txt3'}`}>

@@ -109,8 +109,8 @@
   body {
     background-color: var(--bg);
     color: var(--tx);
-    font-family: 'Roboto', sans-serif;
-    direction: ltr;
+    font-family: 'Vazirmatn', 'Roboto', system-ui, sans-serif;
+    direction: rtl;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

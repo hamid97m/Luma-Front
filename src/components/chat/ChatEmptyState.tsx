@@ -21,7 +21,7 @@ export function ChatEmptyState({ match, onPrefill }: ChatEmptyStateProps) {
       </div>
 
       {user.icebreakerPrompt && user.icebreakerAnswer && (
-        <div className="bg-primary-container rounded-m3-lg p-4 w-full max-w-xs text-left">
+        <div className="bg-primary-container rounded-m3-lg p-4 w-full max-w-xs text-start">
           <p className="text-on-primary-container text-[11px] font-bold uppercase tracking-widest mb-1 opacity-70">
             {t.chat.icebreakerOf(user.name)}
           </p>

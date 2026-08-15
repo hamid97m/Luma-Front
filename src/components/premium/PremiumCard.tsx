@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { usePremiumStore } from '../../store.js'
 import { t } from '../../i18n.js'
-import { formatShortDate } from '../../i18n/format.js'
+import { formatFullDate } from '../../i18n/format.js'
 import { PaywallSheet } from './PaywallSheet.js'
 import { Badge, Button, Card, Icon } from '../ui'
 
@@ -29,7 +29,7 @@ export function PremiumCard() {
           <Badge tone="primary">{t.premium.active}</Badge>
         </div>
         <p className="text-txt text-[14px]">{remainingLabel}</p>
-        <p className="text-txt2 text-[12px] mt-1">{t.premium.until(formatShortDate(premiumUntil!))}</p>
+        <p className="text-txt2 text-[12px] mt-1">{t.premium.until(formatFullDate(premiumUntil!))}</p>
       </Card>
     )
   } else if (status && !isActive && status.enabled) {

@@ -118,7 +118,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
         <button
           type="button"
           onClick={openPaywall}
-          className="mx-4 mt-3 mb-1 rounded-[20px] p-4 flex items-center gap-3 text-left bg-primary-container"
+          className="mx-4 mt-3 mb-1 rounded-[20px] p-4 flex items-center gap-3 text-start bg-primary-container"
         >
           <span className="w-11 h-11 rounded-full flex items-center justify-center flex-none bg-primary">
             <Icon name="lock" size={20} className="text-white" />
@@ -129,7 +129,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
               {t.likes.bannerSub}
             </span>
           </span>
-          <Icon name="chevron-right" size={18} className="text-on-primary-container flex-none" />
+          <Icon name="chevron-left" size={18} className="text-on-primary-container flex-none" />
         </button>
       )}
 
@@ -162,7 +162,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
                 style={{ background: 'linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.62) 100%)' }}
               />
               <span className="absolute left-2.5 right-2.5 bottom-2.5 flex items-end justify-between gap-2">
-                <span className="min-w-0 text-left">
+                <span className="min-w-0 text-start">
                   <span className="block text-[15px] font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis">
                     {l.name}
                     {l.age != null ? `, ${l.age}` : ''}

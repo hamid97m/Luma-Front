@@ -71,10 +71,13 @@ function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onL
   }
 
   // Telegram-style grouping: bubbles inside a group flatten the corners that
-  // face their neighbors, on the sender's side.
+  // face their neighbors, on the sender's side. Logical corners (se/ee = the
+  // inline-end side, ss/es = inline-start) so under RTL — where `self-end`
+  // puts my bubbles on the LEFT, Telegram-fa style — the flattened corners
+  // still hug the correct outer edge.
   const corners = mine
-    ? `${first ? '' : 'rounded-tr-[6px] '}${last ? '' : 'rounded-br-[6px]'}`
-    : `${first ? '' : 'rounded-tl-[6px] '}${last ? '' : 'rounded-bl-[6px]'}`
+    ? `${first ? '' : 'rounded-se-[6px] '}${last ? '' : 'rounded-ee-[6px]'}`
+    : `${first ? '' : 'rounded-ss-[6px] '}${last ? '' : 'rounded-es-[6px]'}`
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (failed && onRetry && (e.key === 'Enter' || e.key === ' ')) {
@@ -103,7 +106,7 @@ function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onL
       } ${failed ? 'opacity-70' : ''} ${last ? 'mb-2' : ''} ${onLongPress ? 'select-none' : ''}`}
     >
       {reply && (
-        <div className={`mb-1 px-2 py-1 rounded-m3-sm border-l-2 ${mine ? 'border-white/70 bg-black/15' : 'border-primary bg-bg'}`}>
+        <div className={`mb-1 px-2 py-1 rounded-m3-sm border-s-2 ${mine ? 'border-white/70 bg-black/15' : 'border-primary bg-bg'}`}>
           {reply.author && <p className="text-[11px] font-bold opacity-90 truncate">{reply.author}</p>}
           <p className="text-[12px] opacity-70 truncate">{reply.text}</p>
         </div>

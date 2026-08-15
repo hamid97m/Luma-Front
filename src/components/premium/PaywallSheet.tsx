@@ -239,7 +239,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
                   type="button"
                   onClick={() => { if (!busy) { haptic.selection(); setSelectedId(plan.id) } }}
                   disabled={busy}
-                  className={`text-left rounded-m3-md px-4 py-3.5 border-2 transition-colors disabled:opacity-50 ${
+                  className={`text-start rounded-m3-md px-4 py-3.5 border-2 transition-colors disabled:opacity-50 ${
                     isSelected ? 'border-primary bg-primary-container' : 'border-transparent bg-surface'
                   }`}
                 >
@@ -256,7 +256,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
                       )}
                     </span>
                     {plan.discountPercent != null && (
-                      <span className="bg-primary text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                      <span dir="ltr" className="bg-primary text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
                         -{plan.discountPercent}%
                       </span>
                     )}
@@ -274,7 +274,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
                       <Icon name="star" size={15} className="text-primary" />{plan.priceStars}
                     </span>
                     <span className="text-[12px] text-txt2">· {t.premium.days(plan.durationDays)}</span>
-                    <span className="ml-auto text-[12px] text-txt2">
+                    <span className="ms-auto text-[12px] text-txt2">
                       {t.premium.perWeek(Math.round(perWeekOf(plan)))}
                     </span>
                   </div>

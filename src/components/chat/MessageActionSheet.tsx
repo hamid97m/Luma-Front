@@ -13,7 +13,7 @@ interface MessageActionSheetProps {
 }
 
 const rowClass =
-  'w-full text-left px-4 py-3.5 text-[15px] rounded-m3-md flex items-center gap-3.5 transition-colors'
+  'w-full text-start px-4 py-3.5 text-[15px] rounded-m3-md flex items-center gap-3.5 transition-colors'
 
 function ActionRow({ icon, label, onClick, tone = 'default' }: {
   icon: IconName

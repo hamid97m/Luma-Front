@@ -52,7 +52,7 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
     >
       {editingBody != null && (
         <div className="flex items-center gap-2 pb-1">
-          <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
+          <div className="flex-1 min-w-0 border-s-2 border-primary ps-2">
             <p className="text-[11px] font-bold text-primary">{t.chat.editingMessage}</p>
             <p className="text-[12px] text-txt2 truncate">{editingBody}</p>
           </div>
@@ -67,7 +67,7 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
       )}
       {editingBody == null && replyingToBody != null && (
         <div className="flex items-center gap-2 pb-1">
-          <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
+          <div className="flex-1 min-w-0 border-s-2 border-primary ps-2">
             <p className="text-[11px] font-bold text-primary">{t.chat.replyingLabel}</p>
             <p className="text-[12px] text-txt2 truncate">{replyingToBody}</p>
           </div>
@@ -83,7 +83,11 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
       {draft.length >= COUNTER_THRESHOLD && (
         <p className="text-[11px] text-txt3 text-right">{MAX_LENGTH - draft.length}</p>
       )}
-      <div className="flex items-end gap-2">
+      {/* USER REQUIREMENT: the send button must sit to the RIGHT of the input,
+          Telegram-style, even under global RTL. dir="ltr" pins the row's flex
+          order physically (gift left, textarea center, send right); the
+          textarea itself re-declares dir="rtl" so message text stays RTL. */}
+      <div className="flex items-end gap-2" dir="ltr">
         <button
           type="button"
           aria-label={t.gifts.openButton}
@@ -97,6 +101,7 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
         </button>
         <textarea
           ref={boxRef}
+          dir="rtl"
           rows={1}
           maxLength={MAX_LENGTH}
           value={draft}

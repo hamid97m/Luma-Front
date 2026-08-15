@@ -116,14 +116,14 @@ export function Onboarding({ onComplete }: Props) {
       {/* Top bar */}
       <div className="relative z-10 flex items-center gap-2 px-4 pt-12 pb-4">
         <IconButton
-          icon="arrow-left"
+          icon="arrow-right"
           onClick={back}
           aria-label={t.aria.back}
           tone="ghost"
           iconSize={22}
           className={`text-txt transition-opacity ${step === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
         />
-        <div className="flex-1 flex gap-1 pr-2">
+        <div className="flex-1 flex gap-1 pe-2">
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
               key={i}
@@ -186,7 +186,7 @@ export function Onboarding({ onComplete }: Props) {
                     <button
                       key={val}
                       onClick={() => setState((s) => ({ ...s, gender: val }))}
-                      className={`rounded-m3-md px-[17px] py-[15px] text-[15px] text-left flex items-center justify-between cursor-pointer transition-colors border-2 ${
+                      className={`rounded-m3-md px-[17px] py-[15px] text-[15px] text-start flex items-center justify-between cursor-pointer transition-colors border-2 ${
                         selected
                           ? 'bg-primary-container text-on-primary-container border-primary font-medium'
                           : 'bg-surface text-txt border-transparent'
@@ -212,7 +212,7 @@ export function Onboarding({ onComplete }: Props) {
                     <button
                       key={val}
                       onClick={() => setState((s) => ({ ...s, pref: val }))}
-                      className={`rounded-m3-md px-[17px] py-[15px] text-[15px] text-left flex items-center justify-between cursor-pointer transition-colors border-2 ${
+                      className={`rounded-m3-md px-[17px] py-[15px] text-[15px] text-start flex items-center justify-between cursor-pointer transition-colors border-2 ${
                         selected
                           ? 'bg-primary-container text-on-primary-container border-primary font-medium'
                           : 'bg-surface text-txt border-transparent'
@@ -288,7 +288,7 @@ export function Onboarding({ onComplete }: Props) {
                     )}
                   </div>
                   {photoUploaded && (
-                    <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-medium px-2.5 py-0.5 rounded-full">
+                    <span className="absolute -top-2 -end-2 bg-primary text-white text-[10px] font-medium px-2.5 py-0.5 rounded-full">
                       {t.onboarding.added}
                     </span>
                   )}
@@ -302,7 +302,7 @@ export function Onboarding({ onComplete }: Props) {
                     onChange={(e) => setState((s) => ({ ...s, bio: e.target.value }))}
                     placeholder={t.onboarding.bioPlaceholder}
                   />
-                  <p className="text-right text-[11px] text-txt3">{state.bio.length}/150</p>
+                  <p className="text-end text-[11px] text-txt3">{state.bio.length}/150</p>
                 </div>
               </div>
               <div className="flex gap-2.5 bg-surface rounded-m3-md px-3.5 py-3">

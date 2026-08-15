@@ -97,7 +97,7 @@ export function PhotoGrid({
               onClick={(e) => { e.stopPropagation(); handleDelete(photo.id) }}
               disabled={deletingId === photo.id}
               aria-label={t.aria.deletePhoto}
-              className="absolute top-1.5 left-1.5 text-white rounded-full w-6 h-6 flex items-center justify-center"
+              className="absolute top-1.5 start-1.5 text-white rounded-full w-6 h-6 flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,.5)' }}
             >
               {deletingId === photo.id
@@ -133,7 +133,7 @@ export function PhotoGrid({
       {error && (
         <div role="alert" className="text-sm text-error bg-error-container rounded-m3-md p-3 flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={() => setError(null)} aria-label={t.aria.close} className="ml-2 flex">
+          <button onClick={() => setError(null)} aria-label={t.aria.close} className="ms-2 flex">
             <Icon name="x" size={14} strokeWidth={2.5} />
           </button>
         </div>

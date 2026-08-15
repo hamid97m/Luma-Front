@@ -13,6 +13,11 @@ export const formatShortDate = (d: Date): string =>
 export const formatLongDate = (d: Date): string =>
   d.toLocaleDateString(FA_LATIN, { month: 'long', day: 'numeric' })
 
+/** Full date with year — used where the date can cross a year boundary
+ * (e.g. the "premium until" date on 90-day plans). */
+export const formatFullDate = (d: Date): string =>
+  d.toLocaleDateString(FA_LATIN, { year: 'numeric', month: 'long', day: 'numeric' })
+
 /** Relative time ("Liked you {when}", match list timestamps, …) — words come
  * from t.time. Thresholds ported exactly from the former LikerProfileSheet.likedAgo. */
 export const relativeTime = (iso: string): string => {

@@ -58,7 +58,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
             aria-checked={dark}
             aria-label={t.settings.darkTheme}
             onClick={toggleDark}
-            className="w-full text-left bg-surface rounded-m3-lg p-4 mb-2.5"
+            className="w-full text-start bg-surface rounded-m3-lg p-4 mb-2.5"
           >
             <div className="flex items-center justify-between">
               <span className="text-txt font-medium text-[15px] flex items-center gap-2.5">
@@ -70,7 +70,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
                 className={`w-12 h-7 rounded-full transition-colors relative inline-block flex-shrink-0 ${dark ? 'bg-primary' : 'bg-[var(--ol2)]'}`}
               >
                 <span
-                  className="absolute top-0.5 w-6 h-6 rounded-full bg-white transition-transform"
+                  className="absolute top-0.5 left-0 w-6 h-6 rounded-full bg-white transition-transform"
                   style={{ transform: dark ? 'translateX(22px)' : 'translateX(2px)' }}
                 />
               </span>
@@ -84,7 +84,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
             aria-label={t.settings.pause}
             disabled={pausing}
             onClick={togglePause}
-            className="w-full text-left bg-surface rounded-m3-lg p-4 mb-2.5 disabled:opacity-60"
+            className="w-full text-start bg-surface rounded-m3-lg p-4 mb-2.5 disabled:opacity-60"
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-txt font-medium text-[15px] flex items-center gap-2.5">
@@ -103,7 +103,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
                   className={`w-12 h-7 rounded-full transition-colors relative inline-block flex-shrink-0 ${!isActive ? 'bg-primary' : 'bg-[var(--ol2)]'}`}
                 >
                   <span
-                    className="absolute top-0.5 w-6 h-6 rounded-full bg-white transition-transform"
+                    className="absolute top-0.5 left-0 w-6 h-6 rounded-full bg-white transition-transform"
                     style={{ transform: !isActive ? 'translateX(22px)' : 'translateX(2px)' }}
                   />
                 </span>
@@ -117,7 +117,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
           <button
             type="button"
             onClick={() => setView('confirmDelete')}
-            className="w-full text-left rounded-m3-lg p-4 bg-error-container"
+            className="w-full text-start rounded-m3-lg p-4 bg-error-container"
           >
             <p className="text-error font-bold text-[11px] uppercase tracking-widest mb-1">{t.settings.dangerZone}</p>
             <span className="text-error font-medium text-[15px] flex items-center gap-2.5">

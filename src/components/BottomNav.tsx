@@ -70,10 +70,10 @@ export function BottomNav({ active, onChange, matchesBadge, likesBadge }: Props)
                   }}
                 />
                 {tab.id === 'matches' && !!matchesBadge && matchesBadge > 0 && (
-                  <Badge className="absolute -top-[7px] -right-[11px]">{matchesBadge}</Badge>
+                  <Badge className="absolute -top-[7px] -end-[11px]">{matchesBadge}</Badge>
                 )}
                 {tab.id === 'likes' && !!likesBadge && likesBadge > 0 && (
-                  <Badge className="absolute -top-[7px] -right-[11px]">{likesBadge}</Badge>
+                  <Badge className="absolute -top-[7px] -end-[11px]">{likesBadge}</Badge>
                 )}
               </span>
             </span>

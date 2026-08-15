@@ -29,7 +29,7 @@ export default {
         'gold-btn': 'var(--goldbtn)',
       },
       fontFamily: {
-        sans: ['Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Vazirmatn', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         fa: ['Vazirmatn', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       borderRadius: {

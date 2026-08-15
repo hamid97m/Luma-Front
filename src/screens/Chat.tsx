@@ -265,7 +265,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
           type="button"
           aria-label={t.chat.viewProfile}
           onClick={() => setPeeking(true)}
-          className="flex items-center gap-3 text-left flex-1 min-w-0"
+          className="flex items-center gap-3 text-start flex-1 min-w-0"
         >
           <Avatar src={match.user.photos[0]} alt={match.user.name} size={40} />
           <p className="font-medium text-txt text-[16px] truncate">

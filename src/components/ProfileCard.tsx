@@ -38,7 +38,7 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props)
 
       {/* Distance pill */}
       <div
-        className="absolute top-8 left-3.5 flex items-center gap-1.5 rounded-m3-sm text-[12px] font-medium px-2.5 py-1.5 text-white pointer-events-none"
+        className="absolute top-8 start-3.5 flex items-center gap-1.5 rounded-m3-sm text-[12px] font-medium px-2.5 py-1.5 text-white pointer-events-none"
         style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
       >
         <Icon name="map-pin" size={12} strokeWidth={2.5} />
@@ -51,7 +51,7 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props)
         onClick={(e) => { e.stopPropagation(); onReport() }}
         onPointerDown={(e) => e.stopPropagation()}
         aria-label={t.report.title}
-        className="absolute top-8 right-3.5 w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
+        className="absolute top-8 end-3.5 w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
         style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
       >
         <Icon name="flag" size={15} />
@@ -63,7 +63,7 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props)
         onClick={(e) => { e.stopPropagation(); onGiftClick() }}
         onPointerDown={(e) => e.stopPropagation()}
         aria-label={t.gifts.openButton}
-        className="absolute top-8 right-[56px] w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
+        className="absolute top-8 end-[56px] w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
         style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
       >
         <Icon name="gift" size={15} />
