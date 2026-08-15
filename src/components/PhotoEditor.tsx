@@ -3,6 +3,7 @@ import Cropper from 'react-easy-crop'
 import type { Area, Point } from 'react-easy-crop'
 import { cropImage } from '../utils/cropImage.js'
 import { useBackButton } from '../telegram.js'
+import { t } from '../i18n.js'
 import { Button } from './ui/index.js'
 
 export interface PhotoEditorProps {
@@ -60,7 +61,7 @@ export function PhotoEditor({ file, onCancel, onConfirm }: PhotoEditorProps) {
       const edited = await cropImage(file, areaPixels, rotation)
       onConfirm(edited)
     } catch {
-      const msg = 'Could not process this photo. Please try again.'
+      const msg = t.photoEditor.error
       setError(msg)
       window.Telegram?.WebApp?.showAlert?.(msg)
     } finally {
@@ -98,7 +99,7 @@ export function PhotoEditor({ file, onCancel, onConfirm }: PhotoEditorProps) {
             onClick={onCancel}
             disabled={busy}
           >
-            Cancel
+            {t.photoEditor.cancel}
           </Button>
 
           <Button
@@ -107,9 +108,9 @@ export function PhotoEditor({ file, onCancel, onConfirm }: PhotoEditorProps) {
             icon="rotate-ccw"
             onClick={rotate}
             disabled={busy}
-            aria-label="Rotate 90 degrees"
+            aria-label={t.photoEditor.rotateAria}
           >
-            Rotate
+            {t.photoEditor.rotate}
           </Button>
 
           <Button
@@ -118,7 +119,7 @@ export function PhotoEditor({ file, onCancel, onConfirm }: PhotoEditorProps) {
             onClick={confirm}
             disabled={busy}
           >
-            {busy ? 'Saving…' : 'Use photo'}
+            {busy ? t.photoEditor.saving : t.photoEditor.use}
           </Button>
         </div>
       </div>

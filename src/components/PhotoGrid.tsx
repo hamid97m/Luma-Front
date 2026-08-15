@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { t } from '../i18n.js'
 import { Icon } from './ui/index.js'
 
 export type Photo = { id: string; url: string; position: number }
@@ -32,11 +33,11 @@ export function PhotoGrid({
     if (inputRef.current) inputRef.current.value = ''
 
     if (!file.type.startsWith('image/')) {
-      setError('Only image files are allowed')
+      setError(t.photoGrid.onlyImages)
       return
     }
     if (file.size > MAX_FILE_SIZE) {
-      setError('Image must be smaller than 20MB')
+      setError(t.photoGrid.tooLarge)
       return
     }
 
@@ -45,7 +46,7 @@ export function PhotoGrid({
     try {
       await onUpload(file)
     } catch {
-      setError('Upload failed — please try again')
+      setError(t.photoGrid.uploadFailed)
     } finally {
       setUploading(false)
     }
@@ -91,11 +92,11 @@ export function PhotoGrid({
             }`}
             onClick={() => handlePhotoTap(photo)}
           >
-            <img src={photo.url} alt={`Photo ${photo.id}`} className="w-full h-full object-cover" />
+            <img src={photo.url} alt="" className="w-full h-full object-cover" />
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete(photo.id) }}
               disabled={deletingId === photo.id}
-              aria-label="Delete photo"
+              aria-label={t.aria.deletePhoto}
               className="absolute top-1.5 left-1.5 text-white rounded-full w-6 h-6 flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,.5)' }}
             >
@@ -132,7 +133,7 @@ export function PhotoGrid({
       {error && (
         <div role="alert" className="text-sm text-error bg-error-container rounded-m3-md p-3 flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={() => setError(null)} aria-label="Dismiss" className="ml-2 flex">
+          <button onClick={() => setError(null)} aria-label={t.aria.close} className="ml-2 flex">
             <Icon name="x" size={14} strokeWidth={2.5} />
           </button>
         </div>

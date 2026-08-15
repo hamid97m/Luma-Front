@@ -3,20 +3,20 @@ import { useBackButton } from '../telegram.js'
 import { Icon } from './ui/index.js'
 import type { LikerProfile } from '../types.js'
 
-/** Compact relative time for "Liked you {when}" — mirrors the design's short form. */
+/** Relative time for "Liked you {when}" — words come from t.time. */
 export function likedAgo(iso: string): string {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
-  if (s < 60) return 'just now'
+  if (s < 60) return t.time.justNow
   const m = Math.floor(s / 60)
-  if (m < 60) return `${m}m ago`
+  if (m < 60) return t.time.minutesAgo(m)
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
+  if (h < 24) return t.time.hoursAgo(h)
   const d = Math.floor(h / 24)
-  if (d === 1) return 'yesterday'
-  if (d < 7) return `${d}d ago`
+  if (d === 1) return t.time.yesterday
+  if (d < 7) return t.time.daysAgo(d)
   const w = Math.floor(d / 7)
-  if (w < 5) return `${w}w ago`
-  return `${Math.floor(d / 30)}mo ago`
+  if (w < 5) return t.time.weeksAgo(w)
+  return t.time.monthsAgo(Math.floor(d / 30))
 }
 
 interface Props {
@@ -85,7 +85,7 @@ export function LikerProfileSheet({ liker, busy, onClose, onPass, onLikeBack }: 
             type="button"
             onClick={onPass}
             disabled={busy}
-            aria-label="Pass"
+            aria-label={t.aria.pass}
             className="flex-none w-14 h-14 rounded-full bg-surface text-txt2 flex items-center justify-center transition-opacity disabled:opacity-60"
           >
             <Icon name="x" size={22} />

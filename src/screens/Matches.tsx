@@ -4,14 +4,15 @@ import { IntrosSection } from '../components/gifts/IntrosSection.js'
 import { Avatar, Badge, Icon } from '../components/ui/index.js'
 import { MatchesEmpty } from '../components/MatchesEmpty.js'
 import { haptic } from '../telegram.js'
+import { t } from '../i18n.js'
 import type { Match } from '../types.js'
 
 function formatDate(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const days = Math.floor(diff / 86400000)
-  if (days === 0) return 'today'
-  if (days === 1) return 'yesterday'
-  if (days < 7) return `${days} days ago`
+  if (days === 0) return t.time.today
+  if (days === 1) return t.time.yesterday
+  if (days < 7) return t.time.daysAgo(days)
   return new Date(iso).toLocaleDateString()
 }
 
@@ -77,7 +78,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
               key={match.id}
               type="button"
               onClick={() => { haptic.selection(); onOpenChat(match) }}
-              aria-label={`Open chat with ${match.user.name}`}
+              aria-label={t.aria.openChatWith(match.user.name)}
               className="w-full text-left bg-surface rounded-m3-lg flex items-center gap-3 px-3.5 py-3 transition-colors active:brightness-95"
             >
               {/* Avatar */}
@@ -85,7 +86,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
                 <Avatar src={match.user.photos[0]} alt={match.user.name} size={56} />
                 {isNewMatch(match.matchedAt) && (
                   <span className="absolute -top-1 -right-1.5 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary">
-                    NEW
+                    {t.matches.newBadge}
                   </span>
                 )}
               </div>
@@ -94,7 +95,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-[16px] text-txt truncate">{match.user.name}</p>
                 <p className="text-[13px] text-txt2 truncate">
-                  {match.lastMessage ? match.lastMessage.body : 'Say hi!'}
+                  {match.lastMessage ? match.lastMessage.body : t.matches.sayHi}
                 </p>
               </div>
 

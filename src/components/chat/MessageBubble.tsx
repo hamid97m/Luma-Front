@@ -23,7 +23,7 @@ interface MessageBubbleProps {
 
 function SeenTicks({ seen }: { seen: boolean }) {
   return (
-    <span role="img" aria-label={seen ? 'Seen' : 'Sent'} className="inline-flex text-white/70">
+    <span role="img" aria-label={seen ? t.aria.seen : t.aria.sent} className="inline-flex text-white/70">
       <Icon name={seen ? 'check-check' : 'check'} size={13} strokeWidth={2.2} />
     </span>
   )

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import { clearReturningUser } from '../utils/returningUser.js'
 import { haptic, isDarkTheme, setThemePref } from '../telegram.js'
+import { t } from '../i18n.js'
 import { Button, Icon, Sheet } from './ui'
 
 interface Props {
@@ -41,7 +42,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
       window.location.reload()
     } catch {
       setDeleting(false)
-      window.Telegram?.WebApp?.showAlert?.('Something went wrong. Please try again.')
+      window.Telegram?.WebApp?.showAlert?.(t.settings.error)
     }
   }
 
@@ -49,20 +50,20 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
     <Sheet open onClose={onClose}>
       {view === 'menu' ? (
         <>
-          <h2 className="text-[22px] font-medium text-txt mb-4">Settings</h2>
+          <h2 className="text-[22px] font-medium text-txt mb-4">{t.settings.title}</h2>
 
           <button
             type="button"
             role="switch"
             aria-checked={dark}
-            aria-label="Dark theme"
+            aria-label={t.settings.darkTheme}
             onClick={toggleDark}
             className="w-full text-left bg-surface rounded-m3-lg p-4 mb-2.5"
           >
             <div className="flex items-center justify-between">
               <span className="text-txt font-medium text-[15px] flex items-center gap-2.5">
                 <Icon name="moon" size={17} className="text-txt2" />
-                Dark theme
+                {t.settings.darkTheme}
               </span>
               <span
                 aria-hidden="true"
@@ -80,7 +81,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
             type="button"
             role="switch"
             aria-checked={!isActive}
-            aria-label="Pause my account"
+            aria-label={t.settings.pause}
             disabled={pausing}
             onClick={togglePause}
             className="w-full text-left bg-surface rounded-m3-lg p-4 mb-2.5 disabled:opacity-60"
@@ -88,7 +89,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
             <div className="flex items-center justify-between mb-1">
               <span className="text-txt font-medium text-[15px] flex items-center gap-2.5">
                 <Icon name="eye" size={17} className="text-txt2" />
-                Pause my account
+                {t.settings.pause}
               </span>
               {pausing ? (
                 <div
@@ -109,7 +110,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
               )}
             </div>
             <p className="text-txt2 text-[13px] font-normal leading-relaxed">
-              You won't appear in Discovery. Your existing matches can still reach you.
+              {t.settings.pauseHint}
             </p>
           </button>
 
@@ -118,18 +119,18 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
             onClick={() => setView('confirmDelete')}
             className="w-full text-left rounded-m3-lg p-4 bg-error-container"
           >
-            <p className="text-error font-bold text-[11px] uppercase tracking-widest mb-1">Danger zone</p>
+            <p className="text-error font-bold text-[11px] uppercase tracking-widest mb-1">{t.settings.dangerZone}</p>
             <span className="text-error font-medium text-[15px] flex items-center gap-2.5">
               <Icon name="trash" size={17} />
-              Delete my account
+              {t.settings.deleteAccount}
             </span>
           </button>
         </>
       ) : (
         <>
-          <h2 className="text-[22px] font-medium text-txt mb-2.5">Delete your account?</h2>
+          <h2 className="text-[22px] font-medium text-txt mb-2.5">{t.settings.confirmTitle}</h2>
           <p className="text-txt2 text-[14px] mb-5 leading-relaxed">
-            This is permanent. You'll be removed from Discovery, your existing matches will lose the connection, and all your photos and profile info will be erased.
+            {t.settings.confirmBody}
           </p>
           <Button
             onClick={handleDelete}
@@ -139,10 +140,10 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
             size="lg"
             className="mb-2"
           >
-            {deleting ? 'Deleting…' : 'Yes, delete my account'}
+            {deleting ? t.settings.deleting : t.settings.confirmDelete}
           </Button>
           <Button onClick={() => setView('menu')} disabled={deleting} variant="text" block>
-            Cancel
+            {t.settings.cancel}
           </Button>
         </>
       )}

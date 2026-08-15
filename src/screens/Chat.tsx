@@ -299,7 +299,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
             <ChatEmptyState match={match} onPrefill={setDraft} />
           ) : (
             <div className="relative flex-1 flex flex-col overflow-hidden">
-              <div ref={listRef} onScroll={onScroll} role="log" aria-label="Messages" className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-[2px]">
+              <div ref={listRef} onScroll={onScroll} role="log" aria-label={t.aria.messages} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-[2px]">
                 {items.map((item) =>
                   item.kind === 'date' ? (
                     <div key={item.id} className="self-center bg-surface-high text-txt2 text-[11px] font-medium px-3 py-1 rounded-full my-2">

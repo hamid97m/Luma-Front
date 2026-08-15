@@ -4,6 +4,7 @@
 // to the Discovery tab.
 import { useAuthStore } from '../store.js'
 import { Avatar, Button, Icon } from './ui/index.js'
+import { t } from '../i18n.js'
 
 interface Props {
   /** Switches to the Discovery tab. */
@@ -27,7 +28,7 @@ export function MatchesEmpty({ onStartDiscovering }: Props) {
           className="absolute w-[72px] h-[72px] rounded-full"
           style={{ right: 12, top: 18, boxShadow: '0 4px 14px rgba(176,41,92,.22)', animation: 'lumaBob 3.4s ease-in-out 1.7s infinite' }}
         >
-          <Avatar src={myPhoto} alt="You" size={72} />
+          <Avatar src={myPhoto} alt={t.aria.you} size={72} />
         </div>
         {/* Center: the spark, sitting between the two avatars */}
         <div
@@ -38,11 +39,11 @@ export function MatchesEmpty({ onStartDiscovering }: Props) {
         </div>
       </div>
 
-      <h2 className="text-[22px] font-medium text-txt">No matches yet</h2>
+      <h2 className="text-[22px] font-medium text-txt">{t.matches.empty}</h2>
       <p className="text-txt2 text-[14px] leading-relaxed max-w-[240px] mb-3">
-        When you and someone like each other, you'll meet here. Your future match is one swipe away.
+        {t.matches.emptyHint}
       </p>
-      <Button onClick={onStartDiscovering}>Start discovering</Button>
+      <Button onClick={onStartDiscovering}>{t.matches.startDiscovering}</Button>
     </div>
   )
 }

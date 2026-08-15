@@ -38,8 +38,11 @@ export const fa = {
   discovery: {
     empty: 'همه را دیده‌ای',
     emptyHint: 'همه افراد اطرافت را دیده‌ای. هر روز افراد جدیدی می‌آیند — خبرت می‌کنیم.',
+    reviewAgain: 'مرور دوباره پروفایل‌ها',
     like: 'لایک',
     pass: 'رد',
+    nearby: 'همین نزدیکی',
+    swipeHint: 'سوایپ برای لایک یا رد · برای مرور عکس‌ها ضربه بزن',
   },
   match: {
     title: 'مچ شدید!',
@@ -58,7 +61,10 @@ export const fa = {
     empty: 'هنوز مچی نداری',
     emptyHint:
       'وقتی تو و کسی همدیگر را لایک کنید، اینجا همدیگر را می‌بینید. مچ بعدی‌ات یک سوایپ فاصله دارد.',
+    startDiscovering: 'شروع دیسکاوری',
     message: 'چت',
+    newBadge: 'جدید',
+    sayHi: 'سلام کن!',
   },
   chat: {
     placeholder: 'پیامی بنویس…',
@@ -128,6 +134,7 @@ export const fa = {
   },
   errors: {
     generic: 'مشکلی پیش آمد',
+    unknown: 'خطای ناشناخته',
     retry: 'تلاش دوباره',
   },
   report: {
@@ -234,5 +241,132 @@ export const fa = {
     pitchTitle: 'سوایپ بدون محدودیت',
     pitchBody: 'پرمیوم محدودیت 4 ساعته را حذف می‌کند — به‌علاوه چت نامحدود و امکانات بیشتر.',
     paywallSubtitle: 'برای سوایپ بدون محدودیت پرمیوم شو',
+  },
+  // Onboarding wizard (per design). Genders/prefs arrays keep the code's
+  // option order: woman/man/nonbinary and men/women/everyone.
+  onboarding: {
+    nameQ: 'اسمتون چیه؟',
+    namePlaceholder: 'تینا',
+    ageQ: 'چند سال داری؟',
+    ageMin: 'باید حداقل 18 سال داشته باشی.',
+    iAm: 'من … هستم',
+    genders: ['زن', 'مرد', 'غیر دودویی'],
+    interestedIn: 'علاقه‌مند به…',
+    prefOptions: ['مردها', 'زن‌ها', 'همه'],
+    pickInterests: 'علایقت را انتخاب کن',
+    tagCount: (n: number) => `${n}/5 انتخاب‌شده · حداقل 3 مورد`,
+    photoBio: 'عکس و بیو اضافه کن',
+    resizing: 'در حال تغییر اندازه…',
+    added: 'اضافه شد ✓',
+    bioPlaceholder: 'یک بیو کوتاه بنویس…',
+    realPhotos:
+      'از عکس‌های واقعی خودت استفاده کن. پروفایل‌های با عکس جعلی ممکن است توسط دیگران گزارش و مسدود شوند.',
+    pauseNote: 'هر زمان می‌توانی حسابت را از تنظیمات متوقف یا حذف کنی.',
+    enter: 'ورود به لوما',
+    continue: 'ادامه',
+    error: (msg: string) => `خطا: ${msg}`,
+  },
+  // The 16 interest tags — the single shared source for both the Onboarding
+  // picker and the MyProfile tag picker. Design maps Wine→چای (emoji kept).
+  interests: [
+    '☕ قهوه', '✈️ سفر', '🎵 موسیقی', '🎨 هنر',
+    '📚 کتاب', '🥾 کوهنوردی', '🍳 آشپزی', '🎬 فیلم',
+    '🐕 سگ‌ها', '🏄 موج‌سواری', '💃 رقص', '🎸 گیتار',
+    '🍷 چای', '🧘 یوگا', '📷 عکاسی', '🎮 گیم',
+  ],
+  // Icebreaker prompts + coaching hints for the MyProfile picker. Order is
+  // paired 1:1 with the icon list in MyProfile. The prompt text is stored
+  // verbatim on the profile. First seven are design-verbatim.
+  icebreakers: [
+    { prompt: 'جمعه ایده‌آل من…', hint: 'صحنه را تصویر کن — راحت تصور شود، راحت جواب بگیرد.' },
+    { prompt: 'دو حقیقت و یک دروغ…', hint: 'بگذار حدس بزنند — نرخ پاسخ عالی.' },
+    { prompt: 'راه به‌دست‌آوردن دل من…', hint: 'دقیق باش، نه رمانتیک.' },
+    { prompt: 'چیزی که دیوانه‌وارش دوست دارم…', hint: 'همان که زیادی درباره‌اش حرف می‌زنی.' },
+    { prompt: 'قرار اول بی‌نقص…', hint: 'جایی واقعی، نه «هر جا با تو».' },
+    { prompt: 'جنجالی‌ترین نظرم…', hint: 'سبک نگهش دار — در حد پیتزا آناناس.' },
+    { prompt: 'با هم می‌سازیم اگر…', hint: 'آدم‌های هم‌تیپ خودت را پیدا کن.' },
+    { prompt: 'صبح آرام یا برنامه فشرده؟', hint: 'یک دوراهی ساده — جوابش خیلی چیزها می‌گوید.' },
+    { prompt: 'مهارت عجیب‌وغریبم…', hint: 'کمی خودستایی بامزه خیلی جواب می‌دهد.' },
+    { prompt: 'سفری که تو را می‌برم…', hint: 'بوی ماجراجویی — کجا می‌رویم؟' },
+    { prompt: 'آخرین چیزی که مرا خنداند…', hint: 'حس شوخ‌طبعی‌ات را نشان بده.' },
+    { prompt: 'نشانه‌های مثبتی که دنبالشان هستم…', hint: 'بگو واقعاً برایت چه چیزی مهم است.' },
+  ],
+  // MyProfile-only strings — field labels shared with the design live in
+  // `profile` above; these are the extras the screen needs.
+  myProfile: {
+    primary: 'اصلی',
+    interestsLabel: 'علایق',
+    locationPlaceholder: 'شهر',
+    tagDone: '− تمام',
+    change: 'تغییر',
+    answerPlaceholder: 'پاسخ تو…',
+    supportSub: 'سؤال، مشکل، بازخورد — پاسخ می‌دهیم.',
+    pickerTitle: 'یک یخ‌شکن انتخاب کن',
+  },
+  settings: {
+    title: 'تنظیمات',
+    darkTheme: 'تم تیره',
+    pause: 'توقف حساب من',
+    pauseHint: 'در دیسکاوری نمایش داده نمی‌شوی. مچ‌های فعلی‌ات همچنان به تو دسترسی دارند.',
+    dangerZone: 'منطقه خطر',
+    deleteAccount: 'حذف حساب من',
+    confirmTitle: 'حسابت حذف شود؟',
+    confirmBody:
+      'این کار دائمی است. از دیسکاوری حذف می‌شوی، مچ‌هایت ارتباط را از دست می‌دهند و همه عکس‌ها و اطلاعات پروفایلت پاک می‌شود.',
+    confirmDelete: 'بله، حسابم حذف شود',
+    deleting: 'در حال حذف…',
+    cancel: 'انصراف',
+    error: 'مشکلی پیش آمد. لطفاً دوباره تلاش کن.',
+  },
+  photoEditor: {
+    cancel: 'انصراف',
+    rotate: 'چرخش',
+    rotateAria: 'چرخش 90 درجه',
+    use: 'استفاده از عکس',
+    saving: 'در حال ذخیره…',
+    error: 'پردازش این عکس ممکن نشد. لطفاً دوباره تلاش کن.',
+  },
+  photoGrid: {
+    onlyImages: 'فقط فایل‌های تصویری مجازند',
+    tooLarge: 'حجم عکس باید کمتر از 20 مگابایت باشد',
+    uploadFailed: 'آپلود انجام نشد — دوباره تلاش کن',
+  },
+  // Fullscreen photo viewer.
+  viewer: {
+    counter: (i: number, n: number) => `${i} از ${n}`,
+  },
+  reconnect: {
+    title: 'اتصال دوباره برقرار نشد',
+    body: 'مشکلی در بارگذاری حساب شما پیش آمد. اگر ادامه داشت، لوما را از تلگرام ببندید و دوباره باز کنید.',
+    retry: 'تلاش دوباره',
+  },
+  // Relative time + date words. Numbers are interpolated directly with Latin
+  // digits; the formatting logic itself stays in the callers (Task 4).
+  time: {
+    justNow: 'همین حالا',
+    minutesAgo: (n: number) => `${n} دقیقه پیش`,
+    hoursAgo: (n: number) => `${n} ساعت پیش`,
+    daysAgo: (n: number) => `${n} روز پیش`,
+    weeksAgo: (n: number) => `${n} هفته پیش`,
+    monthsAgo: (n: number) => `${n} ماه پیش`,
+    today: 'امروز',
+    yesterday: 'دیروز',
+  },
+  // Screen-reader / aria labels — Persian is correct for a fa-locale app.
+  aria: {
+    back: 'بازگشت',
+    close: 'بستن',
+    settings: 'تنظیمات',
+    like: 'لایک',
+    pass: 'رد',
+    deletePhoto: 'حذف عکس',
+    send: 'ارسال',
+    remove: 'حذف',
+    messages: 'پیام‌ها',
+    seen: 'خوانده شد',
+    sent: 'ارسال شد',
+    you: 'تو',
+    photoN: (n: number) => `عکس ${n}`,
+    openChatWith: (name: string) => `باز کردن چت با ${name}`,
   },
 } as const

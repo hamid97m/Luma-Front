@@ -153,7 +153,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
               boxShadow: '0 4px 12px rgba(0,0,0,.25)',
             }}
           >
-            LIKE
+            {t.discovery.like}
           </div>
 
           {/* PASS stamp */}
@@ -165,7 +165,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
               boxShadow: '0 4px 12px rgba(0,0,0,.25)',
             }}
           >
-            PASS
+            {t.discovery.pass}
           </div>
 
           <ProfileCard
@@ -180,7 +180,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
 
       {/* Hint */}
       <p className="text-center text-[11px] text-txt3 select-none">
-        Swipe to like or pass · tap the photo to view it
+        {t.discovery.swipeHint}
       </p>
 
       {/* Action buttons */}
@@ -189,7 +189,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
           onClick={() => !disabled && !flying && fly('pass')}
           disabled={disabled}
           className="w-14 h-14 rounded-[18px] bg-surface text-txt2 shadow-m3-1 flex items-center justify-center disabled:opacity-40 hover:bg-surface-high transition-colors"
-          aria-label="Pass"
+          aria-label={t.aria.pass}
         >
           <Icon name="x" size={24} strokeWidth={2.5} />
         </button>
@@ -198,7 +198,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
           onClick={() => !disabled && !flying && fly('like')}
           disabled={disabled}
           className="w-[76px] h-[76px] rounded-[24px] bg-primary text-white shadow-m3-fab flex items-center justify-center disabled:opacity-40 hover:bg-primary-hover transition-colors"
-          aria-label="Like"
+          aria-label={t.aria.like}
         >
           <Icon name="heart" size={32} filled />
         </button>

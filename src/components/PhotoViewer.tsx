@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { haptic, useBackButton } from '../telegram.js'
+import { t } from '../i18n.js'
 import { Icon } from './ui/index.js'
 
 interface Props {
@@ -279,12 +280,12 @@ export function PhotoViewer({ photos, initialIndex, alt, onClose }: Props) {
         }}
       >
         <span className="text-[14px] text-white/80 font-semibold">
-          {photos.length > 1 ? `${idx + 1} of ${photos.length}` : ''}
+          {photos.length > 1 ? t.viewer.counter(idx + 1, photos.length) : ''}
         </span>
         <button
           type="button"
           onClick={() => onClose(idx)}
-          aria-label="Close"
+          aria-label={t.aria.close}
           className="w-9 h-9 rounded-full glass-dark flex items-center justify-center text-white/90"
         >
           <Icon name="x" size={18} strokeWidth={2.5} />
@@ -305,7 +306,7 @@ export function PhotoViewer({ photos, initialIndex, alt, onClose }: Props) {
               key={i}
               type="button"
               onClick={() => goTo(i)}
-              aria-label={`Photo ${i + 1}`}
+              aria-label={t.aria.photoN(i + 1)}
               className="flex-shrink-0 rounded-lg overflow-hidden transition-all duration-200"
               style={{
                 width: i === idx ? 40 : 28,

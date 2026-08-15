@@ -2,14 +2,8 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import { mainButtonSupported, useMainButton } from '../telegram.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
+import { t } from '../i18n.js'
 import { Button, IconButton, Input, Textarea, Chip, Icon } from '../components/ui/index.js'
-
-const ALL_TAGS = [
-  '☕ Coffee', '✈️ Travel', '🎵 Music', '🎨 Art',
-  '📚 Reading', '🥾 Hiking', '🍳 Cooking', '🎬 Film',
-  '🐕 Dogs', '🏄 Surfing', '💃 Dancing', '🎸 Guitar',
-  '🍷 Wine', '🧘 Yoga', '📷 Photography', '🎮 Gaming',
-]
 
 interface State {
   name: string
@@ -69,8 +63,8 @@ export function Onboarding({ onComplete }: Props) {
         })
         await onComplete()
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error'
-        window.Telegram?.WebApp?.showAlert?.(`Error: ${msg}`)
+        const msg = err instanceof Error ? err.message : t.errors.unknown
+        window.Telegram?.WebApp?.showAlert?.(t.onboarding.error(msg))
       } finally {
         setSaving(false)
       }
@@ -80,7 +74,7 @@ export function Onboarding({ onComplete }: Props) {
   // Native Telegram button drives the primary step action. Falls back to the
   // in-page button below when Telegram provides no MainButton.
   useMainButton({
-    text: step === TOTAL_STEPS - 1 ? 'Enter Luma' : 'Continue',
+    text: step === TOTAL_STEPS - 1 ? t.onboarding.enter : t.onboarding.continue,
     visible: true,
     enabled: valid && !saving,
     loading: saving,
@@ -90,7 +84,7 @@ export function Onboarding({ onComplete }: Props) {
   const toggleInterest = (tag: string) => {
     setState((s) => {
       if (s.interests.includes(tag)) {
-        return { ...s, interests: s.interests.filter((t) => t !== tag) }
+        return { ...s, interests: s.interests.filter((x) => x !== tag) }
       }
       if (s.interests.length >= 5) return s
       return { ...s, interests: [...s.interests, tag] }
@@ -107,7 +101,7 @@ export function Onboarding({ onComplete }: Props) {
       setPhotoUploaded(true)
     } catch (err) {
       setPhotoPreview(null)
-      const msg = err instanceof Error ? err.message : 'Upload failed'
+      const msg = err instanceof Error ? err.message : t.photoGrid.uploadFailed
       window.Telegram?.WebApp?.showAlert?.(msg)
     } finally {
       setUploadPhase(null)
@@ -124,7 +118,7 @@ export function Onboarding({ onComplete }: Props) {
         <IconButton
           icon="arrow-left"
           onClick={back}
-          aria-label="Back"
+          aria-label={t.aria.back}
           tone="ghost"
           iconSize={22}
           className={`text-txt transition-opacity ${step === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
@@ -146,13 +140,13 @@ export function Onboarding({ onComplete }: Props) {
           {/* Step 0: Name */}
           {step === 0 && (
             <>
-              <h2 className="text-[28px] font-medium leading-tight text-txt">What's your name?</h2>
+              <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.nameQ}</h2>
               <Input
                 autoFocus
                 type="text"
                 value={state.name}
                 onChange={(e) => setState((s) => ({ ...s, name: e.target.value }))}
-                placeholder="Your name"
+                placeholder={t.onboarding.namePlaceholder}
                 className="text-[18px] font-normal"
               />
             </>
@@ -161,7 +155,7 @@ export function Onboarding({ onComplete }: Props) {
           {/* Step 1: Age */}
           {step === 1 && (
             <>
-              <h2 className="text-[28px] font-medium leading-tight text-txt">How old are you?</h2>
+              <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.ageQ}</h2>
               <Input
                 autoFocus
                 type="number"
@@ -176,7 +170,7 @@ export function Onboarding({ onComplete }: Props) {
                 className="text-[44px] font-medium text-center rounded-m3-lg"
               />
               {ageError && (
-                <p className="text-error text-sm text-center">You must be at least 18.</p>
+                <p className="text-error text-sm text-center">{t.onboarding.ageMin}</p>
               )}
             </>
           )}
@@ -184,9 +178,9 @@ export function Onboarding({ onComplete }: Props) {
           {/* Step 2: Gender */}
           {step === 2 && (
             <>
-              <h2 className="text-[28px] font-medium leading-tight text-txt">I am a…</h2>
+              <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.iAm}</h2>
               <div className="flex flex-col gap-2.5">
-                {([['woman', 'Woman'], ['man', 'Man'], ['nonbinary', 'Non-binary']] as const).map(([val, label]) => {
+                {([['woman', t.onboarding.genders[0]], ['man', t.onboarding.genders[1]], ['nonbinary', t.onboarding.genders[2]]] as const).map(([val, label]) => {
                   const selected = state.gender === val
                   return (
                     <button
@@ -210,9 +204,9 @@ export function Onboarding({ onComplete }: Props) {
           {/* Step 3: Preference */}
           {step === 3 && (
             <>
-              <h2 className="text-[28px] font-medium leading-tight text-txt">Interested in…</h2>
+              <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.interestedIn}</h2>
               <div className="flex flex-col gap-2.5">
-                {([['men', 'Men'], ['women', 'Women'], ['everyone', 'Everyone']] as const).map(([val, label]) => {
+                {([['men', t.onboarding.prefOptions[0]], ['women', t.onboarding.prefOptions[1]], ['everyone', t.onboarding.prefOptions[2]]] as const).map(([val, label]) => {
                   const selected = state.pref === val
                   return (
                     <button
@@ -237,13 +231,13 @@ export function Onboarding({ onComplete }: Props) {
           {step === 4 && (
             <>
               <div>
-                <h2 className="text-[28px] font-medium leading-tight text-txt">Pick your interests</h2>
+                <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.pickInterests}</h2>
                 <p className="text-[13px] text-txt2 mt-1.5">
-                  {state.interests.length}/5 selected · choose at least 3
+                  {t.onboarding.tagCount(state.interests.length)}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {ALL_TAGS.map((tag) => (
+                {t.interests.map((tag) => (
                   <Chip
                     key={tag}
                     selected={state.interests.includes(tag)}
@@ -259,7 +253,7 @@ export function Onboarding({ onComplete }: Props) {
           {/* Step 5: Photo + Bio */}
           {step === 5 && (
             <>
-              <h2 className="text-[28px] font-medium leading-tight text-txt">Add a photo & bio</h2>
+              <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.photoBio}</h2>
               <div className="flex gap-4">
                 <label className="relative cursor-pointer flex-shrink-0">
                   <input
@@ -272,13 +266,13 @@ export function Onboarding({ onComplete }: Props) {
                     photoPreview ? '' : 'border-2 border-dashed border-outline bg-bg'
                   }`}>
                     {photoPreview
-                      ? <img src={photoPreview} alt="preview" className="w-full h-full object-cover rounded-m3-lg" />
+                      ? <img src={photoPreview} alt="" className="w-full h-full object-cover rounded-m3-lg" />
                       : <Icon name="camera" size={28} className="text-primary" />
                     }
                     {uploadPhase && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3" style={{ background: 'var(--scrim)' }}>
                         {uploadPhase.phase === 'processing' ? (
-                          <span className="text-[11px] text-white font-medium animate-pulse">Resizing…</span>
+                          <span className="text-[11px] text-white font-medium animate-pulse">{t.onboarding.resizing}</span>
                         ) : (
                           <>
                             <div className="w-full h-1 rounded-full bg-white/25 overflow-hidden">
@@ -295,7 +289,7 @@ export function Onboarding({ onComplete }: Props) {
                   </div>
                   {photoUploaded && (
                     <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-medium px-2.5 py-0.5 rounded-full">
-                      Added ✓
+                      {t.onboarding.added}
                     </span>
                   )}
                 </label>
@@ -306,7 +300,7 @@ export function Onboarding({ onComplete }: Props) {
                     maxLength={150}
                     value={state.bio}
                     onChange={(e) => setState((s) => ({ ...s, bio: e.target.value }))}
-                    placeholder="Write a short bio…"
+                    placeholder={t.onboarding.bioPlaceholder}
                   />
                   <p className="text-right text-[11px] text-txt3">{state.bio.length}/150</p>
                 </div>
@@ -314,12 +308,11 @@ export function Onboarding({ onComplete }: Props) {
               <div className="flex gap-2.5 bg-surface rounded-m3-md px-3.5 py-3">
                 <Icon name="alert-triangle" size={16} className="text-primary flex-none mt-px" />
                 <p className="text-txt2 text-[12px] leading-relaxed">
-                  Use real photos of yourself. Profiles with fake photos can be
-                  reported by other users and may be blocked.
+                  {t.onboarding.realPhotos}
                 </p>
               </div>
               <p className="text-txt3 text-[12px] text-center">
-                You can pause or delete your account anytime from Settings.
+                {t.onboarding.pauseNote}
               </p>
             </>
           )}
@@ -330,7 +323,7 @@ export function Onboarding({ onComplete }: Props) {
       {!mainButtonSupported() && (
         <div className="relative z-10 px-6 pb-10 pt-4">
           <Button block size="lg" onClick={next} disabled={!valid || saving}>
-            {saving ? '…' : step === TOTAL_STEPS - 1 ? 'Enter Luma' : 'Continue'}
+            {saving ? '…' : step === TOTAL_STEPS - 1 ? t.onboarding.enter : t.onboarding.continue}
           </Button>
         </div>
       )}

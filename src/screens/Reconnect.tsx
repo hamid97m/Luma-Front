@@ -1,4 +1,5 @@
 import { Button, Icon } from '../components/ui'
+import { t } from '../i18n.js'
 
 interface Props {
   onRetry: () => void
@@ -13,12 +14,12 @@ export function Reconnect({ onRetry }: Props) {
       <div className="w-[72px] h-[72px] rounded-m3-lg bg-primary-container flex items-center justify-center">
         <Icon name="refresh" size={32} className="text-primary" />
       </div>
-      <h1 className="text-[24px] font-medium">Couldn't reconnect</h1>
+      <h1 className="text-[24px] font-medium">{t.reconnect.title}</h1>
       <p className="text-[14px] text-txt2 leading-relaxed">
-        Something went wrong loading your account. If this keeps happening, close and reopen Luma from Telegram.
+        {t.reconnect.body}
       </p>
       <Button onClick={onRetry} className="mt-2">
-        Try again
+        {t.reconnect.retry}
       </Button>
     </div>
   )

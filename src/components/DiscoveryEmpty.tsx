@@ -2,6 +2,7 @@
 // two rippling rings behind a gently bobbing heart tile flanked by bobbing
 // sparkles, then a heading/subtitle and a refresh action.
 import { Button, Icon } from './ui/index.js'
+import { t } from '../i18n.js'
 
 interface Props {
   /** "Review profiles again" — re-checks the feed for new people. */
@@ -40,11 +41,11 @@ export function DiscoveryEmpty({ onReview }: Props) {
         </span>
       </div>
 
-      <h2 className="text-[22px] font-medium text-txt">You're all caught up</h2>
+      <h2 className="text-[22px] font-medium text-txt">{t.discovery.empty}</h2>
       <p className="text-txt2 text-[14px] leading-relaxed max-w-[240px] mb-3">
-        You've seen everyone nearby. New people join every day — we'll let you know.
+        {t.discovery.emptyHint}
       </p>
-      <Button onClick={onReview}>Review profiles again</Button>
+      <Button onClick={onReview}>{t.discovery.reviewAgain}</Button>
     </div>
   )
 }

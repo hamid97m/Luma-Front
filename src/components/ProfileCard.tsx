@@ -42,7 +42,7 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props)
         style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
       >
         <Icon name="map-pin" size={12} strokeWidth={2.5} />
-        Nearby
+        {t.discovery.nearby}
       </div>
 
       {/* Report trigger */}
