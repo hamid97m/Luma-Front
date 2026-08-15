@@ -71,13 +71,13 @@ function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onL
   }
 
   // Telegram-style grouping: bubbles inside a group flatten the corners that
-  // face their neighbors, on the sender's side. Logical corners (se/ee = the
-  // inline-end side, ss/es = inline-start) so under RTL — where `self-end`
-  // puts my bubbles on the LEFT, Telegram-fa style — the flattened corners
-  // still hug the correct outer edge.
+  // face their neighbors, on the sender's side. Physical corners (tr/br for
+  // mine, tl/bl for theirs) because bubble sides are fixed regardless of
+  // text direction: mine always sits on the physical RIGHT, theirs on the
+  // LEFT, in both LTR and RTL layouts.
   const corners = mine
-    ? `${first ? '' : 'rounded-se-[6px] '}${last ? '' : 'rounded-ee-[6px]'}`
-    : `${first ? '' : 'rounded-ss-[6px] '}${last ? '' : 'rounded-es-[6px]'}`
+    ? `${first ? '' : 'rounded-tr-[6px] '}${last ? '' : 'rounded-br-[6px]'}`
+    : `${first ? '' : 'rounded-tl-[6px] '}${last ? '' : 'rounded-bl-[6px]'}`
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (failed && onRetry && (e.key === 'Enter' || e.key === ' ')) {
@@ -102,7 +102,7 @@ function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onL
       onContextMenu={handleContextMenu}
       style={onLongPress ? { WebkitTouchCallout: 'none', WebkitUserSelect: 'none' } : undefined}
       className={`max-w-[75%] px-4 py-2 rounded-m3-lg text-[15px] ${corners} ${
-        mine ? 'self-end bg-primary text-white' : 'self-start bg-surface text-txt'
+        mine ? 'ml-auto bg-primary text-white' : 'mr-auto bg-surface text-txt'
       } ${failed ? 'opacity-70' : ''} ${last ? 'mb-2' : ''} ${onLongPress ? 'select-none' : ''}`}
     >
       {reply && (
