@@ -12,6 +12,7 @@ export interface UserProfile {
   is_active: boolean
   photos: Array<{ id: string; url: string; position: number }>
   setupComplete: boolean
+  paused?: boolean
 }
 
 export interface DiscoveryProfile {

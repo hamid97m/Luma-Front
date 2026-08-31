@@ -6,6 +6,7 @@ import { isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
 import { Reconnect } from './screens/Reconnect.js'
 import { Blocked } from './screens/Blocked.js'
+import { PhotoRequired } from './screens/PhotoRequired.js'
 import { Onboarding } from './screens/Onboarding.js'
 import { Discovery } from './screens/Discovery.js'
 import { Likes } from './screens/Likes.js'
@@ -17,7 +18,7 @@ import { BottomNav } from './components/BottomNav.js'
 import { NotifyPrompt } from './components/NotifyPrompt.js'
 import type { Match, UserProfile } from './types.js'
 
-type Screen = 'splash' | 'onboarding' | 'main' | 'reconnect' | 'blocked'
+type Screen = 'splash' | 'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired'
 type Tab = 'discovery' | 'likes' | 'matches' | 'profile'
 
 export function App() {
@@ -25,7 +26,7 @@ export function App() {
   const { setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('splash')
   const [splashDone, setSplashDone] = useState(false)
-  const [authResult, setAuthResult] = useState<'onboarding' | 'main' | 'reconnect' | 'blocked' | null>(null)
+  const [authResult, setAuthResult] = useState<'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired' | null>(null)
   const [tab, setTab] = useState<Tab>('discovery')
   const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null)
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0)
@@ -100,7 +101,7 @@ export function App() {
         if (partial.setupComplete) {
           markReturningUser()
           setUser(partial as UserProfile)
-          setAuthResult('main')
+          setAuthResult(partial.paused ? 'photoRequired' : 'main')
         } else {
           setAuthResult('onboarding')
         }
@@ -125,6 +126,10 @@ export function App() {
 
   if (screen === 'blocked') {
     return <Blocked supportBot={supportBot} />
+  }
+
+  if (screen === 'photoRequired') {
+    return <PhotoRequired />
   }
 
   if (screen === 'reconnect') {
