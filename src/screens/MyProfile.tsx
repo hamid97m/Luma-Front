@@ -200,17 +200,19 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                         {t.myProfile.primary}
                       </span>
                     )}
-                    <button
-                      onClick={() => handlePhotoDelete(photo.id)}
-                      disabled={deletingId === photo.id}
-                      aria-label={t.aria.deletePhoto}
-                      className="absolute top-1.5 end-1.5 w-6 h-6 rounded-full text-white flex items-center justify-center"
-                      style={{ background: 'rgba(0,0,0,.5)' }}
-                    >
-                      {deletingId === photo.id
-                        ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        : <Icon name="x" size={11} strokeWidth={2.5} />}
-                    </button>
+                    {photos.length > 1 && (
+                      <button
+                        onClick={() => handlePhotoDelete(photo.id)}
+                        disabled={deletingId === photo.id}
+                        aria-label={t.aria.deletePhoto}
+                        className="absolute top-1.5 end-1.5 w-6 h-6 rounded-full text-white flex items-center justify-center"
+                        style={{ background: 'rgba(0,0,0,.5)' }}
+                      >
+                        {deletingId === photo.id
+                          ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          : <Icon name="x" size={11} strokeWidth={2.5} />}
+                      </button>
+                    )}
                     {deletingId === photo.id && (
                       <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,.45)' }}>
                         <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
