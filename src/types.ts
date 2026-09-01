@@ -24,6 +24,7 @@ export interface DiscoveryProfile {
   photos: string[]
   interests: string[]
   location: string | null
+  nearby?: boolean
 }
 
 export interface Match {

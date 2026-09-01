@@ -36,14 +36,16 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props)
         </div>
       )}
 
-      {/* Distance pill */}
-      <div
-        className="absolute top-8 start-3.5 flex items-center gap-1.5 rounded-m3-sm text-[12px] font-medium px-2.5 py-1.5 text-white pointer-events-none"
-        style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
-      >
-        <Icon name="map-pin" size={12} strokeWidth={2.5} />
-        {t.discovery.nearby}
-      </div>
+      {/* Distance pill — only for candidates in the viewer's city */}
+      {profile.nearby && (
+        <div
+          className="absolute top-8 start-3.5 flex items-center gap-1.5 rounded-m3-sm text-[12px] font-medium px-2.5 py-1.5 text-white pointer-events-none"
+          style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
+        >
+          <Icon name="map-pin" size={12} strokeWidth={2.5} />
+          {t.discovery.nearby}
+        </div>
+      )}
 
       {/* Report trigger */}
       <button
