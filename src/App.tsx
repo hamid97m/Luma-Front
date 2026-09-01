@@ -21,13 +21,26 @@ import type { Match, UserProfile } from './types.js'
 type Screen = 'splash' | 'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired'
 type Tab = 'discovery' | 'likes' | 'matches' | 'profile'
 
+const TABS: readonly Tab[] = ['discovery', 'likes', 'matches', 'profile']
+
+// Deep link: a bot message's webApp button opens the app at WEB_URL?screen=<tab>.
+// Read it once at launch; only the four main tabs are valid targets.
+function readDeepLinkTab(): Tab | null {
+  try {
+    const s = new URLSearchParams(window.location.search).get('screen')
+    return s && (TABS as readonly string[]).includes(s) ? (s as Tab) : null
+  } catch {
+    return null
+  }
+}
+
 export function App() {
   const initDataRaw = window.Telegram?.WebApp?.initData ?? null
   const { setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('splash')
   const [splashDone, setSplashDone] = useState(false)
   const [authResult, setAuthResult] = useState<'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired' | null>(null)
-  const [tab, setTab] = useState<Tab>('discovery')
+  const [tab, setTab] = useState<Tab>(() => readDeepLinkTab() ?? 'discovery')
   const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null)
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0)
   const [matchesBadge, setMatchesBadge] = useState(0)
@@ -38,11 +51,14 @@ export function App() {
   const [supportBot, setSupportBot] = useState<string | null>(null)
   // Once a tab has been visited, keep it mounted (hidden via CSS) instead of
   // unmounting — avoids refetching and a loading flash on every tab switch.
-  const [visited, setVisited] = useState<Record<Tab, boolean>>({
-    discovery: true,
-    likes: false,
-    matches: false,
-    profile: false,
+  const [visited, setVisited] = useState<Record<Tab, boolean>>(() => {
+    const d = readDeepLinkTab()
+    return {
+      discovery: true,
+      likes: d === 'likes',
+      matches: d === 'matches',
+      profile: d === 'profile',
+    }
   })
 
   // One-time Telegram setup: ready/expand, fullscreen, swipe-lock, safe-area vars.
