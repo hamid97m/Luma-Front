@@ -59,6 +59,7 @@ interface TelegramWebApp {
       id: number
       first_name: string
       username?: string
+      photo_url?: string
       allows_write_to_pm?: boolean
     }
   }

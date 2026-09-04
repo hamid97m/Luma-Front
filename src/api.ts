@@ -70,6 +70,11 @@ export const api = {
       ),
     delete: (photoId: string) =>
       request<{ ok: boolean }>(`/profile/me/photos/${photoId}`, { method: 'DELETE' }),
+    fromTelegram: () =>
+      request<{ photo: { id: string; url: string; position: number } }>(
+        '/profile/me/photos/from-telegram',
+        { method: 'POST' }
+      ),
     reorder: (order: string[]) =>
       request<{ ok: boolean }>('/profile/me/photos/reorder', {
         method: 'PATCH',

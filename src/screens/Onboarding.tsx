@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api.js'
-import { mainButtonSupported, useMainButton } from '../telegram.js'
+import { mainButtonSupported, useMainButton, telegramFirstName, telegramHasPhoto, haptic } from '../telegram.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
 import { t } from '../i18n.js'
 import { Button, IconButton, Input, Textarea, Chip, Icon } from '../components/ui/index.js'
@@ -42,6 +42,7 @@ export function Onboarding({ onComplete }: Props) {
   const [saving, setSaving] = useState(false)
   const [ageError, setAgeError] = useState(false)
   const [editingFile, setEditingFile] = useState<File | null>(null)
+  const [tgPhotoLoading, setTgPhotoLoading] = useState(false)
 
   const valid = isValid(step, state, photoUploaded)
 
@@ -109,6 +110,22 @@ export function Onboarding({ onComplete }: Props) {
     }
   }
 
+  // Pull the launching user's Telegram profile photo straight into their starter
+  // photo — no crop step. The file-picker path stays fully usable alongside it.
+  const handleTelegramPhoto = async () => {
+    setTgPhotoLoading(true)
+    try {
+      const { photo } = await api.photos.fromTelegram()
+      if (photoPreview) URL.revokeObjectURL(photoPreview)
+      setPhotoPreview(photo.url)
+      setPhotoUploaded(true)
+    } catch {
+      window.Telegram?.WebApp?.showAlert?.(t.onboarding.telegramPhotoFailed)
+    } finally {
+      setTgPhotoLoading(false)
+    }
+  }
+
   return (
     <div
       className="flex flex-col h-full relative overflow-hidden bg-bg text-txt"
@@ -152,6 +169,19 @@ export function Onboarding({ onComplete }: Props) {
               />
               {nameHasDigit(state.name) && (
                 <p className="text-error text-sm">{t.onboarding.nameNoDigits}</p>
+              )}
+              {state.name.trim() === '' && telegramFirstName() && (
+                <Button
+                  variant="text"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => {
+                    setState((s) => ({ ...s, name: telegramFirstName() ?? '' }))
+                    haptic.selection()
+                  }}
+                >
+                  {t.onboarding.useTelegramName}
+                </Button>
               )}
             </>
           )}
@@ -273,19 +303,19 @@ export function Onboarding({ onComplete }: Props) {
                       ? <img src={photoPreview} alt="" className="w-full h-full object-cover rounded-m3-lg" />
                       : <Icon name="camera" size={28} className="text-primary" />
                     }
-                    {uploadPhase && (
+                    {(uploadPhase || tgPhotoLoading) && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-3" style={{ background: 'var(--scrim)' }}>
-                        {uploadPhase.phase === 'processing' ? (
+                        {tgPhotoLoading || uploadPhase?.phase === 'processing' ? (
                           <span className="text-[11px] text-white font-medium animate-pulse">{t.onboarding.resizing}</span>
                         ) : (
                           <>
                             <div className="w-full h-1 rounded-full bg-white/25 overflow-hidden">
                               <div
                                 className="h-full rounded-full bg-white transition-[width]"
-                                style={{ width: `${uploadPhase.progress}%` }}
+                                style={{ width: `${uploadPhase?.progress ?? 0}%` }}
                               />
                             </div>
-                            <span className="text-[10px] text-white">{uploadPhase.progress}%</span>
+                            <span className="text-[10px] text-white">{uploadPhase?.progress ?? 0}%</span>
                           </>
                         )}
                       </div>
@@ -309,6 +339,17 @@ export function Onboarding({ onComplete }: Props) {
                   <p className="text-end text-[11px] text-txt3">{state.bio.length}/150</p>
                 </div>
               </div>
+              {!photoUploaded && telegramHasPhoto() && (
+                <Button
+                  variant="tonal"
+                  size="sm"
+                  className="self-start"
+                  disabled={tgPhotoLoading || !!uploadPhase}
+                  onClick={handleTelegramPhoto}
+                >
+                  {t.onboarding.useTelegramPhoto}
+                </Button>
+              )}
               <div className="flex gap-2.5 bg-surface rounded-m3-md px-3.5 py-3">
                 <Icon name="alert-triangle" size={16} className="text-primary flex-none mt-px" />
                 <p className="text-txt2 text-[12px] leading-relaxed">

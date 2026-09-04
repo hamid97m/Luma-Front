@@ -33,6 +33,21 @@ export const haptic = {
   },
 }
 
+// ---------------------------------------------------------------------------
+// Telegram account details — safe reads of the launching user's profile, used
+// to pre-fill onboarding. Both return "nothing" outside Telegram so the UI can
+// hide the corresponding "use my Telegram …" affordance.
+// ---------------------------------------------------------------------------
+/** The launching user's Telegram first name, or null outside Telegram. */
+export function telegramFirstName(): string | null {
+  return webApp()?.initDataUnsafe?.user?.first_name ?? null
+}
+
+/** True if the launching user exposes a Telegram profile photo. */
+export function telegramHasPhoto(): boolean {
+  return !!webApp()?.initDataUnsafe?.user?.photo_url
+}
+
 /** Open a t.me link inside Telegram; falls back to a new tab outside it. */
 export function openTelegramLink(url: string): void {
   const wa = webApp()
