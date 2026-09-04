@@ -27,6 +27,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   const [busy, setBusy] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const [showHowTo, setShowHowTo] = useState(false)
+  const [showOtherWays, setShowOtherWays] = useState(false)
 
   const mountedRef = useRef(true)
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -64,6 +65,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
     setPhase('idle')
     setBusy(false)
     setShowHowTo(false)
+    setShowOtherWays(false)
     setNow(Date.now())
     expiredRefreshFiredKeysRef.current = new Set()
     usePremiumStore.getState().refresh()
@@ -307,16 +309,24 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             )}
           </button>
 
+          {/* Prominent "don't have Stars?" CTA → opens the full 3-step guide. */}
           <button
             type="button"
+            dir="rtl"
             onClick={() => { haptic.selection(); setShowHowTo(true) }}
-            className="w-full mt-2.5 rounded-m3-md bg-surface px-4 py-3 flex items-center gap-2.5 transition-colors hover:bg-surface-high"
+            className="w-full mt-2.5 flex flex-col gap-0.5 text-start rounded-m3-md border-[1.5px] border-primary px-3.5 py-3 transition-colors"
+            style={{ background: 'var(--prtint)' }}
           >
-            <Icon name="help-circle" size={16} className="text-primary flex-none" />
-            <span className="flex-1 min-w-0 truncate text-right text-[13px] font-medium text-txt2 font-fa">
-              {t.premium.howToBuyRow}
+            <span className="flex items-center gap-2 w-full">
+              <Icon name="sparkle" size={16} className="text-primary flex-none" />
+              <span className="flex-1 min-w-0 text-[14px] font-bold text-primary">
+                {t.premium.starsGuideCta}
+              </span>
+              <Icon name="chevron-left" size={15} className="text-primary flex-none" />
             </span>
-            <Icon name="chevron-left" size={16} className="text-txt3 flex-none" />
+            <span className="text-[12px] leading-relaxed text-txt2 pe-6">
+              {t.premium.starsGuideCtaHint}
+            </span>
           </button>
 
           <div className="flex items-center justify-center gap-1.5 mt-3">
@@ -324,11 +334,48 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             <span className="text-[12px] text-txt3">{t.premium.payHint}</span>
           </div>
           <p className="text-center text-[12px] text-txt2 mt-2.5 mb-0">{t.premium.socialProof}</p>
+
+          {/* Secondary collapsible — alternative ways to get Stars. */}
+          <button
+            type="button"
+            onClick={() => { haptic.selection(); setShowOtherWays((v) => !v) }}
+            className="w-full mt-3.5 flex items-center justify-center gap-1.5 text-primary text-[13px] font-medium py-2"
+          >
+            <Icon name="help-circle" size={14} className="flex-none" />
+            {t.premium.otherWaysToggle}
+            <Icon
+              name="chevron-down"
+              size={14}
+              className={`flex-none transition-transform ${showOtherWays ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {showOtherWays && (
+            <div dir="rtl" className="bg-surface rounded-m3-lg p-4 mt-1 flex flex-col gap-3.5">
+              <p className="m-0 text-[11px] font-semibold tracking-wide uppercase text-txt3">
+                {t.premium.otherWaysLabel}
+              </p>
+              {t.premium.otherWays.map((w, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span className="flex-none w-6 h-6 rounded-full bg-primary-container text-primary text-[12px] font-bold flex items-center justify-center">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="m-0 text-[13px] font-medium text-txt">{w.title}</p>
+                    <p className="mt-0.5 mb-0 text-[12px] leading-relaxed text-txt2">{w.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </Sheet>
     {showHowTo && (
-      <HowToBuyStars packageStars={selected?.priceStars} onClose={() => setShowHowTo(false)} />
+      <HowToBuyStars
+        packageStars={selected?.priceStars}
+        planTitle={selected?.title}
+        onClose={() => setShowHowTo(false)}
+      />
     )}
     </>
   )
