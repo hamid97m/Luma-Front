@@ -62,8 +62,9 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
 
   // Editable field states
   const [name, setName] = useState(storeUser?.name ?? '')
-  const [nameError, setNameError] = useState(false)
+  const [nameError, setNameError] = useState('')
   const [age, setAge] = useState(String(storeUser?.age ?? ''))
+  const [ageError, setAgeError] = useState('')
   const [location, setLocation] = useState(storeUser?.location ?? '')
   const [bio, setBio] = useState(storeUser?.bio ?? '')
   const [tags, setTags] = useState<string[]>(storeUser?.interests ?? [])
@@ -261,12 +262,20 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
           <FieldLabel>{t.profile.nameLabel} <Icon name="verified" size={13} className="text-primary" /></FieldLabel>
           <input
             value={name}
-            onChange={(e) => { setName(e.target.value); setNameError(nameHasDigit(e.target.value)) }}
-            onBlur={() => { if (isValidName(name)) { setNameError(false); save({ name: name.trim() }) } else { setNameError(true) } }}
+            onChange={(e) => {
+              setName(e.target.value)
+              setNameError(nameHasDigit(e.target.value) ? t.onboarding.nameNoDigits : '')
+            }}
+            onBlur={() => {
+              if (!name.trim()) setNameError(t.myProfile.nameRequired)
+              else if (nameHasDigit(name)) setNameError(t.onboarding.nameNoDigits)
+              else if (isValidName(name)) { setNameError(''); save({ name: name.trim() }) }
+              else setNameError(t.myProfile.nameRequired)
+            }}
             className="w-full text-[18px] font-medium bg-transparent text-txt border-b border-outline focus:border-primary outline-none pb-1.5 transition-colors"
           />
           {nameError && (
-            <p className="text-error text-sm mt-1">{t.onboarding.nameNoDigits}</p>
+            <p className="text-error text-sm mt-1">{nameError}</p>
           )}
         </InfoCard>
 
@@ -278,10 +287,18 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
               <input
                 type="number"
                 value={age}
-                onChange={(e) => setAge(e.target.value)}
-                onBlur={() => { const n = Number(age); if (n >= 18 && n <= 99) save({ age: n }) }}
+                onChange={(e) => { setAge(e.target.value); if (e.target.value.trim()) setAgeError('') }}
+                onBlur={() => {
+                  if (!age.trim()) { setAgeError(t.myProfile.ageRequired); return }
+                  const n = Number(age)
+                  if (n >= 18 && n <= 99) { setAgeError(''); save({ age: n }) }
+                  else setAgeError(t.onboarding.ageMin)
+                }}
                 className="w-full text-[18px] font-medium bg-transparent text-txt border-b border-outline focus:border-primary outline-none pb-1.5 transition-colors"
               />
+              {ageError && (
+                <p className="text-error text-sm mt-1">{ageError}</p>
+              )}
             </div>
             <div className="flex-1">
               <FieldLabel>{t.profile.locationLabel}</FieldLabel>

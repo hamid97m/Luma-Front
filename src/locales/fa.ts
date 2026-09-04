@@ -314,6 +314,8 @@ export const fa = {
   // `profile` above; these are the extras the screen needs.
   myProfile: {
     primary: 'اصلی',
+    nameRequired: 'اسم نمی‌تواند خالی باشد.',
+    ageRequired: 'سن نمی‌تواند خالی باشد.',
     interestsLabel: 'علایق',
     locationPlaceholder: 'شهر',
     tagDone: '− تمام',
