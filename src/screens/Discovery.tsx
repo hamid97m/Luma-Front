@@ -9,8 +9,9 @@ import { shouldPromptWriteAccess, haptic } from '../telegram.js'
 import { DiscoveryEmpty } from '../components/DiscoveryEmpty.js'
 import { SwipeLimited } from '../components/SwipeLimited.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
+import { DirectChatSheet } from '../components/premium/DirectChatSheet.js'
 import { usePremiumStore } from '../store.js'
-import type { DiscoveryProfile, SwipeResult, Match } from '../types.js'
+import type { DiscoveryProfile, SwipeResult, Match, DirectChatStatus } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
 
@@ -36,6 +37,11 @@ export function Discovery({ onOpenChat }: Props) {
   const swipedIds = useRef<Set<string>>(new Set())
   const [limitResetAt, setLimitResetAt] = useState<string | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
+  const [directChat, setDirectChat] = useState<DirectChatStatus>({ gate: 'free', remaining: 3, limit: 3, resetAt: null })
+  const [chatTarget, setChatTarget] = useState<DiscoveryProfile | null>(null)
+  const [chatMode, setChatMode] = useState<'paywall' | 'confirm' | 'limit'>('confirm')
+  const [chatPaywallOpen, setChatPaywallOpen] = useState(false)
+  const [starting, setStarting] = useState(false)
   const premiumStatus = usePremiumStore((s) => s.status)
   // Buying premium clears the limit instantly (server stops gating; no refetch needed).
   const premiumActive =
@@ -43,12 +49,13 @@ export function Discovery({ onOpenChat }: Props) {
   const limited = limitResetAt != null && !premiumActive
 
   const fetchBatch = useCallback(async () => {
-    const { profiles, exhausted: done, swipeLimit } = await api.discovery.feed()
+    const { profiles, exhausted: done, swipeLimit, directChat: dc } = await api.discovery.feed()
     setQueue((q) => {
       const seen = new Set(q.map((p) => p.id))
       return [...q, ...profiles.filter((p) => !seen.has(p.id) && !swipedIds.current.has(p.id))]
     })
     setExhausted(done)
+    if (dc) setDirectChat(dc)
     if (swipeLimit?.limited && swipeLimit.resetAt) setLimitResetAt(floorResetAt(swipeLimit.resetAt))
     setLoading(false)
   }, [])
@@ -114,6 +121,55 @@ export function Discovery({ onOpenChat }: Props) {
     setActiveMatch(null)
   }
 
+  // Same synthesis as openMatchChat, for a match created via the direct-chat
+  // route (its response carries the same minimal id + counterpart shape).
+  const openDirectChat = (match: { id: string; user: { id: string; name: string; telegramId: number; username: string | null } }) => {
+    onOpenChat({
+      id: match.id,
+      matchedAt: new Date().toISOString(),
+      user: { ...match.user, photos: [], age: null, bio: null, icebreakerPrompt: null, icebreakerAnswer: null },
+      lastMessage: null,
+      unreadCount: 0,
+    })
+  }
+
+  const startDirectChat = async (profile: DiscoveryProfile) => {
+    if (starting) return
+    setStarting(true)
+    try {
+      const { match } = await api.directChat.start(profile.id)
+      setChatTarget(null)
+      // Optimistically decrement the local quota (a fresh feed refreshes it authoritatively).
+      setDirectChat((d) => (d.gate === 'quota' ? { ...d, remaining: Math.max(0, d.remaining - 1) } : d))
+      openDirectChat(match)
+    } catch (err) {
+      const status = (err as { status?: number } | null)?.status
+      const message = err instanceof Error ? err.message : ''
+      if (status === 403 && message.includes('direct_chat_limit')) {
+        let resetAt: string | null = null
+        try { resetAt = (JSON.parse(message) as { resetAt?: string }).resetAt ?? null } catch { /* not JSON */ }
+        setDirectChat((d) => ({ ...d, gate: 'quota', remaining: 0, resetAt }))
+        setChatMode('limit')
+      } else if (status === 403 && message.includes('premium_required')) {
+        setChatMode('paywall')
+        usePremiumStore.getState().refresh()
+      } else {
+        haptic.notification('error')
+        setChatTarget(null)
+      }
+    } finally {
+      setStarting(false)
+    }
+  }
+
+  const handleChatClick = (profile: DiscoveryProfile) => {
+    if (directChat.gate === 'free') { setChatTarget(profile); startDirectChat(profile); return }
+    if (directChat.gate === 'paywall') { setChatMode('paywall'); setChatTarget(profile); return }
+    // gate === 'quota'
+    setChatMode(directChat.remaining > 0 ? 'confirm' : 'limit')
+    setChatTarget(profile)
+  }
+
   // Rendered on top of both the main card stack and the limited screen: a
   // like that lands as the 20th swipe can both match AND trip the limit, so
   // the match popup must still show even while `limited` is true.
@@ -177,6 +233,25 @@ export function Discovery({ onOpenChat }: Props) {
         onPass={() => swipe('pass')}
         disabled={swiping}
         onGiftClick={(profile) => setGiftTarget({ id: profile.id, name: profile.name })}
+        onChatClick={handleChatClick}
+      />
+      {chatTarget && (
+        <DirectChatSheet
+          open={!chatPaywallOpen}
+          onClose={() => setChatTarget(null)}
+          recipientName={chatTarget.name}
+          mode={chatMode}
+          remaining={directChat.remaining}
+          resetAt={directChat.resetAt}
+          starting={starting}
+          onStart={() => startDirectChat(chatTarget)}
+          onGoPremium={() => { haptic.impact('medium'); setChatPaywallOpen(true) }}
+        />
+      )}
+      <PaywallSheet
+        open={chatPaywallOpen}
+        onClose={() => { setChatPaywallOpen(false); setChatTarget(null) }}
+        subtitle={t.directChat.paywallSubtitle}
       />
       {giftTarget && (
         <GiftPickerSheet
