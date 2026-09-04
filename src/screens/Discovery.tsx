@@ -150,8 +150,10 @@ export function Discovery({ onOpenChat }: Props) {
         try { resetAt = (JSON.parse(message) as { resetAt?: string }).resetAt ?? null } catch { /* not JSON */ }
         setDirectChat((d) => ({ ...d, gate: 'quota', remaining: 0, resetAt }))
         setChatMode('limit')
+        setChatTarget(profile)
       } else if (status === 403 && message.includes('premium_required')) {
         setChatMode('paywall')
+        setChatTarget(profile)
         usePremiumStore.getState().refresh()
       } else {
         haptic.notification('error')
@@ -163,10 +165,15 @@ export function Discovery({ onOpenChat }: Props) {
   }
 
   const handleChatClick = (profile: DiscoveryProfile) => {
-    if (directChat.gate === 'free') { setChatTarget(profile); startDirectChat(profile); return }
-    if (directChat.gate === 'paywall') { setChatMode('paywall'); setChatTarget(profile); return }
-    // gate === 'quota'
-    setChatMode(directChat.remaining > 0 ? 'confirm' : 'limit')
+    // Premium (within today's quota) and free users chat directly — no sheet.
+    // A 403 from the server (limit hit / premium expired) still surfaces the
+    // right sheet via startDirectChat's catch.
+    if (directChat.gate === 'free' || (directChat.gate === 'quota' && directChat.remaining > 0)) {
+      startDirectChat(profile)
+      return
+    }
+    // Non-premium → paywall pitch; premium who used all 3 today → limit sheet.
+    setChatMode(directChat.gate === 'paywall' ? 'paywall' : 'limit')
     setChatTarget(profile)
   }
 

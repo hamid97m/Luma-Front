@@ -7,12 +7,11 @@ interface Props {
   photoIdx: number
   onReport: () => void
   onGiftClick: () => void
-  onChatClick: () => void
 }
 
 // Purely presentational — photo cycling and viewer-opening taps are handled
 // by CardStack on the draggable wrapper (see handleTap there).
-export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onChatClick }: Props) {
+export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props) {
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
 
   return (
@@ -70,18 +69,6 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onChatCl
         style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
       >
         <Icon name="gift" size={15} />
-      </button>
-
-      {/* Direct-chat trigger */}
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onChatClick() }}
-        onPointerDown={(e) => e.stopPropagation()}
-        aria-label={t.aria.directChat}
-        className="absolute top-8 end-[100px] w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
-        style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
-      >
-        <Icon name="message-dots" size={15} />
       </button>
 
       {/* Dark overlay gradient */}
