@@ -58,10 +58,10 @@ export const api = {
       }),
   },
   photos: {
-    getUploadUrl: (contentType: string) =>
+    getUploadUrl: (contentType: string, replacePhotoId?: string) =>
       request<{ uploadUrl: string; photoId: string }>(
         '/profile/me/photos/upload-url',
-        { method: 'POST', body: JSON.stringify({ contentType }) }
+        { method: 'POST', body: JSON.stringify({ contentType, replacePhotoId }) }
       ),
     confirm: (photoId: string) =>
       request<{ photo: { id: string; url: string; position: number } }>(
@@ -83,6 +83,21 @@ export const api = {
       const { uploadUrl, photoId } = await api.photos.getUploadUrl('image/jpeg')
       await putWithProgress(uploadUrl, blob, onProgress)
       const { photo } = await api.photos.confirm(photoId)
+      return photo
+    },
+    // Swap an existing photo for a freshly uploaded one, keeping its position.
+    replace: async (
+      oldPhotoId: string,
+      file: File,
+      onProgress?: (pct: number) => void
+    ): Promise<{ id: string; url: string; position: number }> => {
+      const blob = await compressImage(file)
+      const { uploadUrl, photoId: newPhotoId } = await api.photos.getUploadUrl('image/jpeg', oldPhotoId)
+      await putWithProgress(uploadUrl, blob, onProgress)
+      const { photo } = await request<{ photo: { id: string; url: string; position: number } }>(
+        `/profile/me/photos/${oldPhotoId}/replace`,
+        { method: 'POST', body: JSON.stringify({ newPhotoId }) }
+      )
       return photo
     },
   },

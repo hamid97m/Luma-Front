@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { useAuthStore } from '../store.js'
 import type { UserProfile } from '../types.js'
@@ -74,8 +74,13 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const [promptPicker, setPromptPicker] = useState(false)
   const [uploading, setUploading] = useState<{ slotId: string; phase: 'processing' | 'uploading'; progress: number } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [editing, setEditing] = useState<{ file: File; slotId: string } | null>(null)
+  const [editing, setEditing] = useState<{ file: File; slotId: string; replaceId?: string } | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  // The photo whose action sheet (change / set-main / delete) is open.
+  const [sheetPhoto, setSheetPhoto] = useState<{ id: string; slotId: string; isPrimary: boolean } | null>(null)
+  const changeInputRef = useRef<HTMLInputElement>(null)
+  // Which photo a pending "change" file pick targets (read in the input's onChange).
+  const replaceTargetRef = useRef<{ id: string; slotId: string } | null>(null)
 
   useEffect(() => {
     api.profile.get().then((p) => {
@@ -111,6 +116,18 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
     setUploading({ slotId, phase: 'processing', progress: 0 })
     try {
       await api.photos.upload(file, (progress) => setUploading({ slotId, phase: 'uploading', progress }))
+      const p = await api.profile.get()
+      setProfile(p)
+      setUser(p)
+    } finally {
+      setUploading(null)
+    }
+  }
+
+  const handlePhotoReplace = async (file: File, slotId: string, photoId: string) => {
+    setUploading({ slotId, phase: 'processing', progress: 0 })
+    try {
+      await api.photos.replace(photoId, file, (progress) => setUploading({ slotId, phase: 'uploading', progress }))
       const p = await api.profile.get()
       setProfile(p)
       setUser(p)
@@ -195,7 +212,11 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                     <img
                       src={photo.url}
                       alt=""
-                      onClick={() => setPrimaryPhoto(photo.id)}
+                      onClick={() => {
+                        if (deletingId || uploading) return
+                        haptic.selection()
+                        setSheetPhoto({ id: photo.id, slotId, isPrimary: slotId === 'p' })
+                      }}
                       className="w-full h-full object-cover cursor-pointer"
                     />
                     {slotId === 'p' && (
@@ -203,20 +224,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                         {t.myProfile.primary}
                       </span>
                     )}
-                    {photos.length > 1 && (
-                      <button
-                        onClick={() => handlePhotoDelete(photo.id)}
-                        disabled={deletingId === photo.id}
-                        aria-label={t.aria.deletePhoto}
-                        className="absolute top-1.5 end-1.5 w-6 h-6 rounded-full text-white flex items-center justify-center"
-                        style={{ background: 'rgba(0,0,0,.5)' }}
-                      >
-                        {deletingId === photo.id
-                          ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          : <Icon name="x" size={11} strokeWidth={2.5} />}
-                      </button>
-                    )}
-                    {deletingId === photo.id && (
+                    {(deletingId === photo.id || uploading?.slotId === slotId) && (
                       <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,.45)' }}>
                         <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       </div>
@@ -462,12 +470,90 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
           file={editing.file}
           onCancel={() => setEditing(null)}
           onConfirm={async (edited) => {
-            const { slotId } = editing
+            const { slotId, replaceId } = editing
             setEditing(null)
-            await handlePhotoUpload(edited, slotId)
+            if (replaceId) await handlePhotoReplace(edited, slotId, replaceId)
+            else await handlePhotoUpload(edited, slotId)
           }}
         />
       )}
+
+      {/* Hidden picker for the "change photo" action; the target photo lives in
+          replaceTargetRef so the edit routes through PhotoEditor as a replace. */}
+      <input
+        ref={changeInputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          e.target.value = ''
+          const target = replaceTargetRef.current
+          replaceTargetRef.current = null
+          if (f && target) setEditing({ file: f, slotId: target.slotId, replaceId: target.id })
+        }}
+      />
+
+      <Sheet open={!!sheetPhoto} onClose={() => setSheetPhoto(null)} title={t.myProfile.photoSheetTitle}>
+        {sheetPhoto && (
+          <div className="flex flex-col gap-2 pb-2">
+            <button
+              type="button"
+              onClick={() => {
+                haptic.selection()
+                replaceTargetRef.current = { id: sheetPhoto.id, slotId: sheetPhoto.slotId }
+                setSheetPhoto(null)
+                changeInputRef.current?.click()
+              }}
+              className="w-full flex items-center gap-3 rounded-m3-lg p-3.5 text-start bg-surface hover:bg-surface-high transition-colors"
+            >
+              <span className="w-10 h-10 rounded-m3-sm bg-primary-container text-primary flex items-center justify-center flex-none">
+                <Icon name="image" size={20} />
+              </span>
+              <span className="text-[15px] font-medium text-txt">{t.myProfile.changePhoto}</span>
+            </button>
+
+            {!sheetPhoto.isPrimary && (
+              <button
+                type="button"
+                onClick={() => {
+                  haptic.selection()
+                  const id = sheetPhoto.id
+                  setSheetPhoto(null)
+                  setPrimaryPhoto(id)
+                }}
+                className="w-full flex items-center gap-3 rounded-m3-lg p-3.5 text-start bg-surface hover:bg-surface-high transition-colors"
+              >
+                <span className="w-10 h-10 rounded-m3-sm bg-primary-container text-primary flex items-center justify-center flex-none">
+                  <Icon name="star" size={20} />
+                </span>
+                <span className="text-[15px] font-medium text-txt">{t.myProfile.setPrimary}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              disabled={photos.length <= 1}
+              onClick={() => {
+                haptic.selection()
+                const id = sheetPhoto.id
+                setSheetPhoto(null)
+                handlePhotoDelete(id)
+              }}
+              className="w-full flex items-center gap-3 rounded-m3-lg p-3.5 text-start bg-surface hover:bg-surface-high transition-colors disabled:opacity-40 disabled:hover:bg-surface"
+            >
+              <span className="w-10 h-10 rounded-m3-sm bg-error-container text-error flex items-center justify-center flex-none">
+                <Icon name="trash" size={20} />
+              </span>
+              <span className="text-[15px] font-medium text-error">{t.myProfile.deletePhotoAction}</span>
+            </button>
+
+            {photos.length <= 1 && (
+              <p className="text-[12px] text-txt2 px-1 pt-0.5">{t.myProfile.lastPhotoHint}</p>
+            )}
+          </div>
+        )}
+      </Sheet>
     </div>
   )
 }

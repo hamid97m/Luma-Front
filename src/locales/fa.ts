@@ -323,6 +323,11 @@ export const fa = {
     answerPlaceholder: 'پاسخ تو…',
     supportSub: 'سؤال، مشکل، بازخورد — پاسخ می‌دهیم.',
     pickerTitle: 'یک یخ‌شکن انتخاب کن',
+    photoSheetTitle: 'عکس',
+    changePhoto: 'تغییر عکس',
+    setPrimary: 'انتخاب به‌عنوان عکس اصلی',
+    deletePhotoAction: 'حذف عکس',
+    lastPhotoHint: 'باید حداقل یک عکس داشته باشی',
   },
   settings: {
     title: 'تنظیمات',
