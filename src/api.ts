@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus } from './types.js'
 import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
@@ -103,7 +103,7 @@ export const api = {
   },
   discovery: {
     feed: () =>
-      request<{ profiles: DiscoveryProfile[]; exhausted: boolean; swipeLimit?: SwipeLimitStatus }>('/discovery'),
+      request<{ profiles: DiscoveryProfile[]; exhausted: boolean; swipeLimit?: SwipeLimitStatus; directChat?: DirectChatStatus }>('/discovery'),
   },
   swipes: {
     swipe: (targetUserId: string, direction: 'like' | 'pass') =>
@@ -111,6 +111,13 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ targetUserId, direction }),
       }),
+  },
+  directChat: {
+    start: (targetUserId: string) =>
+      request<{ created: boolean; match: { id: string; user: { id: string; name: string; telegramId: number; username: string | null } } }>(
+        '/discovery/direct-chat',
+        { method: 'POST', body: JSON.stringify({ targetUserId }) },
+      ),
   },
   matches: {
     list: () => request<{ matches: Match[] }>('/matches'),

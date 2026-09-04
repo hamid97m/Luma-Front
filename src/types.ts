@@ -135,6 +135,13 @@ export interface SwipeLimitStatus {
   resetAt: string | null
 }
 
+export interface DirectChatStatus {
+  gate: 'free' | 'paywall' | 'quota'
+  remaining: number
+  limit: number
+  resetAt: string | null
+}
+
 export interface SupportMessage {
   id: string
   sender: 'user' | 'admin'
