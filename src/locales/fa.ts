@@ -91,7 +91,7 @@ export const fa = {
   },
   nav: {
     discovery: 'دیسکاوری',
-    matches: 'مچ‌ها',
+    matches: 'چت',
     profile: 'پروفایل',
     likes: 'لایک‌ها',
   },
@@ -199,24 +199,57 @@ export const fa = {
     perWeek: (stars: number) => `≈ ★${stars}/هفته`,
     payHint: 'پرداخت با استار تلگرام · لغو در هر زمان',
     socialProof: 'از هر 10 عضو پرمیوم، 8 نفر ظرف یک ماه مچ می‌شوند',
-    // Entry row on the paywall that opens the full "How to buy Stars" page.
-    howToBuyRow: 'چجوری استار تهیه کنم؟',
+    // Prominent CTA on the paywall that opens the full 3-step "buy Stars" guide.
+    starsGuideCta: 'استار نداری؟ مشکلی نیست',
+    starsGuideCtaHint: 'در 3 قدم با پرداخت ریالی استار بخر و برگرد — راهنما را ببین',
+    // Secondary collapsible on the paywall listing alternative ways to get Stars.
+    otherWaysToggle: 'استار نداری؟ روش خرید را ببین',
+    otherWaysLabel: 'راه‌های دیگر',
+    otherWays: [
+      {
+        title: 'داخل تلگرام',
+        body: 'تنظیمات ← استارهای من ← خرید استار بیشتر. نیازمند روش پرداخت بین‌المللی.',
+      },
+      {
+        title: 'با TON در فرگمنت',
+        body: 'TON را از صرافی داخلی بخر و در fragment.com استار بگیر — بدون نیاز به کارت خارجی.',
+      },
+      {
+        title: 'از فروشنده داخلی',
+        body: 'فروشگاه‌های معتبر زیادی استار را به‌صورت هدیه به حساب تلگرامت می‌فروشند. پرداخت ریالی — قبل از خرید نظرات را بررسی کن.',
+      },
+    ],
   },
-  // Persian/RTL "How to buy Stars" page — explains Telegram Stars and points
-  // Iranian users at rial resellers, highlighting Asan Star as the pick.
+  // Persian/RTL "How to buy Stars" guide — a 3-step flow that sends Iranian
+  // users to a rial reseller (Asan Star recommended) then back to the paywall.
   howToBuyStars: {
-    title: 'چجوری استار تهیه کنم؟',
-    whatTitle: 'استار تلگرام چیست؟',
-    whatBody:
-      'استار (Star) واحد پرداخت داخل تلگرام است. با استار می‌توانید اشتراک پرمیوم لوما و سایر خدمات داخل تلگرام را بخرید. استارها به حساب تلگرام شما اضافه می‌شوند و خرید با آن‌ها سریع و امن است.',
-    resellersLabel: 'سایت‌های خرید استار با پرداخت ریالی',
+    title: 'خرید استار تلگرام',
+    // Info card. `needTitle` reads "برای {plan} به" and is followed by a
+    // colored ★{stars}, then `needTitleAfter`, composed in the component.
+    needTitle: (plan: string) => `برای ${plan} به`,
+    needTitleAfter: 'نیاز داری',
+    // Fallback when no specific plan/price is in context.
+    needTitleGeneric: 'برای پرمیوم به استار تلگرام نیاز داری',
+    whatBody: 'استار واحد پرداخت داخل تلگرام است — با ریال می‌خری، به حساب تلگرامت اضافه می‌شود.',
+    // Step 1 — buy Stars from a reseller.
+    step1Title: 'از یکی از این سایت‌ها استار بخر',
+    asanName: 'آسان استار',
+    asanBadge: 'پیشنهاد ما',
+    asanBody: 'سریع‌ترین راه — پرداخت ریالی، بدون کارت ارزی، تحویل خودکار.',
+    asanButton: (stars: number) => `خرید ★${stars} از آسان استار`,
+    asanButtonGeneric: 'خرید از آسان استار',
     resellers: [
       { name: 'ایرانی کارت', domain: 'iranicard.ir', url: 'https://www.iranicard.ir/payments/foreign-services/telegram-stars/' },
       { name: 'نامبرلند', domain: 'numberland.ir', url: 'https://numberland.ir/account/telegram-stars' },
     ],
-    recommendTitle: 'پیشنهاد ما: آسان استار',
-    recommendBody: 'خرید سریع و امن برای ایرانیان، بدون نیاز به کارت ارزی.',
-    recommendButton: 'خرید از آسان استار',
+    // Step 2 — Stars land in the Telegram account.
+    step2Title: 'استارها به تلگرامت اضافه می‌شوند',
+    step2Body: 'معمولاً چند دقیقه طول می‌کشد. موجودی را در تلگرام ← تنظیمات ← استارهای من ببین.',
+    // Step 3 — return and pay.
+    step3Title: 'برگرد و پرمیوم را فعال کن',
+    step3Body: (stars: number) => `به همین صفحه برگرد و روی «ادامه — ★${stars}» بزن. پرداخت داخل تلگرام انجام می‌شود.`,
+    step3BodyGeneric: 'به همین صفحه برگرد و طرح را انتخاب کن. پرداخت داخل تلگرام انجام می‌شود.',
+    doneButton: 'استار خریدم — برگرد به پرداخت',
   },
   swipeLimit: {
     title: 'سوایپ‌هایت تمام شد',
@@ -231,6 +264,7 @@ export const fa = {
   onboarding: {
     nameQ: 'اسمتون چیه؟',
     namePlaceholder: 'تینا',
+    nameNoDigits: 'اسم نمی‌تواند شامل عدد باشد.',
     ageQ: 'چند سال داری؟',
     ageMin: 'باید حداقل 18 سال داشته باشی.',
     iAm: 'من … هستم',

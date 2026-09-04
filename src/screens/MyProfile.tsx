@@ -9,6 +9,7 @@ import { Card, IconButton, Icon, Sheet } from '../components/ui/index.js'
 import type { IconName } from '../components/ui/index.js'
 import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
+import { isValidName, nameHasDigit } from '../utils/validateName.js'
 
 // Icebreaker prompts shown in the picker. `prompt` is stored verbatim on the
 // profile (free-text column), `icon` is the glyph tile, and `hint` is the
@@ -61,6 +62,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
 
   // Editable field states
   const [name, setName] = useState(storeUser?.name ?? '')
+  const [nameError, setNameError] = useState(false)
   const [age, setAge] = useState(String(storeUser?.age ?? ''))
   const [location, setLocation] = useState(storeUser?.location ?? '')
   const [bio, setBio] = useState(storeUser?.bio ?? '')
@@ -259,10 +261,13 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
           <FieldLabel>{t.profile.nameLabel} <Icon name="verified" size={13} className="text-primary" /></FieldLabel>
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => save({ name })}
+            onChange={(e) => { setName(e.target.value); setNameError(nameHasDigit(e.target.value)) }}
+            onBlur={() => { if (isValidName(name)) { setNameError(false); save({ name: name.trim() }) } else { setNameError(true) } }}
             className="w-full text-[18px] font-medium bg-transparent text-txt border-b border-outline focus:border-primary outline-none pb-1.5 transition-colors"
           />
+          {nameError && (
+            <p className="text-error text-sm mt-1">{t.onboarding.nameNoDigits}</p>
+          )}
         </InfoCard>
 
         {/* Age + Location */}

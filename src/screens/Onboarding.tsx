@@ -4,6 +4,7 @@ import { mainButtonSupported, useMainButton } from '../telegram.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
 import { t } from '../i18n.js'
 import { Button, IconButton, Input, Textarea, Chip, Icon } from '../components/ui/index.js'
+import { isValidName, nameHasDigit } from '../utils/validateName.js'
 
 interface State {
   name: string
@@ -21,7 +22,7 @@ interface Props {
 const TOTAL_STEPS = 6
 
 function isValid(step: number, state: State, photoUploaded: boolean): boolean {
-  if (step === 0) return state.name.trim().length >= 2
+  if (step === 0) return isValidName(state.name)
   if (step === 1) { const n = Number(state.age); return n >= 18 && n <= 99 }
   if (step === 2) return state.gender !== ''
   if (step === 3) return state.pref !== ''
@@ -149,6 +150,9 @@ export function Onboarding({ onComplete }: Props) {
                 placeholder={t.onboarding.namePlaceholder}
                 className="text-[18px] font-normal"
               />
+              {nameHasDigit(state.name) && (
+                <p className="text-error text-sm">{t.onboarding.nameNoDigits}</p>
+              )}
             </>
           )}
 
