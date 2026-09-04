@@ -15,9 +15,10 @@ interface Props {
   onPass: () => void
   disabled: boolean
   onGiftClick?: (profile: DiscoveryProfile) => void
+  onChatClick?: (profile: DiscoveryProfile) => void
 }
 
-export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: Props) {
+export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick, onChatClick }: Props) {
   const dragRef = useRef({ active: false, startX: 0, startY: 0, moved: false })
   const [offset, setOffset] = useState(0)
   const [flying, setFlying] = useState<'like' | 'pass' | null>(null)
@@ -116,6 +117,12 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
     onGiftClick?.(profile)
   }
 
+  const handleChatClick = () => {
+    if (disabled || flying || !profile) return
+    haptic.selection()
+    onChatClick?.(profile)
+  }
+
   const handleReported = () => {
     setReportUserId(null)
     window.Telegram?.WebApp?.showAlert?.(t.report.thanks)
@@ -174,6 +181,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick }: P
             photoIdx={photoIdx}
             onReport={() => !disabled && !flying && setReportUserId(profile.id)}
             onGiftClick={handleGiftClick}
+            onChatClick={handleChatClick}
           />
         </div>
       </div>
