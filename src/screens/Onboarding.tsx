@@ -119,8 +119,12 @@ export function Onboarding({ onComplete }: Props) {
       if (photoPreview) URL.revokeObjectURL(photoPreview)
       setPhotoPreview(photo.url)
       setPhotoUploaded(true)
-    } catch {
-      window.Telegram?.WebApp?.showAlert?.(t.onboarding.telegramPhotoFailed)
+    } catch (err) {
+      // Temporary: surface the real status + backend error body so we can tell
+      // 404 (not deployed) vs 409 (no_telegram_photo) vs 500 apart in the field.
+      const status = (err as { status?: number })?.status ?? '?'
+      const body = err instanceof Error ? err.message : String(err)
+      window.Telegram?.WebApp?.showAlert?.(`${t.onboarding.telegramPhotoFailed}\n\n[${status}] ${body}`)
     } finally {
       setTgPhotoLoading(false)
     }
