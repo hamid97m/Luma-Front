@@ -66,6 +66,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const [age, setAge] = useState(String(storeUser?.age ?? ''))
   const [ageError, setAgeError] = useState('')
   const [location, setLocation] = useState(storeUser?.location ?? '')
+  const [locationError, setLocationError] = useState('')
   const [bio, setBio] = useState(storeUser?.bio ?? '')
   const [tags, setTags] = useState<string[]>(storeUser?.interests ?? [])
   const [tagPicker, setTagPicker] = useState(false)
@@ -312,11 +313,18 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
               <FieldLabel>{t.profile.locationLabel}</FieldLabel>
               <input
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                onBlur={() => save({ location: location || null })}
+                onChange={(e) => { setLocation(e.target.value); if (e.target.value.trim()) setLocationError('') }}
+                onBlur={() => {
+                  if (!location.trim()) { setLocationError(t.myProfile.locationRequired); return }
+                  setLocationError('')
+                  save({ location: location.trim() })
+                }}
                 placeholder={t.myProfile.locationPlaceholder}
                 className="w-full text-[18px] font-medium bg-transparent text-txt placeholder:text-txt3 border-b border-outline focus:border-primary outline-none pb-1.5 transition-colors"
               />
+              {locationError && (
+                <p className="text-error text-sm mt-1">{locationError}</p>
+              )}
             </div>
           </div>
         </InfoCard>

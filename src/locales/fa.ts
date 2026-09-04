@@ -316,6 +316,7 @@ export const fa = {
     primary: 'اصلی',
     nameRequired: 'اسم نمی‌تواند خالی باشد.',
     ageRequired: 'سن نمی‌تواند خالی باشد.',
+    locationRequired: 'موقعیت نمی‌تواند خالی باشد.',
     interestsLabel: 'علایق',
     locationPlaceholder: 'شهر',
     tagDone: '− تمام',
