@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { Discovery } from '../src/screens/Discovery.js'
 import { api } from '../src/api.js'
+import { t } from '../src/i18n.js'
 
 vi.mock('../src/api.js', () => ({
   api: {
@@ -11,6 +12,7 @@ vi.mock('../src/api.js', () => ({
     discovery: { feed: vi.fn() },
     swipes: { swipe: vi.fn() },
     matches: { list: vi.fn() },
+    directChat: { start: vi.fn() },
   },
 }))
 
@@ -54,5 +56,12 @@ describe('Discovery', () => {
     await waitFor(() => {
       expect(api.swipes.swipe).toHaveBeenCalledWith('p1', 'like')
     })
+  })
+
+  it('renders the direct-chat button on the card [direct-chat]', async () => {
+    vi.mocked(api.discovery.feed).mockResolvedValue({ profiles: MOCK_PROFILES, exhausted: false })
+    render(<Discovery onOpenChat={vi.fn()} />)
+    await waitFor(() => screen.getByText('Sara'))
+    expect(screen.getByRole('button', { name: t.aria.directChat })).toBeInTheDocument()
   })
 })

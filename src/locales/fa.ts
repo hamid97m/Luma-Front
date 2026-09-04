@@ -259,6 +259,16 @@ export const fa = {
     pitchBody: 'پرمیوم محدودیت 4 ساعته را حذف می‌کند — به‌علاوه چت نامحدود و امکانات بیشتر.',
     paywallSubtitle: 'برای سوایپ بدون محدودیت پرمیوم شو',
   },
+  directChat: {
+    title: 'گفتگوی مستقیم',
+    body: 'معمولاً فقط وقتی می‌توانی گفتگو را شروع کنی که هر دو همدیگر را لایک کرده باشید. با اشتراک ویژه می‌توانی روزانه تا 3 نفر را بدون لایک متقابل مستقیم پیام بدهی.',
+    startCta: 'شروع گفتگو',
+    goPremiumCta: 'فعال‌سازی اشتراک ویژه',
+    remaining: (n: number) => `${n} گفتگوی مستقیم باقی‌مانده امروز`,
+    limitTitle: 'به سقف امروز رسیدی',
+    limitBody: 'امروز هر 3 گفتگوی مستقیم را شروع کرده‌ای. زمان باقی‌مانده تا آزاد شدن سقف:',
+    paywallSubtitle: 'گفتگوی مستقیم ویژهٔ کاربران اشتراک ویژه است — روزانه تا 3 نفر بدون لایک متقابل.',
+  },
   // Onboarding wizard (per design). Genders/prefs arrays keep the code's
   // option order: woman/man/nonbinary and men/women/everyone.
   onboarding: {
@@ -394,5 +404,6 @@ export const fa = {
     you: 'تو',
     photoN: (n: number) => `عکس ${n}`,
     openChatWith: (name: string) => `باز کردن چت با ${name}`,
+    directChat: 'شروع گفتگوی مستقیم',
   },
 } as const
