@@ -284,6 +284,7 @@ export const fa = {
     prefOptions: ['مردها', 'زن‌ها', 'همه'],
     pickInterests: 'علایقت را انتخاب کن',
     tagCount: (n: number) => `${n}/5 انتخاب‌شده · حداقل 3 مورد`,
+    interestsMin: 'حداقل 3 مورد انتخاب کن تا ادامه بدهی.',
     photoBio: 'عکس و بیو اضافه کن',
     resizing: 'در حال تغییر اندازه…',
     added: 'اضافه شد ✓',

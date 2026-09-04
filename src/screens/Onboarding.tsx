@@ -41,6 +41,7 @@ export function Onboarding({ onComplete }: Props) {
   const [uploadPhase, setUploadPhase] = useState<{ phase: 'processing' | 'uploading'; progress: number } | null>(null)
   const [saving, setSaving] = useState(false)
   const [ageError, setAgeError] = useState(false)
+  const [interestsError, setInterestsError] = useState(false)
   const [editingFile, setEditingFile] = useState<File | null>(null)
   const [tgPhotoLoading, setTgPhotoLoading] = useState(false)
 
@@ -49,6 +50,13 @@ export function Onboarding({ onComplete }: Props) {
   const back = () => setStep((s) => Math.max(0, s - 1))
 
   const next = async () => {
+    // The interests step keeps its button clickable even below the minimum so the
+    // tap can surface *why* it's blocked, instead of silently doing nothing.
+    if (step === 4 && state.interests.length < 3) {
+      setInterestsError(true)
+      haptic.notification('error')
+      return
+    }
     if (!valid) return
     if (step < TOTAL_STEPS - 1) {
       setStep((s) => s + 1)
@@ -78,7 +86,8 @@ export function Onboarding({ onComplete }: Props) {
   useMainButton({
     text: step === TOTAL_STEPS - 1 ? t.onboarding.enter : t.onboarding.continue,
     visible: true,
-    enabled: valid && !saving,
+    // Step 4 stays enabled below the minimum so the tap can explain the block.
+    enabled: (valid || step === 4) && !saving,
     loading: saving,
     onClick: next,
   })
@@ -91,6 +100,7 @@ export function Onboarding({ onComplete }: Props) {
       if (s.interests.length >= 5) return s
       return { ...s, interests: [...s.interests, tag] }
     })
+    setInterestsError(false)
   }
 
   const handlePhotoFile = async (file: File) => {
@@ -281,6 +291,9 @@ export function Onboarding({ onComplete }: Props) {
                   </Chip>
                 ))}
               </div>
+              {interestsError && (
+                <p className="text-error text-sm">{t.onboarding.interestsMin}</p>
+              )}
             </>
           )}
 
@@ -367,7 +380,7 @@ export function Onboarding({ onComplete }: Props) {
       {/* Sticky bottom button — fallback when Telegram provides no MainButton */}
       {!mainButtonSupported() && (
         <div className="relative z-10 px-6 pb-10 pt-4">
-          <Button block size="lg" onClick={next} disabled={!valid || saving}>
+          <Button block size="lg" onClick={next} disabled={(!valid && step !== 4) || saving}>
             {saving ? '…' : step === TOTAL_STEPS - 1 ? t.onboarding.enter : t.onboarding.continue}
           </Button>
         </div>
