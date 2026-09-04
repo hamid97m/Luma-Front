@@ -119,7 +119,7 @@ export const api = {
   },
   directChat: {
     start: (targetUserId: string) =>
-      request<{ created: boolean; match: { id: string; user: { id: string; name: string; telegramId: number; username: string | null } } }>(
+      request<{ created: boolean; match: { id: string; user: { id: string; name: string; telegramId: number; username: string | null } }; directChat?: { remaining: number; resetAt: string | null } }>(
         '/discovery/direct-chat',
         { method: 'POST', body: JSON.stringify({ targetUserId }) },
       ),

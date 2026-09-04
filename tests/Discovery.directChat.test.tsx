@@ -40,7 +40,7 @@ describe('Discovery direct chat', () => {
 
   it('gate=quota remaining>0 → premium chats directly, no sheet', async () => {
     vi.mocked(api.discovery.feed).mockResolvedValue({ profiles: PROFILES, exhausted: false, directChat: { gate: 'quota', remaining: 2, limit: 3, resetAt: '2026-09-06T12:00:00.000Z' } })
-    vi.mocked(api.directChat.start).mockResolvedValue({ created: true, match: { id: 'm2', user: { id: 'p1', name: 'Sara', telegramId: 99, username: null } } })
+    vi.mocked(api.directChat.start).mockResolvedValue({ created: true, match: { id: 'm2', user: { id: 'p1', name: 'Sara', telegramId: 99, username: null } }, directChat: { remaining: 1, resetAt: '2026-09-06T12:00:00.000Z' } })
     const onOpenChat = vi.fn()
     render(<Discovery onOpenChat={onOpenChat} />)
     await waitFor(() => screen.getByText('Sara'))

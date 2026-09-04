@@ -137,10 +137,13 @@ export function Discovery({ onOpenChat }: Props) {
     if (starting) return
     setStarting(true)
     try {
-      const { match } = await api.directChat.start(profile.id)
+      const { match, directChat: dc } = await api.directChat.start(profile.id)
       setChatTarget(null)
-      // Optimistically decrement the local quota (a fresh feed refreshes it authoritatively).
-      setDirectChat((d) => (d.gate === 'quota' ? { ...d, remaining: Math.max(0, d.remaining - 1) } : d))
+      // Trust the server's post-consume window (remaining + resetAt). It's only
+      // present when a NEW match was created for a quota user — so re-chatting the
+      // same person (existing match) never decrements, and the limit countdown
+      // always has a real resetAt.
+      if (dc) setDirectChat((d) => ({ ...d, remaining: dc.remaining, resetAt: dc.resetAt }))
       openDirectChat(match)
     } catch (err) {
       const status = (err as { status?: number } | null)?.status
