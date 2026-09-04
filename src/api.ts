@@ -5,11 +5,16 @@ const BASE = import.meta.env.VITE_API_URL as string
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const initData = window.Telegram?.WebApp?.initData ?? ''
+  // Only advertise a JSON content-type when we actually send a body — Fastify 4
+  // rejects an empty body carrying `application/json` with FST_ERR_CTP_EMPTY_JSON_BODY,
+  // which is what body-less POSTs (e.g. photos.fromTelegram, gift intro accept/dismiss)
+  // were hitting.
+  const hasBody = options?.body != null
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     keepalive: true,
     headers: {
-      'Content-Type': 'application/json',
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       Authorization: initData,
       ...options?.headers,
     },
