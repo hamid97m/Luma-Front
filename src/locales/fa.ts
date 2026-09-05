@@ -23,6 +23,7 @@ export const fa = {
     pass: 'رد',
     nearby: 'همین نزدیکی',
     swipeHint: 'سوایپ برای لایک یا رد · برای مرور عکس‌ها ضربه بزن',
+    rewindPaywallSubtitle: 'با پرمیوم می‌توانی به پروفایل قبلی برگردی و تصمیمت را عوض کنی.',
   },
   match: {
     title: 'مچ شدید!',
@@ -400,6 +401,7 @@ export const fa = {
     settings: 'تنظیمات',
     like: 'لایک',
     pass: 'رد',
+    rewind: 'بازگشت به پروفایل قبلی',
     deletePhoto: 'حذف عکس',
     remove: 'حذف',
     messages: 'پیام‌ها',

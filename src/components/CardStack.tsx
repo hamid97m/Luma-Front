@@ -14,11 +14,16 @@ interface Props {
   onLike: () => void
   onPass: () => void
   disabled: boolean
+  // Rewind (back to previous profile). `onBack` fires either the actual
+  // rewind (premium) or the paywall (non-premium) — CardStack doesn't decide.
+  onBack?: () => void
+  canGoBack?: boolean
+  backLocked?: boolean
   onGiftClick?: (profile: DiscoveryProfile) => void
   onChatClick?: (profile: DiscoveryProfile) => void
 }
 
-export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick, onChatClick }: Props) {
+export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBack, backLocked, onGiftClick, onChatClick }: Props) {
   const dragRef = useRef({ active: false, startX: 0, startY: 0, moved: false })
   const [offset, setOffset] = useState(0)
   const [flying, setFlying] = useState<'like' | 'pass' | null>(null)
@@ -123,6 +128,15 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick, onC
     onChatClick?.(profile)
   }
 
+  // Locked (non-premium) always taps through to the paywall; premium taps
+  // only when there's history to go back to.
+  const backDisabled = disabled || !!flying || (!backLocked && !canGoBack)
+  const handleBack = () => {
+    if (backDisabled) return
+    haptic.selection()
+    onBack?.()
+  }
+
   const handleReported = () => {
     setReportUserId(null)
     window.Telegram?.WebApp?.showAlert?.(t.report.thanks)
@@ -191,7 +205,21 @@ export function CardStack({ profiles, onLike, onPass, disabled, onGiftClick, onC
       </p>
 
       {/* Action buttons */}
-      <div className="flex items-center justify-center gap-6 pb-2">
+      <div className="flex items-center justify-center gap-5 pb-2">
+        <button
+          onClick={handleBack}
+          disabled={backDisabled}
+          className="relative w-14 h-14 rounded-[18px] bg-surface text-txt2 shadow-m3-1 flex items-center justify-center disabled:opacity-40 hover:bg-surface-high transition-colors"
+          aria-label={t.aria.rewind}
+        >
+          <Icon name="rotate-ccw" size={22} strokeWidth={2.5} />
+          {backLocked && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center shadow-m3-1">
+              <Icon name="lock" size={11} strokeWidth={2.5} />
+            </span>
+          )}
+        </button>
+
         <button
           onClick={() => !disabled && !flying && fly('pass')}
           disabled={disabled}

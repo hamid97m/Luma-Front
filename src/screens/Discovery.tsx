@@ -26,6 +26,11 @@ interface Props {
 
 export function Discovery({ onOpenChat }: Props) {
   const [queue, setQueue] = useState<DiscoveryProfile[]>([])
+  // Session history of swiped profiles, oldest→newest. Powers the premium
+  // "rewind" button (client-side re-show); the recorded swipe is left as-is
+  // and overwritten if the restored profile is re-swiped (POST /swipes upsert).
+  const [history, setHistory] = useState<DiscoveryProfile[]>([])
+  const [rewindPaywallOpen, setRewindPaywallOpen] = useState(false)
   const [exhausted, setExhausted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [swiping, setSwiping] = useState(false)
@@ -67,6 +72,7 @@ export function Discovery({ onOpenChat }: Props) {
     setLoading(true)
     setExhausted(false)
     setQueue([])
+    setHistory([])
     fetchBatch()
   }, [fetchBatch])
 
@@ -75,6 +81,7 @@ export function Discovery({ onOpenChat }: Props) {
     if (!current || swiping) return
 
     swipedIds.current.add(current.id)
+    setHistory((h) => [...h, current])
     setSwiping(true)
     setQueue(rest)
 
@@ -90,6 +97,7 @@ export function Discovery({ onOpenChat }: Props) {
     } catch (err) {
       // The swipe never reached the server — put the card back.
       swipedIds.current.delete(current.id)
+      setHistory((h) => (h[h.length - 1]?.id === current.id ? h.slice(0, -1) : h))
       setQueue((q) => [current, ...q])
       const status = (err as { status?: number } | null)?.status
       const message = err instanceof Error ? err.message : ''
@@ -180,6 +188,23 @@ export function Discovery({ onOpenChat }: Props) {
     setChatTarget(profile)
   }
 
+  // Rewind: re-show the most-recently-swiped profile (client-side only). The
+  // recorded swipe stays; re-swiping upserts over it. Removing the id from
+  // swipedIds keeps a future prefetch from filtering the restored card back out.
+  const goBack = () => {
+    if (swiping) return
+    const prev = history[history.length - 1]
+    if (!prev) return
+    setHistory((h) => h.slice(0, -1))
+    swipedIds.current.delete(prev.id)
+    setQueue((q) => [prev, ...q])
+  }
+
+  const handleBack = () => {
+    if (premiumActive) goBack()
+    else { haptic.impact('medium'); setRewindPaywallOpen(true) }
+  }
+
   // Rendered on top of both the main card stack and the limited screen: a
   // like that lands as the 20th swipe can both match AND trip the limit, so
   // the match popup must still show even while `limited` is true.
@@ -242,6 +267,9 @@ export function Discovery({ onOpenChat }: Props) {
         onLike={() => swipe('like')}
         onPass={() => swipe('pass')}
         disabled={swiping}
+        onBack={handleBack}
+        canGoBack={history.length > 0}
+        backLocked={!premiumActive}
         onGiftClick={(profile) => setGiftTarget({ id: profile.id, name: profile.name })}
         onChatClick={handleChatClick}
       />
@@ -262,6 +290,11 @@ export function Discovery({ onOpenChat }: Props) {
         open={chatPaywallOpen}
         onClose={() => { setChatPaywallOpen(false); setChatTarget(null) }}
         subtitle={t.directChat.paywallSubtitle}
+      />
+      <PaywallSheet
+        open={rewindPaywallOpen}
+        onClose={() => setRewindPaywallOpen(false)}
+        subtitle={t.discovery.rewindPaywallSubtitle}
       />
       {giftTarget && (
         <GiftPickerSheet
