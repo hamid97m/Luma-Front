@@ -8,6 +8,7 @@ import { ChatEmptyState } from '../components/chat/ChatEmptyState.js'
 import { ProfilePeekSheet } from '../components/chat/ProfilePeekSheet.js'
 import { MessageActionSheet } from '../components/chat/MessageActionSheet.js'
 import { ReportSheet } from '../components/ReportSheet.js'
+import { BlockSheet } from '../components/BlockSheet.js'
 import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { usePremiumStore } from '../store.js'
@@ -32,6 +33,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
   const [draft, setDraft] = useState('')
   const [peeking, setPeeking] = useState(false)
   const [showReport, setShowReport] = useState(false)
+  const [showBlock, setShowBlock] = useState(false)
   const [actionId, setActionId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [replyingToId, setReplyingToId] = useState<string | null>(null)
@@ -280,6 +282,14 @@ export function Chat({ match, myUserId, onBack }: Props) {
           aria-label={t.report.title}
           onClick={() => setShowReport(true)}
         />
+        <IconButton
+          icon="ban"
+          tone="ghost"
+          iconSize={16}
+          className="text-error hover:bg-error-container"
+          aria-label={t.block.action}
+          onClick={() => setShowBlock(true)}
+        />
       </div>
 
       {loadState === 'unavailable' ? (
@@ -381,6 +391,19 @@ export function Chat({ match, myUserId, onBack }: Props) {
           }}
         />
       )}
+
+      <BlockSheet
+        open={showBlock}
+        name={match.user.name}
+        userId={match.user.id}
+        onClose={() => setShowBlock(false)}
+        onBlocked={() => {
+          setShowBlock(false)
+          // The block row is in place; leaving refetches matches, which now
+          // filters this pair out — the chat disappears from the list.
+          onBack()
+        }}
+      />
 
       {actionId && (() => {
         const msg = messages.find((m) => m.id === actionId)

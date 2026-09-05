@@ -181,6 +181,10 @@ export const api = {
       matchId?: string
     }) => request<{ ok: true }>('/reports', { method: 'POST', body: JSON.stringify(input) }),
   },
+  blocks: {
+    create: (userId: string) =>
+      request<{ ok: true }>('/block', { method: 'POST', body: JSON.stringify({ userId }) }),
+  },
   support: {
     list: () => request<{ tickets: SupportTicketListItem[] }>('/support/tickets'),
     thread: (id: string) => request<SupportThread>(`/support/tickets/${id}`),
