@@ -9,6 +9,7 @@ import { shouldPromptWriteAccess, haptic } from '../telegram.js'
 import { DiscoveryEmpty } from '../components/DiscoveryEmpty.js'
 import { SwipeLimited } from '../components/SwipeLimited.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
+import { RewindSheet } from '../components/premium/RewindSheet.js'
 import { DirectChatSheet } from '../components/premium/DirectChatSheet.js'
 import { usePremiumStore } from '../store.js'
 import type { DiscoveryProfile, SwipeResult, Match, DirectChatStatus } from '../types.js'
@@ -30,6 +31,7 @@ export function Discovery({ onOpenChat }: Props) {
   // "rewind" button (client-side re-show); the recorded swipe is left as-is
   // and overwritten if the restored profile is re-swiped (POST /swipes upsert).
   const [history, setHistory] = useState<DiscoveryProfile[]>([])
+  const [rewindSheetOpen, setRewindSheetOpen] = useState(false)
   const [rewindPaywallOpen, setRewindPaywallOpen] = useState(false)
   const [exhausted, setExhausted] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -202,7 +204,7 @@ export function Discovery({ onOpenChat }: Props) {
 
   const handleBack = () => {
     if (premiumActive) goBack()
-    else { haptic.impact('medium'); setRewindPaywallOpen(true) }
+    else { haptic.impact('medium'); setRewindSheetOpen(true) }
   }
 
   // Rendered on top of both the main card stack and the limited screen: a
@@ -291,10 +293,14 @@ export function Discovery({ onOpenChat }: Props) {
         onClose={() => { setChatPaywallOpen(false); setChatTarget(null) }}
         subtitle={t.directChat.paywallSubtitle}
       />
+      <RewindSheet
+        open={rewindSheetOpen}
+        onClose={() => setRewindSheetOpen(false)}
+        onGoPremium={() => { haptic.impact('medium'); setRewindSheetOpen(false); setRewindPaywallOpen(true) }}
+      />
       <PaywallSheet
         open={rewindPaywallOpen}
         onClose={() => setRewindPaywallOpen(false)}
-        subtitle={t.discovery.rewindPaywallSubtitle}
       />
       {giftTarget && (
         <GiftPickerSheet

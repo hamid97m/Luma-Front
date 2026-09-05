@@ -205,21 +205,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
       </p>
 
       {/* Action buttons */}
-      <div className="flex items-center justify-center gap-5 pb-2">
-        <button
-          onClick={handleBack}
-          disabled={backDisabled}
-          className="relative w-14 h-14 rounded-[18px] bg-surface text-txt2 shadow-m3-1 flex items-center justify-center disabled:opacity-40 hover:bg-surface-high transition-colors"
-          aria-label={t.aria.rewind}
-        >
-          <Icon name="rotate-ccw" size={22} strokeWidth={2.5} />
-          {backLocked && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center shadow-m3-1">
-              <Icon name="lock" size={11} strokeWidth={2.5} />
-            </span>
-          )}
-        </button>
-
+      <div className="flex items-center justify-center gap-[18px] pb-2">
         <button
           onClick={() => !disabled && !flying && fly('pass')}
           disabled={disabled}
@@ -245,6 +231,16 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
           aria-label={t.aria.directChat}
         >
           <Icon name="message-dots" size={23} strokeWidth={2} />
+        </button>
+
+        <button
+          onClick={handleBack}
+          disabled={backDisabled}
+          className={`w-12 h-12 rounded-2xl bg-field border border-outline shadow-m3-1 flex items-center justify-center transition-colors hover:bg-surface ${canGoBack ? 'text-primary' : 'text-txt3'}`}
+          style={{ opacity: canGoBack || backLocked ? 1 : 0.45 }}
+          aria-label={t.aria.rewind}
+        >
+          <Icon name="arrow-left" size={22} strokeWidth={2} />
         </button>
       </div>
 
