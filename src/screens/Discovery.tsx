@@ -301,6 +301,7 @@ export function Discovery({ onOpenChat }: Props) {
       <PaywallSheet
         open={rewindPaywallOpen}
         onClose={() => setRewindPaywallOpen(false)}
+        subtitle={t.rewind.paywallSubtitle}
       />
       {giftTarget && (
         <GiftPickerSheet
