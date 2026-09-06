@@ -34,6 +34,16 @@ function readDeepLinkTab(): Tab | null {
   }
 }
 
+// Deep link: a new-message notification button opens WEB_URL?screen=matches&chat=<matchId>.
+// Read the match id once at launch so we can open that conversation directly.
+function readDeepLinkChat(): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get('chat')
+  } catch {
+    return null
+  }
+}
+
 export function App() {
   const initDataRaw = window.Telegram?.WebApp?.initData ?? null
   const { setUser, setInitDataRaw } = useAuthStore()
@@ -42,6 +52,7 @@ export function App() {
   const [authResult, setAuthResult] = useState<'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired' | null>(null)
   const [tab, setTab] = useState<Tab>(() => readDeepLinkTab() ?? 'discovery')
   const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null)
+  const [chatDeepLinkDone, setChatDeepLinkDone] = useState(false)
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0)
   const [matchesBadge, setMatchesBadge] = useState(0)
   const [likesBadge, setLikesBadge] = useState(0)
@@ -85,6 +96,22 @@ export function App() {
     api.matches.unreadCount().then(({ count }) => setMatchesBadge(count))
     api.likes.unreadCount().then(({ count }) => setLikesBadge(count))
   }, [screen, matchesRefreshKey, tab])
+
+  // Message-notification deep link: once in the app, resolve ?chat=<matchId> to
+  // its Match and open the chat overlay. Runs once — guarded so returning from
+  // the chat (which clears activeChatMatch) doesn't reopen it.
+  useEffect(() => {
+    if (screen !== 'main' || chatDeepLinkDone) return
+    setChatDeepLinkDone(true)
+    const chatId = readDeepLinkChat()
+    if (!chatId) return
+    api.matches.list()
+      .then(({ matches }) => {
+        const found = matches.find((m) => m.id === chatId)
+        if (found) setActiveChatMatch(found)
+      })
+      .catch(() => {})
+  }, [screen, chatDeepLinkDone])
 
   // Premium gate status (toggle + own expiry + plans) — needed before the
   // user first hits send in a gated chat; refreshed by the paywall on purchase.
