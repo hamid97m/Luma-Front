@@ -14,6 +14,7 @@ import { Matches } from './screens/Matches.js'
 import { MyProfile } from './screens/MyProfile.js'
 import { Chat } from './screens/Chat.js'
 import { Support } from './screens/Support.js'
+import { PaywallSheet } from './components/premium/PaywallSheet.js'
 import { BottomNav } from './components/BottomNav.js'
 import { NotifyPrompt } from './components/NotifyPrompt.js'
 import type { Match, UserProfile } from './types.js'
@@ -44,6 +45,16 @@ function readDeepLinkChat(): string | null {
   }
 }
 
+// Deep link: WEB_URL?screen=plans opens the premium plans sheet on launch
+// (used by broadcasts / bot buttons to send users straight to the paywall).
+function readDeepLinkPlans(): boolean {
+  try {
+    return new URLSearchParams(window.location.search).get('screen') === 'plans'
+  } catch {
+    return false
+  }
+}
+
 export function App() {
   const initDataRaw = window.Telegram?.WebApp?.initData ?? null
   const { setUser, setInitDataRaw } = useAuthStore()
@@ -53,6 +64,8 @@ export function App() {
   const [tab, setTab] = useState<Tab>(() => readDeepLinkTab() ?? 'discovery')
   const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null)
   const [chatDeepLinkDone, setChatDeepLinkDone] = useState(false)
+  // ?screen=plans → open the premium plans sheet once we reach the main app.
+  const [plansOpen, setPlansOpen] = useState(() => readDeepLinkPlans())
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0)
   const [matchesBadge, setMatchesBadge] = useState(0)
   const [likesBadge, setLikesBadge] = useState(0)
@@ -199,6 +212,8 @@ export function App() {
   return (
     <>
       {showSupport && <Support onClose={() => setShowSupport(false)} />}
+      {/* ?screen=plans deep link — the plans sheet self-refreshes plans on open. */}
+      <PaywallSheet open={plansOpen} onClose={() => setPlansOpen(false)} />
       {activeChatMatch && (
         <Chat
           key={activeChatMatch.id}
