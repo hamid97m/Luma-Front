@@ -346,6 +346,8 @@ export const fa = {
     ageRequired: 'سن نمی‌تواند خالی باشد.',
     locationRequired: 'موقعیت نمی‌تواند خالی باشد.',
     interestsLabel: 'علایق',
+    genderLabel: 'جنسیت من',
+    lookingForLabel: 'به دنبال',
     locationPlaceholder: 'شهر',
     tagDone: '− تمام',
     change: 'تغییر',

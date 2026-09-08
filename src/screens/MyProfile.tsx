@@ -50,9 +50,9 @@ function InfoCard({ children }: { children: React.ReactNode }) {
   )
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+function FieldLabel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className="text-[11px] font-medium text-txt2 tracking-wide mb-1.5 flex items-center gap-1.5">{children}</p>
+    <p className={`text-[11px] font-medium text-txt2 tracking-wide mb-1.5 flex items-center gap-1.5 ${className}`}>{children}</p>
   )
 }
 
@@ -68,6 +68,8 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const [location, setLocation] = useState(storeUser?.location ?? '')
   const [locationError, setLocationError] = useState('')
   const [bio, setBio] = useState(storeUser?.bio ?? '')
+  const [gender, setGender] = useState<UserProfile['gender']>(storeUser?.gender ?? 'man')
+  const [lookingFor, setLookingFor] = useState<UserProfile['looking_for']>(storeUser?.looking_for ?? 'women')
   const [tags, setTags] = useState<string[]>(storeUser?.interests ?? [])
   const [tagPicker, setTagPicker] = useState(false)
   const [prompt, setPrompt] = useState(storeUser?.icebreaker_prompt ?? ICEBREAKERS[0].prompt)
@@ -91,6 +93,8 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
       setAge(String(p.age))
       setLocation(p.location ?? '')
       setBio(p.bio ?? '')
+      setGender(p.gender)
+      setLookingFor(p.looking_for)
       setTags(p.interests)
       setPrompt(p.icebreaker_prompt ?? ICEBREAKERS[0].prompt)
       setAnswer(p.icebreaker_answer ?? '')
@@ -111,6 +115,20 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
     const next = [...tags, tag]
     setTags(next)
     save({ interests: next })
+  }
+
+  const pickGender = (g: UserProfile['gender']) => {
+    if (g === gender) return
+    setGender(g)
+    haptic.selection()
+    save({ gender: g })
+  }
+
+  const pickLookingFor = (l: UserProfile['looking_for']) => {
+    if (l === lookingFor) return
+    setLookingFor(l)
+    haptic.selection()
+    save({ looking_for: l })
   }
 
   const handlePhotoUpload = async (file: File, slotId: string) => {
@@ -192,7 +210,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
       <div className="flex items-center justify-between px-5 pt-12 pb-4">
         <h1 className="text-2xl font-medium text-txt">{t.profile.title}</h1>
         <IconButton
-          icon="settings-2"
+          icon="settings"
           onClick={() => setSettingsOpen(true)}
           aria-label={t.aria.settings}
           tone="surface"
@@ -326,6 +344,40 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                 <p className="text-error text-sm mt-1">{locationError}</p>
               )}
             </div>
+          </div>
+        </InfoCard>
+
+        {/* Gender + Looking for */}
+        <InfoCard>
+          <FieldLabel>{t.myProfile.genderLabel}</FieldLabel>
+          <div className="flex gap-1.5">
+            {([['woman', t.onboarding.genders[0]], ['man', t.onboarding.genders[1]], ['nonbinary', t.onboarding.genders[2]]] as const).map(([val, label]) => {
+              const selected = gender === val
+              return (
+                <button
+                  key={val}
+                  onClick={() => pickGender(val)}
+                  className={`flex-1 rounded-m3-md py-2.5 text-[13px] font-semibold transition-colors cursor-pointer ${selected ? 'bg-primary text-white' : 'bg-bg text-txt border border-outline'}`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+          <FieldLabel className="mt-4">{t.myProfile.lookingForLabel}</FieldLabel>
+          <div className="flex gap-1.5">
+            {([['men', t.onboarding.prefOptions[0]], ['women', t.onboarding.prefOptions[1]], ['everyone', t.onboarding.prefOptions[2]]] as const).map(([val, label]) => {
+              const selected = lookingFor === val
+              return (
+                <button
+                  key={val}
+                  onClick={() => pickLookingFor(val)}
+                  className={`flex-1 rounded-m3-md py-2.5 text-[13px] font-semibold transition-colors cursor-pointer ${selected ? 'bg-primary text-white' : 'bg-bg text-txt border border-outline'}`}
+                >
+                  {label}
+                </button>
+              )
+            })}
           </div>
         </InfoCard>
 
