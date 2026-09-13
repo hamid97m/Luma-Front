@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
-import { useAuthStore, usePremiumStore } from './store.js'
+import { useAuthStore, usePremiumStore, useReferralStore } from './store.js'
 import { isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
 import { Reconnect } from './screens/Reconnect.js'
@@ -15,6 +15,7 @@ import { MyProfile } from './screens/MyProfile.js'
 import { Chat } from './screens/Chat.js'
 import { Support } from './screens/Support.js'
 import { PaywallSheet } from './components/premium/PaywallSheet.js'
+import { InviteSheet } from './components/referrals/InviteSheet.js'
 import { BottomNav } from './components/BottomNav.js'
 import { NotifyPrompt } from './components/NotifyPrompt.js'
 import type { Match, UserProfile } from './types.js'
@@ -132,6 +133,12 @@ export function App() {
     if (screen === 'main') usePremiumStore.getState().refresh()
   }, [screen])
 
+  // Referral status (enabled flag + milestones) — drives the My Profile entry
+  // card and the invite sheet's stepper.
+  useEffect(() => {
+    if (screen === 'main') useReferralStore.getState().refresh()
+  }, [screen])
+
   // Ask for bot DM permission on entering the app — covers both a fresh
   // profile right after onboarding and returning users who never granted it.
   // Cooldown-gated so "Not now" isn't re-asked on every launch.
@@ -214,6 +221,7 @@ export function App() {
       {showSupport && <Support onClose={() => setShowSupport(false)} />}
       {/* ?screen=plans deep link — the plans sheet self-refreshes plans on open. */}
       <PaywallSheet open={plansOpen} onClose={() => setPlansOpen(false)} />
+      <InviteSheet />
       {activeChatMatch && (
         <Chat
           key={activeChatMatch.id}

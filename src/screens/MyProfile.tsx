@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
-import { useAuthStore } from '../store.js'
+import { useAuthStore, useReferralStore } from '../store.js'
 import type { UserProfile } from '../types.js'
 import { SettingsSheet } from '../components/SettingsSheet.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
@@ -58,6 +58,7 @@ function FieldLabel({ children, className = '' }: { children: React.ReactNode; c
 
 export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const { user: storeUser, setUser } = useAuthStore()
+  const referralEnabled = useReferralStore((s) => s.status?.enabled) === true
   const [profile, setProfile] = useState<UserProfile | null>(storeUser)
 
   // Editable field states
@@ -283,6 +284,23 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
         </div>
 
         <PremiumCard />
+
+        {referralEnabled && (
+          <button
+            type="button"
+            onClick={() => { haptic.selection(); useReferralStore.getState().openSheet() }}
+            className="w-full text-start bg-primary-container rounded-m3-lg p-3.5 flex items-center gap-3.5 transition-colors"
+          >
+            <span className="w-11 h-11 rounded-[15px] bg-bg text-primary flex-none flex items-center justify-center">
+              <Icon name="gift" size={20} />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[15px] font-semibold text-on-primary-container">{t.referral.entryTitle}</span>
+              <span className="block text-[12px] text-on-primary-container/70">{t.referral.entrySub}</span>
+            </span>
+            <Icon name="chevron-left" size={18} className="text-primary flex-none" />
+          </button>
+        )}
 
         {/* Name */}
         <InfoCard>
