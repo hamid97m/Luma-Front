@@ -110,7 +110,7 @@ function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClo
   const handleShare = () => {
     haptic.impact('light')
     if (!link) return
-    openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(t.referral.shareText))
+    openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(link))
   }
 
   const headline =
