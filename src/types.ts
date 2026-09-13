@@ -163,3 +163,20 @@ export interface SupportThread {
   ticket: { id: string; status: 'open' | 'closed'; createdAt: string }
   messages: SupportMessage[]
 }
+
+export interface ReferralMilestone {
+  count: number
+  rewardType: 'swipes' | 'premium_days'
+  rewardAmount: number
+  achieved: boolean
+  granted: boolean
+}
+
+export interface ReferralStatus {
+  enabled: boolean
+  code: string | null
+  link: string | null
+  qualifiedCount: number
+  totalCount: number
+  milestones: ReferralMilestone[]
+}

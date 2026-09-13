@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { api } from './api.js'
-import type { PremiumStatus, UserProfile } from './types.js'
+import type { PremiumStatus, ReferralStatus, UserProfile } from './types.js'
 
 interface AuthState {
   user: UserProfile | null
@@ -32,4 +32,27 @@ export const usePremiumStore = create<PremiumState>((set) => ({
       // keep the last known status — the server 403 is the enforcement anyway
     }
   },
+}))
+
+interface ReferralState {
+  status: ReferralStatus | null
+  sheetOpen: boolean
+  refresh: () => Promise<void>
+  openSheet: () => void
+  closeSheet: () => void
+}
+
+export const useReferralStore = create<ReferralState>()((set) => ({
+  status: null,
+  sheetOpen: false,
+  // Swallow errors to keep the last known status (same as premium refresh).
+  refresh: async () => {
+    try {
+      set({ status: await api.referrals.me() })
+    } catch {
+      /* keep last known */
+    }
+  },
+  openSheet: () => set({ sheetOpen: true }),
+  closeSheet: () => set({ sheetOpen: false }),
 }))

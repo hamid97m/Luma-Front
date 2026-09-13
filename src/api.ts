@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus } from './types.js'
 import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
@@ -171,6 +171,9 @@ export const api = {
         method: 'POST', body: JSON.stringify({ planId }),
       }),
     transaction: (id: string) => request<{ status: string }>(`/premium/transactions/${id}`),
+  },
+  referrals: {
+    me: () => request<ReferralStatus>('/referrals/me'),
   },
   reports: {
     create: (input: {
