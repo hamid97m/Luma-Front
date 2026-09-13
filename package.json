@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@telegram-apps/sdk-react": "^3.0.0",
+    "@vercel/speed-insights": "^2.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-easy-crop": "^6.2.3",

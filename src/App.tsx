@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { api } from './api.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
 import { useAuthStore, usePremiumStore } from './store.js'
@@ -177,31 +178,54 @@ export function App() {
   }, [initDataRaw])
 
   if (screen === 'splash') {
-    return <Splash onDone={() => setSplashDone(true)} />
+    return (
+      <>
+        <Splash onDone={() => setSplashDone(true)} />
+        <SpeedInsights />
+      </>
+    )
   }
 
   if (screen === 'blocked') {
-    return <Blocked supportBot={supportBot} />
+    return (
+      <>
+        <Blocked supportBot={supportBot} />
+        <SpeedInsights />
+      </>
+    )
   }
 
   if (screen === 'photoRequired') {
-    return <PhotoRequired />
+    return (
+      <>
+        <PhotoRequired />
+        <SpeedInsights />
+      </>
+    )
   }
 
   if (screen === 'reconnect') {
-    return <Reconnect onRetry={() => window.location.reload()} />
+    return (
+      <>
+        <Reconnect onRetry={() => window.location.reload()} />
+        <SpeedInsights />
+      </>
+    )
   }
 
   if (screen === 'onboarding') {
     return (
-      <Onboarding
-        onComplete={async () => {
-          markReturningUser()
-          const p = await api.profile.get()
-          setUser(p)
-          setScreen('main')
-        }}
-      />
+      <>
+        <Onboarding
+          onComplete={async () => {
+            markReturningUser()
+            const p = await api.profile.get()
+            setUser(p)
+            setScreen('main')
+          }}
+        />
+        <SpeedInsights />
+      </>
     )
   }
 
@@ -247,6 +271,7 @@ export function App() {
         <BottomNav active={tab} onChange={setTab} matchesBadge={matchesBadge} likesBadge={likesBadge} />
         {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}
       </div>
+      <SpeedInsights />
     </>
   )
 }
