@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api.js'
 import { t } from '../../i18n.js'
 import { openInvoice, haptic } from '../../telegram.js'
-import { usePremiumStore } from '../../store.js'
+import { usePremiumStore, useReferralStore } from '../../store.js'
 import { formatCountdown } from '../../utils/premium.js'
 import { Icon, Sheet } from '../ui'
 import { HowToBuyStars } from './HowToBuyStars.js'
@@ -21,6 +21,7 @@ const POLL_MAX_TRIES = 8
 
 export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   const status = usePremiumStore((s) => s.status)
+  const referralEnabled = useReferralStore((s) => s.status?.enabled)
   const plans = status?.plans ?? []
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
@@ -367,6 +368,34 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
               ))}
             </div>
           )}
+        </>
+      )}
+
+      {referralEnabled && (
+        <>
+          <div className="flex items-center gap-2.5 my-3">
+            <span className="flex-1 h-px bg-surface-high" />
+            <span className="text-[11px] text-txt2">یا</span>
+            <span className="flex-1 h-px bg-surface-high" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              haptic.selection()
+              handleClose()
+              useReferralStore.getState().openSheet()
+            }}
+            className="w-full flex items-center gap-3 text-start rounded-m3-md border border-outline px-3.5 py-3"
+          >
+            <span className="w-8 h-8 flex-none rounded-[10px] bg-surface flex items-center justify-center">
+              <Icon name="gift" size={16} className="text-primary" />
+            </span>
+            <span className="flex-1 min-w-0 text-[13px] font-medium text-txt2">
+              {t.referral.paywallPromo}
+            </span>
+            <Icon name="chevron-left" size={15} className="text-txt3 flex-none" />
+          </button>
         </>
       )}
     </Sheet>
