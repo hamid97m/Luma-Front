@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from './api.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
 import { useAuthStore, usePremiumStore, useReferralStore } from './store.js'
-import { isReturningUser, markReturningUser } from './utils/returningUser.js'
+import { cacheGender, isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
 import { Reconnect } from './screens/Reconnect.js'
 import { Blocked } from './screens/Blocked.js'
@@ -163,6 +163,8 @@ export function App() {
       .then(({ user: partial }) => {
         if (partial.setupComplete) {
           markReturningUser()
+          const gender = (partial as Partial<UserProfile>).gender
+          if (gender) cacheGender(gender)
           setUser(partial as UserProfile)
           setAuthResult(partial.paused ? 'photoRequired' : 'main')
         } else {
@@ -205,6 +207,7 @@ export function App() {
         onComplete={async () => {
           markReturningUser()
           const p = await api.profile.get()
+          cacheGender(p.gender)
           setUser(p)
           setScreen('main')
         }}

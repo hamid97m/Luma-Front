@@ -364,9 +364,9 @@ export function Onboarding({ onComplete }: Props) {
                 </Button>
               )}
               <div className="flex gap-2.5 bg-surface rounded-m3-md px-3.5 py-3">
-                <Icon name="alert-triangle" size={16} className="text-primary flex-none mt-px" />
+                <Icon name={state.gender === 'woman' ? 'shield' : 'alert-triangle'} size={16} className="text-primary flex-none mt-px" />
                 <p className="text-txt2 text-[12px] leading-relaxed">
-                  {t.onboarding.realPhotos}
+                  {state.gender === 'woman' ? t.onboarding.realPhotosWomen : t.onboarding.realPhotos}
                 </p>
               </div>
               <p className="text-txt3 text-[12px] text-center">

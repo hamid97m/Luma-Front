@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '../components/ui'
 import { t } from '../i18n'
+import { cachedGenderIsWoman } from '../utils/returningUser.js'
 
 interface Props {
   onDone: () => void
@@ -31,7 +32,9 @@ function shuffle<T>(items: readonly T[]): T[] {
 }
 
 export function Splash({ onDone }: Props) {
-  const [messages] = useState(() => shuffle(t.splash.messages))
+  const [messages] = useState(() =>
+    shuffle(cachedGenderIsWoman() ? [...t.splash.messages, ...t.splash.messagesWomen] : t.splash.messages)
+  )
   const [current, setCurrent] = useState(0)
   const [prev, setPrev] = useState<number | null>(null)
 

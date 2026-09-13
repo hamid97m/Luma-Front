@@ -10,6 +10,7 @@ import type { IconName } from '../components/ui/index.js'
 import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
+import { cacheGender } from '../utils/returningUser.js'
 
 // Icebreaker prompts shown in the picker. `prompt` is stored verbatim on the
 // profile (free-text column), `icon` is the glyph tile, and `hint` is the
@@ -121,6 +122,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const pickGender = (g: UserProfile['gender']) => {
     if (g === gender) return
     setGender(g)
+    cacheGender(g)
     haptic.selection()
     save({ gender: g })
   }
