@@ -5,7 +5,7 @@ import { haptic, openTelegramLink } from '../../telegram.js'
 import { useReferralStore, usePremiumStore } from '../../store.js'
 import { fillPercent, grantedCount, newlyGranted, sheetVariant, stageNumber } from '../../utils/referral.js'
 import { Icon, Sheet } from '../ui/index.js'
-import type { ReferralMilestone } from '../../types.js'
+import type { ReferralMilestone, ReferralStatus } from '../../types.js'
 
 const SEEN_KEY = 'luma_referral_granted_seen'
 
@@ -27,31 +27,45 @@ function rewardLine(m: ReferralMilestone): string {
 
 // Milestone invite bottom sheet — self-contained (reads useReferralStore
 // itself). Rendered once at the app root; opened via useReferralStore.openSheet().
+//
+// This outer component stays mounted for the whole app session (it's the same
+// element in the same tree position every render), so any hook state declared
+// directly here would persist across opens/closes instead of resetting. The
+// actual sheet body is split into `InviteSheetContent`, which this component
+// only adds to the tree while `sheetOpen && status` — so it fully unmounts on
+// close and remounts fresh (including its `seenGranted` useState initializer
+// re-reading localStorage) on every reopen.
 export function InviteSheet() {
   const status = useReferralStore((s) => s.status)
   const sheetOpen = useReferralStore((s) => s.sheetOpen)
   const closeSheet = useReferralStore((s) => s.closeSheet)
-  const premiumUntilRaw = usePremiumStore((s) => s.status?.premiumUntil)
-
-  // Captured once per mount so the reward variant stays stable for as long as
-  // the sheet is open, even after we mark it seen on close.
-  const [seenGranted] = useState(() => Number(localStorage.getItem(SEEN_KEY) ?? '0'))
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (sheetOpen) useReferralStore.getState().refresh()
   }, [sheetOpen])
 
-  const milestone = status ? newlyGranted(status.milestones, seenGranted) : null
+  if (!sheetOpen || !status) return null
 
-  // A freshly-granted premium reward needs the premium store refreshed so the
-  // banner's "until <date>" reflects the just-applied expiry.
+  return <InviteSheetContent status={status} onClose={closeSheet} />
+}
+
+function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClose: () => void }) {
+  const premiumUntilRaw = usePremiumStore((s) => s.status?.premiumUntil)
+
+  // Re-read fresh on every mount (i.e. every time the sheet opens — see the
+  // note on InviteSheet above), then stays stable for as long as this
+  // instance is mounted, even after markSeen() updates localStorage on close.
+  const [seenGranted] = useState(() => Number(localStorage.getItem(SEEN_KEY) ?? '0'))
+  const [copied, setCopied] = useState(false)
+
+  const milestone = newlyGranted(status.milestones, seenGranted)
+
+  // A freshly-granted premium reward needs the premium store refreshed once,
+  // on open, so the banner's "until <date>" reflects the just-applied expiry.
   useEffect(() => {
-    if (sheetOpen && milestone?.rewardType === 'premium_days') {
-      usePremiumStore.getState().refresh()
-    }
+    if (milestone?.rewardType === 'premium_days') usePremiumStore.getState().refresh()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheetOpen, milestone?.rewardType])
+  }, [])
 
   useEffect(() => {
     if (!copied) return
@@ -59,28 +73,28 @@ export function InviteSheet() {
     return () => clearTimeout(id)
   }, [copied])
 
-  if (!sheetOpen || !status) return null
-
   const variant = sheetVariant(status, seenGranted)
   const qualifiedCount = status.qualifiedCount
-  const nextMilestone = status.milestones.find((m) => m.count > qualifiedCount) ?? null
+  // Defensive: render/derive in ascending tier order even if the API ever
+  // returns milestones out of order (the 1/3/10 rail math assumes ascending).
+  const milestones = [...status.milestones].sort((a, b) => a.count - b.count)
+  const nextMilestone = milestones.find((m) => m.count > qualifiedCount) ?? null
   const link = status.link ?? ''
   const displayLink = link.replace(/^https?:\/\//, '')
   const premiumUntil = premiumUntilRaw ? new Date(premiumUntilRaw) : null
 
   const markSeen = () => {
     localStorage.setItem(SEEN_KEY, String(grantedCount(status.milestones)))
-    if (milestone?.rewardType === 'premium_days') usePremiumStore.getState().refresh()
   }
 
   const handleClose = () => {
     markSeen()
-    closeSheet()
+    onClose()
   }
 
   const handleContinue = () => {
     markSeen()
-    closeSheet()
+    onClose()
   }
 
   const handleCopy = () => {
@@ -175,7 +189,7 @@ export function InviteSheet() {
               style={{ right: '16.6%', top: '15px', width: `${fillPercent(qualifiedCount)}%` }}
             />
             <div className="relative flex">
-              {status.milestones.map((m) => {
+              {milestones.map((m) => {
                 const done = m.granted || m.achieved
                 const isJustGranted = m.granted && milestone?.count === m.count
                 return (
