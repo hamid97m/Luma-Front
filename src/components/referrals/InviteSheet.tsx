@@ -183,11 +183,12 @@ function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClo
           </div>
 
           <div className="relative">
-            <div className="absolute h-[5px] rounded-full bg-surface-high" style={{ right: '16.6%', left: '16.6%', top: '15px' }} />
-            <div
-              className="absolute h-[5px] rounded-full bg-primary"
-              style={{ right: '16.6%', top: '15px', width: `${fillPercent(qualifiedCount)}%` }}
-            />
+            <div className="absolute h-[5px] rounded-full bg-surface-high" style={{ right: '16.6%', left: '16.6%', top: '15px' }}>
+              <div
+                className="absolute inset-y-0 right-0 rounded-full bg-primary"
+                style={{ width: `${fillPercent(qualifiedCount)}%` }}
+              />
+            </div>
             <div className="relative flex">
               {milestones.map((m) => {
                 const done = m.granted || m.achieved
