@@ -328,7 +328,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
                 <span className="flex-1 min-w-0 text-[14px] font-bold text-primary">
                   {t.premium.starsGuideCta}
                 </span>
-                <Icon name="chevron-left" size={15} className="text-primary flex-none" />
+                <Icon name={dir === 'rtl' ? 'chevron-left' : 'chevron-right'} size={15} className="text-primary flex-none" />
               </span>
               <span className="text-[12px] leading-relaxed text-txt2 pe-6">
                 {t.premium.starsGuideCtaHint}
@@ -400,7 +400,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             <span className="flex-1 min-w-0 text-[13px] font-medium text-txt2">
               {t.referral.paywallPromo}
             </span>
-            <Icon name="chevron-left" size={15} className="text-txt3 flex-none" />
+            <Icon name={dir === 'rtl' ? 'chevron-left' : 'chevron-right'} size={15} className="text-txt3 flex-none" />
           </button>
         </>
       )}
