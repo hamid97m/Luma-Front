@@ -3,7 +3,7 @@ import { api } from '../api.js'
 import { clearReturningUser } from '../utils/returningUser.js'
 import { haptic, isDarkTheme, setThemePref } from '../telegram.js'
 import { t, useLocaleStore } from '../i18n.js'
-import { LOCALE_META, setLocalePending, type Locale } from '../i18n/locale.js'
+import { LOCALE_META, clearStoredLocale, setLocalePending, type Locale } from '../i18n/locale.js'
 import { LanguageOptions } from './LanguageOptions.js'
 import { Button, Icon, Sheet } from './ui'
 
@@ -59,6 +59,9 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
     try {
       await api.profile.delete()
       clearReturningUser()
+      // The server also nulls `locale`; forget the device copy too so the
+      // re-signup starts with the first-open language picker.
+      clearStoredLocale()
       window.location.reload()
     } catch {
       setDeleting(false)

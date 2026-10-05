@@ -39,6 +39,7 @@ vi.mock('../src/api.ts', () => ({
     profile: {
       get: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(() => Promise.resolve({ ok: true })),
       setWriteAccess: vi.fn(() => Promise.resolve({ ok: true })),
       setLocale: vi.fn(() => Promise.resolve({ ok: true, locale: 'fa' })),
     },

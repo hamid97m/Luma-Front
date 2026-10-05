@@ -104,4 +104,21 @@ describe('SettingsSheet language row', () => {
     expect(isLocalePending()).toBe(false)
     expect(useLocaleStore.getState().locale).toBe('fa')
   })
+
+  it('deleting the account forgets the saved language so a re-signup sees the picker', async () => {
+    vi.mocked(api.profile.delete).mockResolvedValue({ ok: true })
+    setLocalePending(true)
+    expect(localStorage.getItem('luma.locale')).toBe('fa')
+    const reloadMock = vi.fn()
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, reload: reloadMock } })
+
+    renderSheet()
+    fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByText(fa.settings.confirmDelete))
+
+    await waitFor(() => expect(reloadMock).toHaveBeenCalled())
+    expect(api.profile.delete).toHaveBeenCalled()
+    expect(localStorage.getItem('luma.locale')).toBeNull()
+    expect(isLocalePending()).toBe(false)
+  })
 })

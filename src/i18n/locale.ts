@@ -64,6 +64,17 @@ export function writeStoredLocale(locale: Locale): void {
   }
 }
 
+/** Forget the device's language choice (account deletion → the next sign-up
+ * starts from scratch and sees the first-open picker again). */
+export function clearStoredLocale(): void {
+  try {
+    localStorage.removeItem(LOCALE_KEY)
+    localStorage.removeItem(LOCALE_PENDING_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Set when a Settings change failed to reach the server; the next launch re-sends it. */
 export function isLocalePending(): boolean {
   try {
