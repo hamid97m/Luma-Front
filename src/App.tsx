@@ -11,6 +11,7 @@ import { Onboarding } from './screens/Onboarding.js'
 import { LanguagePicker } from './screens/LanguagePicker.js'
 import { useLocaleStore } from './i18n.js'
 import { isLocale, isLocalePending, readStoredLocale, setLocalePending, type Locale } from './i18n/locale.js'
+import { prefetchGeoCountry } from './i18n/geo.js'
 import { Discovery } from './screens/Discovery.js'
 import { Likes } from './screens/Likes.js'
 import { Matches } from './screens/Matches.js'
@@ -199,6 +200,7 @@ export function App() {
   useEffect(() => {
     if (!initDataRaw) {
       // Dev / no-Telegram context — skip auth, show onboarding
+      if (!readStoredLocale()) prefetchGeoCountry()
       setAuthResult('onboarding')
       return
     }
@@ -210,6 +212,9 @@ export function App() {
         setServerLocale(locale)
         // Only a brand-new user (server has no locale yet) gets the picker.
         if (isLocale(locale)) setLocaleChosen(true)
+        // Picker is coming — start the IP-country lookup now so its default
+        // row is settled by the time the splash ends (see LanguagePicker).
+        else if (!partial.setupComplete && !readStoredLocale()) prefetchGeoCountry()
         if (partial.setupComplete) {
           healMissingLocale(locale)
           markReturningUser()

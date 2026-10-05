@@ -18,8 +18,14 @@ vi.mock('../src/telegram.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../src/telegram.js')>()),
   initTelegram: vi.fn(),
 }))
+// No network in tests — the picker's IP-country fallback resolves to "unknown".
+vi.mock('../src/i18n/geo.js', () => ({
+  geoCountrySync: vi.fn(() => null),
+  prefetchGeoCountry: vi.fn(() => Promise.resolve(null)),
+}))
 
 import { App, healMissingLocale, syncLocaleFromServer } from '../src/App.js'
+import { prefetchGeoCountry } from '../src/i18n/geo.js'
 import { useLocaleStore } from '../src/i18n.js'
 import { setLocalePending, isLocalePending } from '../src/i18n/locale.js'
 import { api } from '../src/api.js'
@@ -123,6 +129,8 @@ describe('App language-picker gating', () => {
     render(<App />)
     expect(await screen.findByRole('radiogroup')).toBeInTheDocument()
     expect(screen.queryByTestId('onboarding')).toBeNull()
+    // The IP-country lookup is started as soon as the picker is known to be coming.
+    expect(prefetchGeoCountry).toHaveBeenCalled()
   })
 
   it('existing user with a saved locale (backfilled fa) never sees the picker', async () => {
@@ -130,6 +138,8 @@ describe('App language-picker gating', () => {
     render(<App />)
     expect(await screen.findByTestId('onboarding')).toBeInTheDocument()
     expect(screen.queryByRole('radiogroup')).toBeNull()
+    // …and pays nothing for the geo lookup.
+    expect(prefetchGeoCountry).not.toHaveBeenCalled()
   })
 
   it('a locale already chosen on this device skips the picker even if the server has none yet', async () => {
@@ -141,14 +151,21 @@ describe('App language-picker gating', () => {
   })
 
   it('picker Continue commits the choice and moves on to onboarding', async () => {
-    verifyWith(null)
-    render(<App />)
-    const group = await screen.findByRole('radiogroup')
-    expect(group).toBeInTheDocument()
-    // Continue with the preselected locale: no store change, so no remount —
-    // the gating state alone must advance the screen.
-    fireEvent.click(screen.getByRole('button', { name: fa.language.continue }))
-    expect(await screen.findByTestId('onboarding')).toBeInTheDocument()
-    expect(localStorage.getItem('luma.locale')).toBe('fa')
+    // Persian Telegram client → picker preselects fa, matching the store.
+    const tgUser = window.Telegram!.WebApp!.initDataUnsafe.user as { language_code?: string }
+    tgUser.language_code = 'fa'
+    try {
+      verifyWith(null)
+      render(<App />)
+      const group = await screen.findByRole('radiogroup')
+      expect(group).toBeInTheDocument()
+      // Continue with the preselected locale: no store change, so no remount —
+      // the gating state alone must advance the screen.
+      fireEvent.click(screen.getByRole('button', { name: fa.language.continue }))
+      expect(await screen.findByTestId('onboarding')).toBeInTheDocument()
+      expect(localStorage.getItem('luma.locale')).toBe('fa')
+    } finally {
+      delete tgUser.language_code
+    }
   })
 })

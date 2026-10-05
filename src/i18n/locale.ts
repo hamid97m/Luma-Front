@@ -2,10 +2,10 @@ export type Locale = 'fa' | 'en' | 'ar'
 
 export const LOCALES: readonly Locale[] = ['fa', 'en', 'ar']
 
-export const LOCALE_META: Record<Locale, { dir: 'rtl' | 'ltr'; intl: string; nativeName: string }> = {
-  fa: { dir: 'rtl', intl: 'fa-IR-u-nu-latn', nativeName: 'فارسی' },
-  ar: { dir: 'rtl', intl: 'ar-u-nu-latn', nativeName: 'العربية' },
-  en: { dir: 'ltr', intl: 'en-US', nativeName: 'English' },
+export const LOCALE_META: Record<Locale, { dir: 'rtl' | 'ltr'; intl: string; nativeName: string; flag: string }> = {
+  fa: { dir: 'rtl', intl: 'fa-IR-u-nu-latn', nativeName: 'فارسی', flag: '🇮🇷' },
+  ar: { dir: 'rtl', intl: 'ar-u-nu-latn', nativeName: 'العربية', flag: '🇸🇦' },
+  en: { dir: 'ltr', intl: 'en-US', nativeName: 'English', flag: '🇬🇧' },
 }
 
 export function isLocale(x: unknown): x is Locale {
@@ -18,6 +18,30 @@ export function mapTelegramLang(code: string | null | undefined): Locale {
   if (base === 'fa') return 'fa'
   if (base === 'ar') return 'ar'
   return 'en'
+}
+
+const PERSIAN_COUNTRIES = new Set(['IR', 'AF'])
+const ARABIC_COUNTRIES = new Set([
+  'SA', 'AE', 'QA', 'KW', 'BH', 'OM', 'IQ', 'SY', 'JO', 'LB', 'PS', 'YE',
+  'EG', 'SD', 'LY', 'TN', 'DZ', 'MA', 'MR', 'SO', 'DJ', 'KM',
+])
+
+/** ISO-3166 alpha-2 country → locale, or null when the country implies nothing. */
+export function mapCountryToLocale(country: string | null | undefined): Locale | null {
+  const c = (country ?? '').toUpperCase()
+  if (PERSIAN_COUNTRIES.has(c)) return 'fa'
+  if (ARABIC_COUNTRIES.has(c)) return 'ar'
+  return null
+}
+
+/** First-open default: Telegram's language decides when it is Persian/Arabic;
+ * otherwise (English, another language, or missing) the IP country decides;
+ * otherwise English. Many Persian/Arabic speakers run Telegram in English,
+ * which is why the country gets a say when Telegram is not decisive. */
+export function pickDefaultLocale(tgLang: string | null | undefined, country: string | null | undefined): Locale {
+  const fromTelegram = mapTelegramLang(tgLang)
+  if (fromTelegram !== 'en') return fromTelegram
+  return mapCountryToLocale(country) ?? 'en'
 }
 
 export const LOCALE_KEY = 'luma.locale'

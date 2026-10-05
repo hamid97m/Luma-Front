@@ -31,8 +31,14 @@ export function LanguageOptions({ value, onChange }: Props) {
               selected ? 'bg-primary-container text-on-primary-container' : 'bg-surface text-txt hover:bg-surface-high'
             }`}
           >
-            <span lang={l} dir={LOCALE_META[l].dir} className="text-[15px] font-medium">
-              {LOCALE_META[l].nativeName}
+            <span className="flex items-center gap-3">
+              {/* Decorative — the native name is the accessible label. */}
+              <span aria-hidden="true" className="text-[22px] leading-none">
+                {LOCALE_META[l].flag}
+              </span>
+              <span lang={l} dir={LOCALE_META[l].dir} className="text-[15px] font-medium">
+                {LOCALE_META[l].nativeName}
+              </span>
             </span>
             {selected && <Icon name="check" size={18} className="flex-none" />}
           </button>
