@@ -9,8 +9,9 @@ interface Props {
 
 /** Three-row language list shared by the first-open picker and Settings.
  * Row = the Settings-sheet row pattern; selected = the Chip selected tokens.
- * Each row carries its own `lang`/`dir` so every native name renders in its
- * own script direction regardless of the surrounding document direction. */
+ * The row follows the screen direction (so the check column stays aligned);
+ * only the label carries its own `lang`/`dir` so each native name renders in
+ * its own script direction. */
 export function LanguageOptions({ value, onChange }: Props) {
   return (
     <div role="radiogroup" className="flex flex-col gap-2.5">
@@ -22,8 +23,6 @@ export function LanguageOptions({ value, onChange }: Props) {
             type="button"
             role="radio"
             aria-checked={selected}
-            lang={l}
-            dir={LOCALE_META[l].dir}
             onClick={() => {
               haptic.selection()
               onChange(l)
@@ -32,7 +31,9 @@ export function LanguageOptions({ value, onChange }: Props) {
               selected ? 'bg-primary-container text-on-primary-container' : 'bg-surface text-txt hover:bg-surface-high'
             }`}
           >
-            <span className="text-[15px] font-medium">{LOCALE_META[l].nativeName}</span>
+            <span lang={l} dir={LOCALE_META[l].dir} className="text-[15px] font-medium">
+              {LOCALE_META[l].nativeName}
+            </span>
             {selected && <Icon name="check" size={18} className="flex-none" />}
           </button>
         )

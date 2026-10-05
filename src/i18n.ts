@@ -32,7 +32,11 @@ export const useLocaleStore = create<LocaleState>((set) => ({
 // Set lang/dir before first paint so the splash doesn't flash the wrong direction.
 applyDocumentLocale(useLocaleStore.getState().locale)
 
-const active = (): Messages => messages[useLocaleStore.getState().locale]
+/** Messages for a specific locale — for UI that previews a locale other than
+ * the active one (e.g. the first-open picker). Everything else uses `t`. */
+export const messagesFor = (locale: Locale): Messages => messages[locale]
+
+const active = (): Messages => messagesFor(useLocaleStore.getState().locale)
 
 /** Live accessor over the active locale. Existing `t.section.key` and
  * `t.section.fn(arg)` call sites keep working unchanged; the App remounts on

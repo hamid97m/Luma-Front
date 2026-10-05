@@ -85,6 +85,9 @@ export function App() {
   const [screen, setScreen] = useState<Screen>('splash')
   const [splashDone, setSplashDone] = useState(splashPlayed)
   const [authResult, setAuthResult] = useState<'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired' | null>(null)
+  // Locale the server returned from /auth/verify. Reconciled with the local
+  // store only once the splash is over (see the advance effect below).
+  const [serverLocale, setServerLocale] = useState<Locale | null | undefined>(undefined)
   // First-open language picker gate. A locale saved on this device counts as
   // chosen (this also survives the keyed App remount that follows Continue);
   // a locale saved on the server (every existing user, backfilled to 'fa')
@@ -174,10 +177,15 @@ export function App() {
     if (screen === 'main') setShowNotifyPrompt(shouldPromptWriteAccessOnLaunch())
   }, [screen])
 
-  // Advance only when both the splash timer has fired and auth has resolved
+  // Advance only when both the splash timer has fired and auth has resolved.
+  // Server-locale reconciliation runs here, after the intro, because adopting
+  // the server's locale remounts the keyed <App> — doing it mid-splash would
+  // restart the intro. On 'synced' the remount takes over, so don't advance.
   useEffect(() => {
-    if (splashDone && authResult) setScreen(authResult)
-  }, [splashDone, authResult])
+    if (!(splashDone && authResult)) return
+    if (syncLocaleFromServer(serverLocale) === 'synced') return
+    setScreen(authResult)
+  }, [splashDone, authResult, serverLocale])
 
   useEffect(() => {
     if (!initDataRaw) {
@@ -189,10 +197,10 @@ export function App() {
 
     api.auth.verify(initDataRaw)
       .then(({ user: partial }) => {
-        const serverLocale = (partial as { locale?: Locale | null }).locale
-        syncLocaleFromServer(serverLocale)
+        const locale = (partial as { locale?: Locale | null }).locale ?? null
+        setServerLocale(locale)
         // Only a brand-new user (server has no locale yet) gets the picker.
-        if (isLocale(serverLocale)) setLocaleChosen(true)
+        if (isLocale(locale)) setLocaleChosen(true)
         if (partial.setupComplete) {
           markReturningUser()
           const gender = (partial as Partial<UserProfile>).gender

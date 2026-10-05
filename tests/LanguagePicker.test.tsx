@@ -28,10 +28,12 @@ describe('LanguagePicker', () => {
     expect(screen.getByRole('radiogroup')).toBeInTheDocument()
     const radios = screen.getAllByRole('radio')
     expect(radios.map((r) => r.textContent)).toEqual(['فارسی', 'English', 'العربية'])
-    expect(screen.getByRole('radio', { name: 'English' })).toHaveAttribute('dir', 'ltr')
-    expect(screen.getByRole('radio', { name: 'English' })).toHaveAttribute('lang', 'en')
-    expect(screen.getByRole('radio', { name: 'العربية' })).toHaveAttribute('dir', 'rtl')
-    expect(screen.getByRole('radio', { name: 'فارسی' })).toHaveAttribute('dir', 'rtl')
+    // The label (not the row) carries lang/dir so the check column stays aligned.
+    expect(screen.getByText('English')).toHaveAttribute('dir', 'ltr')
+    expect(screen.getByText('English')).toHaveAttribute('lang', 'en')
+    expect(screen.getByText('العربية')).toHaveAttribute('dir', 'rtl')
+    expect(screen.getByText('فارسی')).toHaveAttribute('dir', 'rtl')
+    expect(screen.getByRole('radio', { name: 'English' })).not.toHaveAttribute('dir')
   })
 
   it('preselects the store locale (Telegram-mapped default) and previews in it', () => {

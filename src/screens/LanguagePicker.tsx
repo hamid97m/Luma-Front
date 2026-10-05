@@ -1,9 +1,6 @@
 import { useState } from 'react'
-import { useLocaleStore, type Messages } from '../i18n.js'
+import { messagesFor, useLocaleStore } from '../i18n.js'
 import { LOCALE_META, type Locale } from '../i18n/locale.js'
-import { fa } from '../locales/fa.js'
-import { en } from '../locales/en.js'
-import { ar } from '../locales/ar.js'
 import { mainButtonSupported, useMainButton } from '../telegram.js'
 import { Button } from '../components/ui/index.js'
 import { LanguageOptions } from '../components/LanguageOptions.js'
@@ -11,8 +8,6 @@ import { LanguageOptions } from '../components/LanguageOptions.js'
 interface Props {
   onDone: () => void
 }
-
-const MESSAGES: Record<Locale, Messages> = { fa, en, ar }
 
 /** First-open language choice. The store already holds the Telegram-mapped
  * default, so that row is preselected. Tapping a row only changes a local
@@ -23,7 +18,7 @@ const MESSAGES: Record<Locale, Messages> = { fa, en, ar }
  * sent with the onboarding profile save. */
 export function LanguagePicker({ onDone }: Props) {
   const [preview, setPreview] = useState<Locale>(() => useLocaleStore.getState().locale)
-  const copy = MESSAGES[preview].language
+  const copy = messagesFor(preview).language
 
   const done = () => {
     useLocaleStore.getState().setLocale(preview)
