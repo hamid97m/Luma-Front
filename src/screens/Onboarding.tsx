@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import { mainButtonSupported, useMainButton, telegramFirstName, telegramHasPhoto, haptic } from '../telegram.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
-import { t } from '../i18n.js'
+import { t, useLocaleStore } from '../i18n.js'
 import { Button, IconButton, Input, Textarea, Chip, Icon } from '../components/ui/index.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
 
@@ -70,6 +70,8 @@ export function Onboarding({ onComplete }: Props) {
           looking_for: state.pref as 'men' | 'women' | 'everyone',
           bio: state.bio.trim() || null,
           interests: state.interests,
+          // The language chosen on first open (or the Telegram-mapped default).
+          locale: useLocaleStore.getState().locale,
         })
         await onComplete()
       } catch (err) {

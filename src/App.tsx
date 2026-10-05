@@ -8,6 +8,9 @@ import { Reconnect } from './screens/Reconnect.js'
 import { Blocked } from './screens/Blocked.js'
 import { PhotoRequired } from './screens/PhotoRequired.js'
 import { Onboarding } from './screens/Onboarding.js'
+import { LanguagePicker } from './screens/LanguagePicker.js'
+import { useLocaleStore } from './i18n.js'
+import { isLocale, isLocalePending, readStoredLocale, setLocalePending, type Locale } from './i18n/locale.js'
 import { Discovery } from './screens/Discovery.js'
 import { Likes } from './screens/Likes.js'
 import { Matches } from './screens/Matches.js'
@@ -56,12 +59,33 @@ function readDeepLinkPlans(): boolean {
   }
 }
 
+/** Reconcile the server's saved locale with the local store on launch.
+ * Server wins — unless a Settings change failed to reach it, in which case
+ * the local value is re-sent first (and the pending flag cleared on success). */
+export function syncLocaleFromServer(serverLocale: Locale | null | undefined): 'kept' | 'synced' | 'resent' {
+  const local = useLocaleStore.getState().locale
+  if (isLocalePending()) {
+    api.profile.setLocale(local).then(() => setLocalePending(false)).catch(() => {})
+    return 'resent'
+  }
+  if (isLocale(serverLocale) && serverLocale !== local) {
+    useLocaleStore.getState().setLocale(serverLocale)
+    return 'synced'
+  }
+  return 'kept'
+}
+
 export function App() {
   const initDataRaw = window.Telegram?.WebApp?.initData ?? null
   const { setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('splash')
   const [splashDone, setSplashDone] = useState(false)
   const [authResult, setAuthResult] = useState<'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired' | null>(null)
+  // First-open language picker gate. A locale saved on this device counts as
+  // chosen (this also survives the keyed App remount that follows Continue);
+  // a locale saved on the server (every existing user, backfilled to 'fa')
+  // counts too — see the verify handler below.
+  const [localeChosen, setLocaleChosen] = useState(() => readStoredLocale() !== null)
   const [tab, setTab] = useState<Tab>(() => readDeepLinkTab() ?? 'discovery')
   const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null)
   const [chatDeepLinkDone, setChatDeepLinkDone] = useState(false)
@@ -161,6 +185,10 @@ export function App() {
 
     api.auth.verify(initDataRaw)
       .then(({ user: partial }) => {
+        const serverLocale = (partial as { locale?: Locale | null }).locale
+        syncLocaleFromServer(serverLocale)
+        // Only a brand-new user (server has no locale yet) gets the picker.
+        if (isLocale(serverLocale)) setLocaleChosen(true)
         if (partial.setupComplete) {
           markReturningUser()
           const gender = (partial as Partial<UserProfile>).gender
@@ -202,6 +230,9 @@ export function App() {
   }
 
   if (screen === 'onboarding') {
+    if (!localeChosen) {
+      return <LanguagePicker onDone={() => setLocaleChosen(true)} />
+    }
     return (
       <Onboarding
         onComplete={async () => {
