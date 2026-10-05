@@ -205,12 +205,15 @@ export const fa = {
     close: 'بستن',
     noPlans: 'پرمیوم فعلاً در دسترس نیست',
     active: 'فعال',
+    badge: 'پرمیوم',
     daysLeft: (n: number) => `${n} روز مانده`,
     endsToday: 'امروز تمام می‌شود',
     until: (date: string) => `تا ${date}`,
     pitch: 'با لوما پرمیوم پیام‌رسانی نامحدود و امکانات بیشتر را باز کن.',
     getButton: 'دریافت پرمیوم',
     endsIn: (time: string) => `پایان پیشنهاد تا ${time}`,
+    countdownDays: (days: number, hms: string) => `${days} روز ${hms}`,
+    or: 'یا',
     benefitSwipes: 'سوایپ نامحدود',
     benefitChat: 'چت با همه',
     benefitLikes: 'ببین چه کسی لایکت کرده',
@@ -382,6 +385,13 @@ export const fa = {
     cancel: 'انصراف',
     error: 'مشکلی پیش آمد. لطفاً دوباره تلاش کن.',
   },
+  // First-open language picker + the Settings row.
+  language: {
+    title: 'زبانت را انتخاب کن',
+    subtitle: 'بعداً می‌توانی از تنظیمات تغییرش بدهی.',
+    continue: 'ادامه',
+    settingsLabel: 'زبان',
+  },
   photoEditor: {
     cancel: 'انصراف',
     rotate: 'چرخش',
@@ -467,4 +477,4 @@ export const fa = {
     footnote: 'دعوت وقتی شمرده می‌شود که دوستت ثبت‌نام کند و عکس پروفایل بگذارد.',
     paywallPromo: 'یا با دعوت 3 دوست، 3 روز رایگان بگیر',
   },
-} as const
+}

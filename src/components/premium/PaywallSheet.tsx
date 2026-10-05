@@ -375,7 +375,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
         <>
           <div className="flex items-center gap-2.5 my-3">
             <span className="flex-1 h-px bg-surface-high" />
-            <span className="text-[11px] text-txt2">یا</span>
+            <span className="text-[11px] text-txt2">{t.premium.or}</span>
             <span className="flex-1 h-px bg-surface-high" />
           </div>
 

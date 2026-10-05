@@ -1,3 +1,4 @@
+import { t } from '../i18n.js'
 import type { Match, PremiumStatus } from '../types.js'
 
 /** Client-side courtesy check — the server 403 is the real enforcement.
@@ -21,5 +22,5 @@ export function formatCountdown(msRemaining: number): string {
   const seconds = totalSeconds % 60
   const pad = (n: number) => String(n).padStart(2, '0')
   const hms = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
-  return days > 0 ? `${days} روز ${hms}` : hms
+  return days > 0 ? t.premium.countdownDays(days, hms) : hms
 }
