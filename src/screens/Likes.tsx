@@ -8,6 +8,7 @@ import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { MatchPopup } from '../components/MatchPopup.js'
 import { LikerProfileSheet } from '../components/LikerProfileSheet.js'
 import { Icon } from '../components/ui/index.js'
+import { PremiumBadge } from '../components/premium/PremiumBadge.js'
 import type { LikerProfile, LockedLiker, Match, SwipeResult } from '../types.js'
 
 // Fallback for a locked liker with no photo — a theme-token gradient (blurred
@@ -69,7 +70,9 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
       setOpenLiker(null)
       // A liker liking back is by definition a mutual like → a match. Fire the
       // existing "It's a Match" dialog rather than opening chat directly.
-      if (res.matched && res.match) setMatchPopup(res.match)
+      if (res.matched && res.match) {
+        setMatchPopup({ ...res.match, user: { ...res.match.user, premium: l.premium } })
+      }
     } catch {
       haptic.notification('error')
     } finally {
@@ -163,9 +166,12 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
               />
               <span className="absolute left-2.5 right-2.5 bottom-2.5 flex items-end justify-between gap-2">
                 <span className="min-w-0 text-start">
-                  <span className="block text-[15px] font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis">
-                    {l.name}
-                    {l.age != null ? `, ${l.age}` : ''}
+                  <span className="flex items-center gap-1 text-[15px] font-medium text-white min-w-0">
+                    <span className="truncate">
+                      {l.name}
+                      {l.age != null ? `, ${l.age}` : ''}
+                    </span>
+                    {l.premium && <PremiumBadge size={15} />}
                   </span>
                   <span className="block text-[11px] text-white/80">{relativeTime(l.likedAt)}</span>
                 </span>

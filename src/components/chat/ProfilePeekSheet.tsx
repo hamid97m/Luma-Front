@@ -1,5 +1,6 @@
 import { t } from '../../i18n.js'
 import { Sheet, Button, Icon } from '../ui/index.js'
+import { PremiumBadge } from '../premium/PremiumBadge.js'
 import type { Match } from '../../types.js'
 
 interface ProfilePeekSheetProps {
@@ -13,9 +14,12 @@ export function ProfilePeekSheet({ user, onClose, onReport, onSendGift }: Profil
   return (
     <Sheet open onClose={onClose}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[22px] font-medium text-txt">
-          {user.name}
-          {user.age != null && <span className="text-txt2 font-normal">, {user.age}</span>}
+        <h2 className="text-[22px] font-medium text-txt flex items-center gap-2 flex-wrap min-w-0">
+          <span>
+            {user.name}
+            {user.age != null && <span className="text-txt2 font-normal">, {user.age}</span>}
+          </span>
+          {user.premium && <PremiumBadge size={18} />}
         </h2>
         <button
           type="button"

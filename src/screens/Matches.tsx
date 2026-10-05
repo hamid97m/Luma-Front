@@ -3,6 +3,7 @@ import { api } from '../api.js'
 import { IntrosSection } from '../components/gifts/IntrosSection.js'
 import { Avatar, Badge, Icon } from '../components/ui/index.js'
 import { MatchesEmpty } from '../components/MatchesEmpty.js'
+import { PremiumBadge } from '../components/premium/PremiumBadge.js'
 import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
 import { formatShortDate } from '../i18n/format.js'
@@ -94,7 +95,10 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-[16px] text-txt truncate">{match.user.name}</p>
+                <p className="font-medium text-[16px] text-txt truncate flex items-center gap-1.5">
+                  <span className="truncate">{match.user.name}</span>
+                  {match.user.premium && <PremiumBadge size={16} />}
+                </p>
                 <p className="text-[13px] text-txt2 truncate">
                   {match.lastMessage ? match.lastMessage.body : t.matches.sayHi}
                 </p>

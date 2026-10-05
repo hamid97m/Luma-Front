@@ -2,6 +2,7 @@ import { t } from '../i18n.js'
 import { relativeTime } from '../i18n/format.js'
 import { useBackButton } from '../telegram.js'
 import { Icon } from './ui/index.js'
+import { PremiumBadge } from './premium/PremiumBadge.js'
 import type { LikerProfile } from '../types.js'
 
 interface Props {
@@ -46,9 +47,12 @@ export function LikerProfileSheet({ liker, busy, onClose, onPass, onLikeBack }: 
             <Icon name="heart" size={11} />
             {t.likes.likedYou(relativeTime(liker.likedAt))}
           </span>
-          <h1 className="text-[28px] font-medium text-white m-0">
-            {liker.name}
-            {liker.age != null ? `, ${liker.age}` : ''}
+          <h1 className="text-[28px] font-medium text-white m-0 flex items-center gap-2 flex-wrap">
+            <span>
+              {liker.name}
+              {liker.age != null ? `, ${liker.age}` : ''}
+            </span>
+            {liker.premium && <PremiumBadge size={20} />}
           </h1>
           {liker.location && <p className="mt-0.5 text-[14px] text-white/85">{liker.location}</p>}
         </div>

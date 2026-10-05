@@ -91,8 +91,13 @@ export function Discovery({ onOpenChat }: Props) {
       const result = await api.swipes.swipe(current.id, direction)
       if (result.swipeLimit?.remaining === 0) setLimitResetAt(floorResetAt(result.swipeLimit.resetAt))
       if (result.matched && result.match) {
-        // Small delay so card animation can finish before popup
-        setTimeout(() => setActiveMatch(result.match!), 400)
+        const matched = result.match
+        // Small delay so card animation can finish before popup.
+        // Carry the card's premium flag — the swipe payload doesn't include it.
+        setTimeout(() => setActiveMatch({
+          ...matched,
+          user: { ...matched.user, premium: current.premium },
+        }), 400)
       }
       // Prefetch next batch when queue runs low
       if (rest.length <= PREFETCH_THRESHOLD && !exhausted) fetchBatch()
@@ -133,11 +138,14 @@ export function Discovery({ onOpenChat }: Props) {
 
   // Same synthesis as openMatchChat, for a match created via the direct-chat
   // route (its response carries the same minimal id + counterpart shape).
-  const openDirectChat = (match: { id: string; user: { id: string; name: string; telegramId: number; username: string | null } }) => {
+  const openDirectChat = (
+    match: { id: string; user: { id: string; name: string; telegramId: number; username: string | null } },
+    premium?: boolean,
+  ) => {
     onOpenChat({
       id: match.id,
       matchedAt: new Date().toISOString(),
-      user: { ...match.user, photos: [], age: null, bio: null, icebreakerPrompt: null, icebreakerAnswer: null },
+      user: { ...match.user, premium, photos: [], age: null, bio: null, icebreakerPrompt: null, icebreakerAnswer: null },
       lastMessage: null,
       unreadCount: 0,
     })
@@ -154,7 +162,7 @@ export function Discovery({ onOpenChat }: Props) {
       // same person (existing match) never decrements, and the limit countdown
       // always has a real resetAt.
       if (dc) setDirectChat((d) => ({ ...d, remaining: dc.remaining, resetAt: dc.resetAt }))
-      openDirectChat(match)
+      openDirectChat(match, profile.premium)
     } catch (err) {
       const status = (err as { status?: number } | null)?.status
       const message = err instanceof Error ? err.message : ''

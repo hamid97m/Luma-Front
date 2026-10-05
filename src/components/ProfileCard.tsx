@@ -1,6 +1,7 @@
 import type { DiscoveryProfile } from '../types.js'
 import { t } from '../i18n.js'
 import { Icon } from './ui/index.js'
+import { PremiumBadge } from './premium/PremiumBadge.js'
 
 interface Props {
   profile: DiscoveryProfile
@@ -98,7 +99,7 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props)
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[32px] font-medium text-white leading-none">{profile.name}</span>
           <span className="text-[26px] font-normal text-white/90">{profile.age}</span>
-          <Icon name="verified" size={18} className="text-primary self-center flex-shrink-0" />
+          {profile.premium && <PremiumBadge size={22} />}
         </div>
 
         {/* Tagline · city */}

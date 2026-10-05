@@ -11,6 +11,7 @@ import { ReportSheet } from '../components/ReportSheet.js'
 import { BlockSheet } from '../components/BlockSheet.js'
 import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
+import { PremiumBadge } from '../components/premium/PremiumBadge.js'
 import { usePremiumStore } from '../store.js'
 import { premiumSendBlocked } from '../utils/premium.js'
 import { Avatar, Button, Icon, IconButton } from '../components/ui/index.js'
@@ -270,9 +271,12 @@ export function Chat({ match, myUserId, onBack }: Props) {
           className="flex items-center gap-3 text-start flex-1 min-w-0"
         >
           <Avatar src={match.user.photos[0]} alt={match.user.name} size={40} />
-          <p className="font-medium text-txt text-[16px] truncate">
-            {match.user.name}
-            {match.user.age != null && <span className="text-txt2 font-normal">, {match.user.age}</span>}
+          <p className="font-medium text-txt text-[16px] truncate flex items-center gap-1.5 min-w-0">
+            <span className="truncate">
+              {match.user.name}
+              {match.user.age != null && <span className="text-txt2 font-normal">, {match.user.age}</span>}
+            </span>
+            {match.user.premium && <PremiumBadge size={16} />}
           </p>
         </button>
         <IconButton
