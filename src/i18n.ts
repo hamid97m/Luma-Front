@@ -1,12 +1,12 @@
 import { create } from 'zustand'
 import { fa } from './locales/fa.js'
 import { en } from './locales/en.js'
+import { ar } from './locales/ar.js'
 import { LOCALE_META, detectInitialLocale, writeStoredLocale, type Locale } from './i18n/locale.js'
 
 export type Messages = typeof fa
 
-// TODO(Task 9b): replace the `ar: fa` alias with the real `ar` locale once locales/ar.ts lands.
-const messages: Record<Locale, Messages> = { fa, en, ar: fa }
+const messages: Record<Locale, Messages> = { fa, en, ar }
 
 export function applyDocumentLocale(locale: Locale): void {
   if (typeof document === 'undefined') return

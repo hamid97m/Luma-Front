@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { useLocaleStore, t, applyDocumentLocale, type Messages } from '../src/i18n.js'
+import { useLocaleStore, t, applyDocumentLocale } from '../src/i18n.js'
 import { fa } from '../src/locales/fa.js'
+import { en } from '../src/locales/en.js'
+import { ar } from '../src/locales/ar.js'
 
 describe('locale store + t proxy', () => {
   beforeEach(() => {
@@ -15,16 +17,16 @@ describe('locale store + t proxy', () => {
   })
 
   it('t is a live view: it follows the store, not a snapshot', () => {
-    // TEMP (Task 9 lands en/ar): until then every locale maps to `fa`, so we
-    // prove liveness by swapping the fa section the proxy resolves through.
-    const original = fa.settings
-    try {
-      ;(fa as Messages).settings = { ...original, title: '__swapped__' }
-      expect(t.settings.title).toBe('__swapped__')
-    } finally {
-      ;(fa as Messages).settings = original
-    }
-    expect(t.settings.title).toBe(original.title)
+    useLocaleStore.getState().setLocale('en')
+    expect(t.settings.title).toBe(en.settings.title)
+    expect(t.match.message('Sara')).toBe(en.match.message('Sara'))
+
+    useLocaleStore.getState().setLocale('ar')
+    expect(t.settings.title).toBe(ar.settings.title)
+    expect(t.match.message('Sara')).toBe(ar.match.message('Sara'))
+
+    useLocaleStore.getState().setLocale('fa')
+    expect(t.settings.title).toBe(fa.settings.title)
     expect(Object.keys(t)).toEqual(Object.keys(fa))
     expect('settings' in t).toBe(true)
   })

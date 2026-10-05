@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { fa } from '../src/locales/fa.js'
 import { en } from '../src/locales/en.js'
-// TODO(Task 9b): import { ar } from '../src/locales/ar.js' and add it to every check below.
+import { ar } from '../src/locales/ar.js'
 
 function shape(obj: any, prefix = ''): Record<string, string> {
   const out: Record<string, string> = {}
@@ -29,8 +29,12 @@ describe('frontend locale shape', () => {
     expect(shape(en)).toEqual(base)
   })
 
+  it('ar matches fa key-for-key (incl. function arity and array length)', () => {
+    expect(shape(ar)).toEqual(base)
+  })
+
   it('no empty strings', () => {
-    for (const loc of [en]) {
+    for (const loc of [en, ar]) {
       for (const [k, kind] of Object.entries(shape(loc))) {
         if (kind !== 'string') continue
         expect(k.split('.').reduce((o: any, p) => o[p], loc), k).not.toBe('')
@@ -38,9 +42,16 @@ describe('frontend locale shape', () => {
     }
   })
 
-  it('no Persian-only glyphs leak into en', () => {
+  it('no Persian-only glyphs leak into en/ar', () => {
     const persianOnly = /[\u067E\u0686\u0698\u06AF\u06A9\u06CC]/ // پ چ ژ گ ک ی
     walkStrings(en, 'en', (v, path) => expect(v, path).not.toMatch(persianOnly))
+    walkStrings(ar, 'ar', (v, path) => expect(v, path).not.toMatch(persianOnly))
+  })
+
+  it('no Arabic-Indic digits in en/ar (user-visible digits stay Latin)', () => {
+    const nonLatinDigits = /[\u0660-\u0669\u06F0-\u06F9]/
+    walkStrings(en, 'en', (v, path) => expect(v, path).not.toMatch(nonLatinDigits))
+    walkStrings(ar, 'ar', (v, path) => expect(v, path).not.toMatch(nonLatinDigits))
   })
 
   it('en contains no Arabic-script characters at all', () => {
