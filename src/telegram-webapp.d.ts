@@ -59,6 +59,8 @@ interface TelegramWebApp {
       id: number
       first_name: string
       username?: string
+      // IETF tag of the user's Telegram client language, e.g. 'fa', 'en', 'pt-br'
+      language_code?: string
       photo_url?: string
       allows_write_to_pm?: boolean
     }

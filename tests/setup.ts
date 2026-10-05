@@ -4,6 +4,10 @@ import { vi } from 'vitest'
 // Mock scrollIntoView
 Element.prototype.scrollIntoView = vi.fn()
 
+// Existing tests assert Persian copy via `t`; pin the locale so the new
+// Telegram-language default (en) doesn't flip them.
+localStorage.setItem('luma.locale', 'fa')
+
 // Mock Telegram WebApp global
 Object.assign(window, {
   Telegram: {

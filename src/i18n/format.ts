@@ -1,22 +1,22 @@
-import { t } from '../i18n.js'
+import { t, useLocaleStore, LOCALE_META } from '../i18n.js'
 
-// Jalali calendar month names, LATIN digits (per the user's digits override —
-// all user-visible numbers stay 0-9, never Persian digits).
-const FA_LATIN = 'fa-IR-u-nu-latn'
+// Per-locale Intl tag — fa keeps the Jalali calendar; all three force Latin
+// digits (the `-u-nu-latn` extension) per the app-wide digits rule.
+const tag = () => LOCALE_META[useLocaleStore.getState().locale].intl
 
 export const formatTime = (d: Date): string =>
-  d.toLocaleTimeString(FA_LATIN, { hour: '2-digit', minute: '2-digit' })
+  d.toLocaleTimeString(tag(), { hour: '2-digit', minute: '2-digit' })
 
 export const formatShortDate = (d: Date): string =>
-  d.toLocaleDateString(FA_LATIN, { month: 'short', day: 'numeric' })
+  d.toLocaleDateString(tag(), { month: 'short', day: 'numeric' })
 
 export const formatLongDate = (d: Date): string =>
-  d.toLocaleDateString(FA_LATIN, { month: 'long', day: 'numeric' })
+  d.toLocaleDateString(tag(), { month: 'long', day: 'numeric' })
 
 /** Full date with year — used where the date can cross a year boundary
  * (e.g. the "premium until" date on 90-day plans). */
 export const formatFullDate = (d: Date): string =>
-  d.toLocaleDateString(FA_LATIN, { year: 'numeric', month: 'long', day: 'numeric' })
+  d.toLocaleDateString(tag(), { year: 'numeric', month: 'long', day: 'numeric' })
 
 /** Relative time ("Liked you {when}", match list timestamps, …) — words come
  * from t.time. Thresholds ported exactly from the former LikerProfileSheet.likedAgo. */
