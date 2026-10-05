@@ -10,6 +10,7 @@ import type { IconName } from '../components/ui/index.js'
 import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
+import { cityError } from '../utils/validateCity.js'
 import { cacheGender } from '../utils/returningUser.js'
 
 // Icebreaker prompts shown in the picker. `prompt` is stored verbatim on the
@@ -356,9 +357,19 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
               <FieldLabel>{t.profile.locationLabel}</FieldLabel>
               <input
                 value={location}
-                onChange={(e) => { setLocation(e.target.value); if (e.target.value.trim()) setLocationError('') }}
+                onChange={(e) => {
+                  setLocation(e.target.value)
+                  const err = cityError(e.target.value)
+                  if (err === 'digits') setLocationError(t.onboarding.cityNoDigits)
+                  else if (err === 'too_long') setLocationError(t.onboarding.cityTooLong)
+                  else setLocationError('')
+                }}
                 onBlur={() => {
-                  if (!location.trim()) { setLocationError(t.myProfile.locationRequired); return }
+                  const err = cityError(location)
+                  if (err === 'empty') { setLocationError(t.myProfile.locationRequired); return }
+                  if (err === 'digits') { setLocationError(t.onboarding.cityNoDigits); return }
+                  if (err === 'too_long') { setLocationError(t.onboarding.cityTooLong); return }
+                  if (err === 'invalid') { setLocationError(t.onboarding.cityInvalid); return }
                   setLocationError('')
                   save({ location: location.trim() })
                 }}

@@ -5,9 +5,11 @@ import { PhotoEditor } from '../components/PhotoEditor.js'
 import { t, useLocaleStore } from '../i18n.js'
 import { Button, IconButton, Input, Textarea, Chip, Icon } from '../components/ui/index.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
+import { cityError, isValidCity } from '../utils/validateCity.js'
 
 interface State {
   name: string
+  city: string
   age: string
   gender: 'woman' | 'man' | 'nonbinary' | ''
   pref: 'men' | 'women' | 'everyone' | ''
@@ -19,22 +21,38 @@ interface Props {
   onComplete: () => Promise<void>
 }
 
-const TOTAL_STEPS = 6
+const STEP_NAME = 0
+const STEP_CITY = 1
+const STEP_AGE = 2
+const STEP_GENDER = 3
+const STEP_PREF = 4
+const STEP_INTERESTS = 5
+const STEP_PHOTO = 6
+const TOTAL_STEPS = 7
+
+function cityMessage(city: string): string | null {
+  const err = cityError(city)
+  if (err === 'digits') return t.onboarding.cityNoDigits
+  if (err === 'too_long') return t.onboarding.cityTooLong
+  if (err === 'invalid' && city.trim().length >= 2) return t.onboarding.cityInvalid
+  return null
+}
 
 function isValid(step: number, state: State, photoUploaded: boolean): boolean {
-  if (step === 0) return isValidName(state.name)
-  if (step === 1) { const n = Number(state.age); return n >= 18 && n <= 99 }
-  if (step === 2) return state.gender !== ''
-  if (step === 3) return state.pref !== ''
-  if (step === 4) return state.interests.length >= 3
-  if (step === 5) return photoUploaded
+  if (step === STEP_NAME) return isValidName(state.name)
+  if (step === STEP_CITY) return isValidCity(state.city)
+  if (step === STEP_AGE) { const n = Number(state.age); return n >= 18 && n <= 99 }
+  if (step === STEP_GENDER) return state.gender !== ''
+  if (step === STEP_PREF) return state.pref !== ''
+  if (step === STEP_INTERESTS) return state.interests.length >= 3
+  if (step === STEP_PHOTO) return photoUploaded
   return false
 }
 
 export function Onboarding({ onComplete }: Props) {
   const [step, setStep] = useState(0)
   const [state, setState] = useState<State>({
-    name: '', age: '', gender: '', pref: '', interests: [], bio: '',
+    name: '', city: '', age: '', gender: '', pref: '', interests: [], bio: '',
   })
   const [photoUploaded, setPhotoUploaded] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -46,13 +64,14 @@ export function Onboarding({ onComplete }: Props) {
   const [tgPhotoLoading, setTgPhotoLoading] = useState(false)
 
   const valid = isValid(step, state, photoUploaded)
+  const cityHint = step === STEP_CITY ? cityMessage(state.city) : null
 
   const back = () => setStep((s) => Math.max(0, s - 1))
 
   const next = async () => {
     // The interests step keeps its button clickable even below the minimum so the
     // tap can surface *why* it's blocked, instead of silently doing nothing.
-    if (step === 4 && state.interests.length < 3) {
+    if (step === STEP_INTERESTS && state.interests.length < 3) {
       setInterestsError(true)
       haptic.notification('error')
       return
@@ -65,6 +84,7 @@ export function Onboarding({ onComplete }: Props) {
       try {
         await api.profile.update({
           name: state.name.trim(),
+          location: state.city.trim(),
           age: Number(state.age),
           gender: state.gender as 'man' | 'woman' | 'nonbinary',
           looking_for: state.pref as 'men' | 'women' | 'everyone',
@@ -89,7 +109,7 @@ export function Onboarding({ onComplete }: Props) {
     text: step === TOTAL_STEPS - 1 ? t.onboarding.enter : t.onboarding.continue,
     visible: true,
     // Step 4 stays enabled below the minimum so the tap can explain the block.
-    enabled: (valid || step === 4) && !saving,
+    enabled: (valid || step === STEP_INTERESTS) && !saving,
     loading: saving,
     onClick: next,
   })
@@ -168,7 +188,7 @@ export function Onboarding({ onComplete }: Props) {
         <div key={step} className="animate-fade-up flex flex-col gap-5">
 
           {/* Step 0: Name */}
-          {step === 0 && (
+          {step === STEP_NAME && (
             <>
               <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.nameQ}</h2>
               <Input
@@ -198,8 +218,26 @@ export function Onboarding({ onComplete }: Props) {
             </>
           )}
 
-          {/* Step 1: Age */}
-          {step === 1 && (
+          {/* Step 1: City */}
+          {step === STEP_CITY && (
+            <>
+              <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.cityQ}</h2>
+              <Input
+                autoFocus
+                type="text"
+                value={state.city}
+                onChange={(e) => setState((s) => ({ ...s, city: e.target.value }))}
+                placeholder={t.onboarding.cityPlaceholder}
+                className="text-[18px] font-normal"
+              />
+              {cityHint && (
+                <p className="text-error text-sm">{cityHint}</p>
+              )}
+            </>
+          )}
+
+          {/* Step 2: Age */}
+          {step === STEP_AGE && (
             <>
               <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.ageQ}</h2>
               <Input
@@ -221,8 +259,8 @@ export function Onboarding({ onComplete }: Props) {
             </>
           )}
 
-          {/* Step 2: Gender */}
-          {step === 2 && (
+          {/* Step 3: Gender */}
+          {step === STEP_GENDER && (
             <>
               <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.iAm}</h2>
               <div className="flex flex-col gap-2.5">
@@ -247,8 +285,8 @@ export function Onboarding({ onComplete }: Props) {
             </>
           )}
 
-          {/* Step 3: Preference */}
-          {step === 3 && (
+          {/* Step 4: Preference */}
+          {step === STEP_PREF && (
             <>
               <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.interestedIn}</h2>
               <div className="flex flex-col gap-2.5">
@@ -273,8 +311,8 @@ export function Onboarding({ onComplete }: Props) {
             </>
           )}
 
-          {/* Step 4: Interests */}
-          {step === 4 && (
+          {/* Step 5: Interests */}
+          {step === STEP_INTERESTS && (
             <>
               <div>
                 <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.pickInterests}</h2>
@@ -299,8 +337,8 @@ export function Onboarding({ onComplete }: Props) {
             </>
           )}
 
-          {/* Step 5: Photo + Bio */}
-          {step === 5 && (
+          {/* Step 6: Photo + Bio */}
+          {step === STEP_PHOTO && (
             <>
               <h2 className="text-[28px] font-medium leading-tight text-txt">{t.onboarding.photoBio}</h2>
               <div className="flex gap-4">
@@ -382,7 +420,7 @@ export function Onboarding({ onComplete }: Props) {
       {/* Sticky bottom button — fallback when Telegram provides no MainButton */}
       {!mainButtonSupported() && (
         <div className="relative z-10 px-6 pb-10 pt-4">
-          <Button block size="lg" onClick={next} disabled={(!valid && step !== 4) || saving}>
+          <Button block size="lg" onClick={next} disabled={(!valid && step !== STEP_INTERESTS) || saving}>
             {saving ? '…' : step === TOTAL_STEPS - 1 ? t.onboarding.enter : t.onboarding.continue}
           </Button>
         </div>

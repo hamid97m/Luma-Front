@@ -24,33 +24,37 @@ describe('Onboarding photo editor wiring', () => {
     const { container } = render(<Onboarding onComplete={vi.fn()} />)
 
     const clickContinue = () => {
-      const btn = screen.getByRole('button', { name: /continue|enter luma/i })
+      const btn = screen.getByRole('button', { name: /ادامه|ورود به لوما/ })
       fireEvent.click(btn)
     }
 
     // Step 0: name (required, min 2 chars).
-    fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ali' } })
+    fireEvent.change(screen.getByPlaceholderText('تینا'), { target: { value: 'Ali' } })
     clickContinue()
 
-    // Step 1: age (required, 18-99).
+    // Step 1: city (required).
+    fireEvent.change(screen.getByPlaceholderText('تهران'), { target: { value: 'شیراز' } })
+    clickContinue()
+
+    // Step 2: age (required, 18-99).
     fireEvent.change(screen.getByPlaceholderText('25'), { target: { value: '25' } })
     clickContinue()
 
-    // Step 2: gender (required).
-    fireEvent.click(screen.getByText('Woman 👩'))
+    // Step 3: gender (required).
+    fireEvent.click(screen.getByText('زن'))
     clickContinue()
 
-    // Step 3: looking-for preference (required).
-    fireEvent.click(screen.getByText('Everyone 🌈'))
+    // Step 4: looking-for preference (required).
+    fireEvent.click(screen.getByText('همه'))
     clickContinue()
 
-    // Step 4: interests (required, at least 3).
-    fireEvent.click(screen.getByText('☕ Coffee'))
-    fireEvent.click(screen.getByText('✈️ Travel'))
-    fireEvent.click(screen.getByText('🎵 Music'))
+    // Step 5: interests (required, at least 3).
+    fireEvent.click(screen.getByText('☕ قهوه'))
+    fireEvent.click(screen.getByText('✈️ سفر'))
+    fireEvent.click(screen.getByText('🎵 موسیقی'))
     clickContinue()
 
-    // Step 5: photo & bio — the file input should now be present.
+    // Step 6: photo & bio — the file input should now be present.
     const input = container.querySelector('input[type="file"]') as HTMLInputElement | null
     expect(input).not.toBeNull()
 
