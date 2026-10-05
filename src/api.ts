@@ -1,4 +1,5 @@
 import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus } from './types.js'
+import type { Locale } from './i18n/locale.js'
 import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
@@ -60,6 +61,11 @@ export const api = {
       request<{ ok: boolean }>('/profile/me/write-access', {
         method: 'POST',
         body: JSON.stringify({ granted }),
+      }),
+    setLocale: (locale: Locale) =>
+      request<{ ok: boolean; locale: Locale }>('/profile/me/locale', {
+        method: 'PATCH',
+        body: JSON.stringify({ locale }),
       }),
   },
   photos: {

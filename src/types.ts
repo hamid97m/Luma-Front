@@ -1,3 +1,5 @@
+import type { Locale } from './i18n/locale.js'
+
 export interface UserProfile {
   id: string
   name: string
@@ -13,6 +15,8 @@ export interface UserProfile {
   photos: Array<{ id: string; url: string; position: number }>
   setupComplete: boolean
   paused?: boolean
+  /** Saved UI language; `null` for a brand-new user who hasn't picked one yet. */
+  locale?: Locale | null
 }
 
 export interface DiscoveryProfile {
@@ -25,6 +29,8 @@ export interface DiscoveryProfile {
   interests: string[]
   location: string | null
   nearby?: boolean
+  /** True when this person's premium is currently active. */
+  premium?: boolean
 }
 
 export interface Match {
@@ -40,6 +46,7 @@ export interface Match {
     bio: string | null
     icebreakerPrompt: string | null
     icebreakerAnswer: string | null
+    premium?: boolean
   }
   lastMessage: { body: string; createdAt: string; senderId: string } | null
   unreadCount: number
@@ -56,6 +63,7 @@ export interface LikerProfile {
   telegramId: number
   photos: string[]
   likedAt: string
+  premium?: boolean
 }
 
 /** A locked liker exposes only a photo (rendered blurred) — no identity. */
@@ -125,7 +133,7 @@ export interface SwipeResult {
   matched: boolean
   match?: {
     id: string
-    user: { id: string; name: string; telegramId: number; username: string | null }
+    user: { id: string; name: string; telegramId: number; username: string | null; premium?: boolean }
   }
   swipeLimit?: { remaining: number; resetAt: string }
 }
