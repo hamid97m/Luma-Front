@@ -11,14 +11,17 @@ interface Props {
   likesBadge?: number
 }
 
-const TABS: Array<{ id: Tab; icon: IconName; label: string }> = [
-  { id: 'discovery', icon: 'flame',   label: t.nav.discovery },
-  { id: 'likes',     icon: 'heart',   label: t.nav.likes     },
-  { id: 'matches',   icon: 'message', label: t.nav.matches   },
-  { id: 'profile',   icon: 'user',    label: t.nav.profile   },
+const TABS: Array<{ id: Tab; icon: IconName; label: keyof typeof t.nav }> = [
+  { id: 'discovery', icon: 'flame',   label: 'discovery' },
+  { id: 'likes',     icon: 'heart',   label: 'likes'     },
+  { id: 'matches',   icon: 'message', label: 'matches'   },
+  { id: 'profile',   icon: 'user',    label: 'profile'   },
 ]
 
 export function BottomNav({ active, onChange, matchesBadge, likesBadge }: Props) {
+  // Resolve labels at render time: module scope runs in the launch locale,
+  // before /auth/verify may switch the store to the user's saved language.
+  const nav = t.nav
   return (
     <nav
       className="bg-surface flex gap-1 px-2 pt-2 flex-none"
@@ -77,7 +80,7 @@ export function BottomNav({ active, onChange, matchesBadge, likesBadge }: Props)
                 )}
               </span>
             </span>
-            <span className="text-[12px] font-medium">{tab.label}</span>
+            <span className="text-[12px] font-medium">{nav[tab.label]}</span>
           </button>
         )
       })}

@@ -10,6 +10,7 @@ import type { IconName } from '../components/ui/index.js'
 import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
+import { cityError } from '../utils/validateCity.js'
 import { cacheGender } from '../utils/returningUser.js'
 
 // Icebreaker prompts shown in the picker. `prompt` is stored verbatim on the
@@ -27,18 +28,22 @@ const ICEBREAKER_ICONS: IconName[] = [
   'sparkles', 'star', 'flame', 'map-pin', 'message-dots', 'verified',
 ]
 
-const ICEBREAKERS: Icebreaker[] = t.icebreakers.map((ib, i) => ({
-  prompt: ib.prompt,
-  hint: ib.hint,
-  icon: ICEBREAKER_ICONS[i] ?? 'sparkle',
-}))
+// Built on demand (not at module scope): the locale store may switch to the
+// user's saved language after this module has loaded in the launch locale.
+const icebreakers = (): Icebreaker[] =>
+  t.icebreakers.map((ib, i) => ({
+    prompt: ib.prompt,
+    hint: ib.hint,
+    icon: ICEBREAKER_ICONS[i] ?? 'sparkle',
+  }))
 
 // Resolve a stored prompt string to its metadata. Falls back gracefully for
 // legacy/custom prompts that aren't in the current list.
 function icebreakerFor(prompt: string | null | undefined): Icebreaker {
-  const match = ICEBREAKERS.find((i) => i.prompt === prompt)
+  const list = icebreakers()
+  const match = list.find((i) => i.prompt === prompt)
   if (match) return match
-  return { prompt: prompt || ICEBREAKERS[0].prompt, icon: 'sparkle', hint: '' }
+  return { prompt: prompt || list[0].prompt, icon: 'sparkle', hint: '' }
 }
 
 const SLOT_IDS = ['p', 'a', 'b', 'c', 'd', 'e'] as const
@@ -74,6 +79,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const [lookingFor, setLookingFor] = useState<UserProfile['looking_for']>(storeUser?.looking_for ?? 'women')
   const [tags, setTags] = useState<string[]>(storeUser?.interests ?? [])
   const [tagPicker, setTagPicker] = useState(false)
+  const ICEBREAKERS = icebreakers()
   const [prompt, setPrompt] = useState(storeUser?.icebreaker_prompt ?? ICEBREAKERS[0].prompt)
   const [answer, setAnswer] = useState(storeUser?.icebreaker_answer ?? '')
   const [promptPicker, setPromptPicker] = useState(false)
@@ -351,9 +357,19 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
               <FieldLabel>{t.profile.locationLabel}</FieldLabel>
               <input
                 value={location}
-                onChange={(e) => { setLocation(e.target.value); if (e.target.value.trim()) setLocationError('') }}
+                onChange={(e) => {
+                  setLocation(e.target.value)
+                  const err = cityError(e.target.value)
+                  if (err === 'digits') setLocationError(t.onboarding.cityNoDigits)
+                  else if (err === 'too_long') setLocationError(t.onboarding.cityTooLong)
+                  else setLocationError('')
+                }}
                 onBlur={() => {
-                  if (!location.trim()) { setLocationError(t.myProfile.locationRequired); return }
+                  const err = cityError(location)
+                  if (err === 'empty') { setLocationError(t.myProfile.locationRequired); return }
+                  if (err === 'digits') { setLocationError(t.onboarding.cityNoDigits); return }
+                  if (err === 'too_long') { setLocationError(t.onboarding.cityTooLong); return }
+                  if (err === 'invalid') { setLocationError(t.onboarding.cityInvalid); return }
                   setLocationError('')
                   save({ location: location.trim() })
                 }}

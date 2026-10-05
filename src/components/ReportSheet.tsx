@@ -7,12 +7,16 @@ import { Button, Icon, Sheet, Textarea } from './ui'
 const REASONS = ['fake', 'inappropriate', 'harassment', 'spam', 'other'] as const
 type Reason = (typeof REASONS)[number]
 
-const REASON_LABEL: Record<Reason, string> = {
-  fake: t.report.reasonFake,
-  inappropriate: t.report.reasonInappropriate,
-  harassment: t.report.reasonHarassment,
-  spam: t.report.reasonSpam,
-  other: t.report.reasonOther,
+// Read at render time (not module scope): the store may switch to the user's
+// saved locale after this module has loaded in the Telegram launch language.
+const reasonLabel = (r: Reason): string => {
+  switch (r) {
+    case 'fake': return t.report.reasonFake
+    case 'inappropriate': return t.report.reasonInappropriate
+    case 'harassment': return t.report.reasonHarassment
+    case 'spam': return t.report.reasonSpam
+    case 'other': return t.report.reasonOther
+  }
 }
 
 interface Props {
@@ -75,7 +79,7 @@ export function ReportSheet({ reportedUserId, context, matchId, onClose, onSubmi
                   : 'bg-surface text-txt2'
               }`}
             >
-              <span className="text-[14px]">{REASON_LABEL[r]}</span>
+              <span className="text-[14px]">{reasonLabel(r)}</span>
               {selected && <Icon name="check" size={18} className="flex-none" />}
             </button>
           )
