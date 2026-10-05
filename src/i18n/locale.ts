@@ -64,12 +64,38 @@ export function writeStoredLocale(locale: Locale): void {
   }
 }
 
+/** Which Telegram account made the choice on this device. localStorage is
+ * shared by every account on the same Telegram client, so the first-open
+ * gate must be per account — otherwise a second account on the device would
+ * silently inherit the first one's language and never see the picker. */
+export const LOCALE_CHOSEN_KEY = 'luma.locale.chosen_tg_id'
+
+const currentTgId = (): string =>
+  String(typeof window !== 'undefined' ? window.Telegram?.WebApp?.initDataUnsafe?.user?.id ?? 'dev' : 'dev')
+
+export function markLocaleChosen(): void {
+  try {
+    localStorage.setItem(LOCALE_CHOSEN_KEY, currentTgId())
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isLocaleChosenHere(): boolean {
+  try {
+    return localStorage.getItem(LOCALE_CHOSEN_KEY) === currentTgId()
+  } catch {
+    return false
+  }
+}
+
 /** Forget the device's language choice (account deletion → the next sign-up
  * starts from scratch and sees the first-open picker again). */
 export function clearStoredLocale(): void {
   try {
     localStorage.removeItem(LOCALE_KEY)
     localStorage.removeItem(LOCALE_PENDING_KEY)
+    localStorage.removeItem(LOCALE_CHOSEN_KEY)
   } catch {
     /* ignore */
   }

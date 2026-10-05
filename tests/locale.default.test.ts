@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { LOCALE_META, mapCountryToLocale, pickDefaultLocale } from '../src/i18n/locale.js'
+import {
+  LOCALE_META,
+  LOCALE_CHOSEN_KEY,
+  clearStoredLocale,
+  isLocaleChosenHere,
+  mapCountryToLocale,
+  markLocaleChosen,
+  pickDefaultLocale,
+  setLocalePending,
+  writeStoredLocale,
+} from '../src/i18n/locale.js'
 import { geoCountrySync, prefetchGeoCountry, resetGeoForTests } from '../src/i18n/geo.js'
 
 describe('first-open default locale', () => {
@@ -29,6 +39,35 @@ describe('first-open default locale', () => {
     expect(pickDefaultLocale('de', 'DE')).toBe('en')
     expect(pickDefaultLocale('en', null)).toBe('en')
     expect(pickDefaultLocale(null, null)).toBe('en')
+  })
+})
+
+describe('per-account "chosen" flag', () => {
+  const tgUser = () => window.Telegram!.WebApp!.initDataUnsafe.user as { id: number }
+  afterEach(() => {
+    tgUser().id = 123
+    localStorage.clear()
+    localStorage.setItem('luma.locale', 'fa') // setup.ts pin
+  })
+
+  it('is keyed by the current Telegram user id', () => {
+    expect(isLocaleChosenHere()).toBe(false)
+    markLocaleChosen()
+    expect(localStorage.getItem(LOCALE_CHOSEN_KEY)).toBe('123')
+    expect(isLocaleChosenHere()).toBe(true)
+    // Another account on the same client: not chosen for them.
+    tgUser().id = 999
+    expect(isLocaleChosenHere()).toBe(false)
+  })
+
+  it('clearStoredLocale forgets value, pending flag and chosen marker', () => {
+    writeStoredLocale('ar')
+    setLocalePending(true)
+    markLocaleChosen()
+    clearStoredLocale()
+    expect(localStorage.getItem('luma.locale')).toBeNull()
+    expect(localStorage.getItem('luma.locale.pending')).toBeNull()
+    expect(localStorage.getItem(LOCALE_CHOSEN_KEY)).toBeNull()
   })
 })
 

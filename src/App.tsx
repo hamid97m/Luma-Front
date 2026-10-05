@@ -10,7 +10,7 @@ import { PhotoRequired } from './screens/PhotoRequired.js'
 import { Onboarding } from './screens/Onboarding.js'
 import { LanguagePicker } from './screens/LanguagePicker.js'
 import { useLocaleStore } from './i18n.js'
-import { isLocale, isLocalePending, readStoredLocale, setLocalePending, type Locale } from './i18n/locale.js'
+import { isLocale, isLocaleChosenHere, isLocalePending, markLocaleChosen, setLocalePending, type Locale } from './i18n/locale.js'
 import { prefetchGeoCountry } from './i18n/geo.js'
 import { Discovery } from './screens/Discovery.js'
 import { Likes } from './screens/Likes.js'
@@ -98,11 +98,12 @@ export function App() {
   // Locale the server returned from /auth/verify. Reconciled with the local
   // store only once the splash is over (see the advance effect below).
   const [serverLocale, setServerLocale] = useState<Locale | null | undefined>(undefined)
-  // First-open language picker gate. A locale saved on this device counts as
-  // chosen (this also survives the keyed App remount that follows Continue);
-  // a locale saved on the server (every existing user, backfilled to 'fa')
-  // counts too — see the verify handler below.
-  const [localeChosen, setLocaleChosen] = useState(() => readStoredLocale() !== null)
+  // First-open language picker gate. A choice made on this device *by this
+  // Telegram account* counts (and survives the keyed App remount that follows
+  // Continue); a locale saved on the server (every existing user, backfilled
+  // to 'fa') counts too — see the verify handler below. Keyed per account
+  // because localStorage is shared by all accounts on one Telegram client.
+  const [localeChosen, setLocaleChosen] = useState(() => isLocaleChosenHere())
   const [tab, setTab] = useState<Tab>(() => readDeepLinkTab() ?? 'discovery')
   const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null)
   const [chatDeepLinkDone, setChatDeepLinkDone] = useState(false)
@@ -200,7 +201,7 @@ export function App() {
   useEffect(() => {
     if (!initDataRaw) {
       // Dev / no-Telegram context — skip auth, show onboarding
-      if (!readStoredLocale()) prefetchGeoCountry()
+      if (!isLocaleChosenHere()) prefetchGeoCountry()
       setAuthResult('onboarding')
       return
     }
@@ -214,7 +215,7 @@ export function App() {
         if (isLocale(locale)) setLocaleChosen(true)
         // Picker is coming — start the IP-country lookup now so its default
         // row is settled by the time the splash ends (see LanguagePicker).
-        else if (!partial.setupComplete && !readStoredLocale()) prefetchGeoCountry()
+        else if (!partial.setupComplete && !isLocaleChosenHere()) prefetchGeoCountry()
         if (partial.setupComplete) {
           healMissingLocale(locale)
           markReturningUser()
@@ -261,7 +262,9 @@ export function App() {
 
   if (screen === 'onboarding') {
     if (!localeChosen) {
-      return <LanguagePicker onDone={() => setLocaleChosen(true)} />
+      // markLocaleChosen runs synchronously before React commits, so the keyed
+      // remount that may follow the store change reads the flag on mount.
+      return <LanguagePicker onDone={() => { markLocaleChosen(); setLocaleChosen(true) }} />
     }
     return (
       <Onboarding

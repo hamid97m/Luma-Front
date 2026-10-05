@@ -142,12 +142,24 @@ describe('App language-picker gating', () => {
     expect(prefetchGeoCountry).not.toHaveBeenCalled()
   })
 
-  it('a locale already chosen on this device skips the picker even if the server has none yet', async () => {
+  it('a locale already chosen on this device BY THIS ACCOUNT skips the picker even if the server has none yet', async () => {
     localStorage.setItem('luma.locale', 'en')
+    localStorage.setItem('luma.locale.chosen_tg_id', '123') // setup.ts mock user id
     verifyWith(null)
     render(<App />)
     expect(await screen.findByTestId('onboarding')).toBeInTheDocument()
     expect(screen.queryByRole('radiogroup')).toBeNull()
+  })
+
+  it('a choice made by ANOTHER account on the same device does not skip the picker', async () => {
+    // Telegram clients share localStorage across accounts; the device-level
+    // locale value alone must not count as "this account already chose".
+    localStorage.setItem('luma.locale', 'fa')
+    localStorage.setItem('luma.locale.chosen_tg_id', '999')
+    verifyWith(null)
+    render(<App />)
+    expect(await screen.findByRole('radiogroup')).toBeInTheDocument()
+    expect(screen.queryByTestId('onboarding')).toBeNull()
   })
 
   it('picker Continue commits the choice and moves on to onboarding', async () => {
@@ -164,6 +176,8 @@ describe('App language-picker gating', () => {
       fireEvent.click(screen.getByRole('button', { name: fa.language.continue }))
       expect(await screen.findByTestId('onboarding')).toBeInTheDocument()
       expect(localStorage.getItem('luma.locale')).toBe('fa')
+      // Recorded per account so a remount / next launch of THIS account skips the picker.
+      expect(localStorage.getItem('luma.locale.chosen_tg_id')).toBe('123')
     } finally {
       delete tgUser.language_code
     }
