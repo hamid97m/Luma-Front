@@ -75,6 +75,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
           <button
             type="button"
             aria-expanded={langOpen}
+            aria-controls="settings-language-options"
             onClick={() => {
               haptic.selection()
               setLangOpen((o) => !o)
@@ -86,13 +87,18 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
                 <Icon name="globe" size={17} className="text-txt2" />
                 {t.language.settingsLabel}
               </span>
-              <span className="text-txt2 text-[14px]" lang={locale} dir={LOCALE_META[locale].dir}>
-                {LOCALE_META[locale].nativeName}
+              <span className="flex items-center gap-1.5 text-txt2 text-[14px]">
+                <span lang={locale} dir={LOCALE_META[locale].dir}>{LOCALE_META[locale].nativeName}</span>
+                <Icon
+                  name="chevron-down"
+                  size={16}
+                  className={`flex-none transition-transform ${langOpen ? 'rotate-180' : ''}`}
+                />
               </span>
             </div>
           </button>
           {langOpen && (
-            <div className="mb-2.5">
+            <div id="settings-language-options" className="mb-2.5">
               <LanguageOptions value={locale} onChange={changeLocale} />
             </div>
           )}
