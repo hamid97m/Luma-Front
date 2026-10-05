@@ -1,12 +1,12 @@
 import { create } from 'zustand'
 import { fa } from './locales/fa.js'
+import { en } from './locales/en.js'
 import { LOCALE_META, detectInitialLocale, writeStoredLocale, type Locale } from './i18n/locale.js'
 
 export type Messages = typeof fa
 
-// TEMP until locales/en.ts + ar.ts land (Task 9): every locale renders Persian.
-// TODO(Task 9): replace with `{ fa, en, ar }` once those modules exist.
-const messages: Record<Locale, Messages> = { fa, en: fa, ar: fa }
+// TODO(Task 9b): replace the `ar: fa` alias with the real `ar` locale once locales/ar.ts lands.
+const messages: Record<Locale, Messages> = { fa, en, ar: fa }
 
 export function applyDocumentLocale(locale: Locale): void {
   if (typeof document === 'undefined') return
