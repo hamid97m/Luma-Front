@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import { clearReturningUser } from '../utils/returningUser.js'
 import { haptic, isDarkTheme, setThemePref } from '../telegram.js'
-import { t } from '../i18n.js'
+import { t, useLocaleStore } from '../i18n.js'
+import { LOCALE_META, setLocalePending, type Locale } from '../i18n/locale.js'
+import { LanguageOptions } from './LanguageOptions.js'
 import { Button, Icon, Sheet } from './ui'
 
 interface Props {
@@ -16,6 +18,24 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
   const [pausing, setPausing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [dark, setDark] = useState(isDarkTheme())
+  const [langOpen, setLangOpen] = useState(false)
+  const locale = useLocaleStore((s) => s.locale)
+
+  const changeLocale = (next: Locale) => {
+    if (next === locale) return
+    // Mark pending BEFORE switching: the store change remounts the app, which
+    // re-runs /auth/verify and may answer with the OLD server locale before the
+    // PATCH below lands. With the flag set, App's server sync re-sends the local
+    // choice instead of reverting it.
+    setLocalePending(true)
+    useLocaleStore.getState().setLocale(next) // persists + remounts the app via main.tsx
+    api.profile
+      .setLocale(next)
+      .then(() => setLocalePending(false))
+      .catch(() => {
+        /* flag stays set; re-sent on next launch */
+      })
+  }
 
   const toggleDark = () => {
     const next = !dark
@@ -51,6 +71,31 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
       {view === 'menu' ? (
         <>
           <h2 className="text-[22px] font-medium text-txt mb-4">{t.settings.title}</h2>
+
+          <button
+            type="button"
+            aria-expanded={langOpen}
+            onClick={() => {
+              haptic.selection()
+              setLangOpen((o) => !o)
+            }}
+            className="w-full text-start bg-surface rounded-m3-lg p-4 mb-2.5"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-txt font-medium text-[15px] flex items-center gap-2.5">
+                <Icon name="globe" size={17} className="text-txt2" />
+                {t.language.settingsLabel}
+              </span>
+              <span className="text-txt2 text-[14px]" lang={locale} dir={LOCALE_META[locale].dir}>
+                {LOCALE_META[locale].nativeName}
+              </span>
+            </div>
+          </button>
+          {langOpen && (
+            <div className="mb-2.5">
+              <LanguageOptions value={locale} onChange={changeLocale} />
+            </div>
+          )}
 
           <button
             type="button"
