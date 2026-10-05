@@ -19,7 +19,7 @@ vi.mock('../src/telegram.js', async (importOriginal) => ({
   initTelegram: vi.fn(),
 }))
 
-import { App, syncLocaleFromServer } from '../src/App.js'
+import { App, healMissingLocale, syncLocaleFromServer } from '../src/App.js'
 import { useLocaleStore } from '../src/i18n.js'
 import { setLocalePending, isLocalePending } from '../src/i18n/locale.js'
 import { api } from '../src/api.js'
@@ -73,6 +73,32 @@ describe('syncLocaleFromServer', () => {
     await Promise.resolve()
     expect(isLocalePending()).toBe(true)
     expect(useLocaleStore.getState().locale).toBe('en')
+  })
+})
+
+describe('healMissingLocale', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useLocaleStore.setState({ locale: 'en' })
+  })
+  afterEach(() => useLocaleStore.getState().setLocale('fa'))
+
+  it('persists the device locale for a finished profile the server has no locale for', () => {
+    expect(healMissingLocale(null)).toBe(true)
+    expect(api.profile.setLocale).toHaveBeenCalledWith('en')
+  })
+
+  it('leaves a profile with a saved locale alone', () => {
+    expect(healMissingLocale('fa')).toBe(false)
+    expect(api.profile.setLocale).not.toHaveBeenCalled()
+  })
+
+  it('swallows a failed write (retried implicitly on a later Settings change)', async () => {
+    vi.mocked(api.profile.setLocale).mockRejectedValueOnce(new Error('offline'))
+    expect(healMissingLocale(null)).toBe(true)
+    await Promise.resolve()
+    await Promise.resolve()
+    // No unhandled rejection; nothing else to assert.
   })
 })
 

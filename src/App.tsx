@@ -79,6 +79,15 @@ export function syncLocaleFromServer(serverLocale: Locale | null | undefined): '
   return 'kept'
 }
 
+/** A finished profile with no saved locale (onboarded by a frontend that
+ * predates the picker) never reaches the picker — persist the device-detected
+ * locale so bot messages match the UI language. Returns whether it did. */
+export function healMissingLocale(serverLocale: Locale | null): boolean {
+  if (serverLocale !== null) return false
+  api.profile.setLocale(useLocaleStore.getState().locale).catch(() => {})
+  return true
+}
+
 export function App() {
   const initDataRaw = window.Telegram?.WebApp?.initData ?? null
   const { setUser, setInitDataRaw } = useAuthStore()
@@ -202,6 +211,7 @@ export function App() {
         // Only a brand-new user (server has no locale yet) gets the picker.
         if (isLocale(locale)) setLocaleChosen(true)
         if (partial.setupComplete) {
+          healMissingLocale(locale)
           markReturningUser()
           const gender = (partial as Partial<UserProfile>).gender
           if (gender) cacheGender(gender)
