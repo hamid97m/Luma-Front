@@ -59,6 +59,10 @@ function readDeepLinkPlans(): boolean {
   }
 }
 
+// The intro splash plays once per page load. A locale change remounts the
+// keyed <App> (see main.tsx) — that remount must not replay the 2.6 s intro.
+let splashPlayed = false
+
 /** Reconcile the server's saved locale with the local store on launch.
  * Server wins — unless a Settings change failed to reach it, in which case
  * the local value is re-sent first (and the pending flag cleared on success). */
@@ -79,7 +83,7 @@ export function App() {
   const initDataRaw = window.Telegram?.WebApp?.initData ?? null
   const { setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('splash')
-  const [splashDone, setSplashDone] = useState(false)
+  const [splashDone, setSplashDone] = useState(splashPlayed)
   const [authResult, setAuthResult] = useState<'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired' | null>(null)
   // First-open language picker gate. A locale saved on this device counts as
   // chosen (this also survives the keyed App remount that follows Continue);
@@ -214,7 +218,10 @@ export function App() {
   }, [initDataRaw])
 
   if (screen === 'splash') {
-    return <Splash onDone={() => setSplashDone(true)} />
+    // After a locale remount only auth is still in flight — hold a blank
+    // canvas for those few hundred ms instead of replaying the intro.
+    if (splashPlayed) return <div className="h-full bg-bg" />
+    return <Splash onDone={() => { splashPlayed = true; setSplashDone(true) }} />
   }
 
   if (screen === 'blocked') {
