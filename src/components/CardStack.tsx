@@ -164,7 +164,9 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
         >
-          {/* LIKE stamp */}
+          {/* LIKE stamp. The stamps are physical, not logical: the drag
+              gesture is physical in every locale (drag right = like, card
+              flies right), so the stamp corners must not mirror with dir. */}
           <div
             className="absolute top-7 left-5 z-20 text-white font-bold text-[22px] tracking-wide rounded-xl px-4 py-1.5 pointer-events-none"
             style={{

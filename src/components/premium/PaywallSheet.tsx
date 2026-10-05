@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api.js'
-import { t } from '../../i18n.js'
+import { t, useLocaleStore, LOCALE_META } from '../../i18n.js'
 import { openInvoice, haptic } from '../../telegram.js'
 import { usePremiumStore, useReferralStore } from '../../store.js'
 import { formatCountdown } from '../../utils/premium.js'
@@ -22,6 +22,10 @@ const POLL_MAX_TRIES = 8
 export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   const status = usePremiumStore((s) => s.status)
   const referralEnabled = useReferralStore((s) => s.status?.enabled)
+  const locale = useLocaleStore((s) => s.locale)
+  const dir = LOCALE_META[locale].dir
+  // The "how to buy Stars" guide is Iran-specific (rial resellers) — fa only.
+  const showIranGuide = locale === 'fa'
   const plans = status?.plans ?? []
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
@@ -310,25 +314,27 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             )}
           </button>
 
-          {/* Prominent "don't have Stars?" CTA → opens the full 3-step guide. */}
-          <button
-            type="button"
-            dir="rtl"
-            onClick={() => { haptic.selection(); setShowHowTo(true) }}
-            className="w-full mt-2.5 flex flex-col gap-0.5 text-start rounded-m3-md border-[1.5px] border-primary px-3.5 py-3 transition-colors"
-            style={{ background: 'var(--prtint)' }}
-          >
-            <span className="flex items-center gap-2 w-full">
-              <Icon name="sparkle" size={16} className="text-primary flex-none" />
-              <span className="flex-1 min-w-0 text-[14px] font-bold text-primary">
-                {t.premium.starsGuideCta}
+          {/* Prominent "don't have Stars?" CTA → opens the full 3-step guide (fa only). */}
+          {showIranGuide && (
+            <button
+              type="button"
+              dir={dir}
+              onClick={() => { haptic.selection(); setShowHowTo(true) }}
+              className="w-full mt-2.5 flex flex-col gap-0.5 text-start rounded-m3-md border-[1.5px] border-primary px-3.5 py-3 transition-colors"
+              style={{ background: 'var(--prtint)' }}
+            >
+              <span className="flex items-center gap-2 w-full">
+                <Icon name="sparkle" size={16} className="text-primary flex-none" />
+                <span className="flex-1 min-w-0 text-[14px] font-bold text-primary">
+                  {t.premium.starsGuideCta}
+                </span>
+                <Icon name="chevron-left" size={15} className="text-primary flex-none" />
               </span>
-              <Icon name="chevron-left" size={15} className="text-primary flex-none" />
-            </span>
-            <span className="text-[12px] leading-relaxed text-txt2 pe-6">
-              {t.premium.starsGuideCtaHint}
-            </span>
-          </button>
+              <span className="text-[12px] leading-relaxed text-txt2 pe-6">
+                {t.premium.starsGuideCtaHint}
+              </span>
+            </button>
+          )}
 
           <div className="flex items-center justify-center gap-1.5 mt-3">
             <Icon name="lock" size={13} className="text-txt3" />
@@ -351,7 +357,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             />
           </button>
           {showOtherWays && (
-            <div dir="rtl" className="bg-surface rounded-m3-lg p-4 mt-1 flex flex-col gap-3.5">
+            <div dir={dir} className="bg-surface rounded-m3-lg p-4 mt-1 flex flex-col gap-3.5">
               <p className="m-0 text-[11px] font-semibold tracking-wide uppercase text-txt3">
                 {t.premium.otherWaysLabel}
               </p>
@@ -399,7 +405,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
         </>
       )}
     </Sheet>
-    {showHowTo && (
+    {showHowTo && showIranGuide && (
       <HowToBuyStars
         packageStars={selected?.priceStars}
         planTitle={selected?.title}

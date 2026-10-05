@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { t } from '../../i18n.js'
+import { t, useLocaleStore, LOCALE_META } from '../../i18n.js'
 import { haptic } from '../../telegram.js'
 import { IconButton, Icon } from '../ui/index.js'
 
@@ -20,6 +20,9 @@ interface ChatInputBarProps {
 
 export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCancelEdit, replyingToBody, onCancelReply, onGiftClick }: ChatInputBarProps) {
   const boxRef = useRef<HTMLTextAreaElement>(null)
+  // Message text follows the active locale's script direction (the row below
+  // stays physically LTR — see the comment there).
+  const dir = LOCALE_META[useLocaleStore((s) => s.locale)].dir
 
   // Auto-grow: runs on every draft change (typing, prefill, clear-on-send).
   useEffect(() => {
@@ -81,12 +84,15 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
         </div>
       )}
       {draft.length >= COUNTER_THRESHOLD && (
+        // Physical `text-right`: the counter sits above the send button, and
+        // the row below is pinned dir="ltr" (send always on the right).
         <p className="text-[11px] text-txt3 text-right">{MAX_LENGTH - draft.length}</p>
       )}
       {/* USER REQUIREMENT: the send button must sit to the RIGHT of the input,
           Telegram-style, even under global RTL. dir="ltr" pins the row's flex
           order physically (gift left, textarea center, send right); the
-          textarea itself re-declares dir="rtl" so message text stays RTL. */}
+          textarea itself re-declares the locale's dir so message text is
+          RTL for fa/ar and LTR for en. */}
       <div className="flex items-end gap-2" dir="ltr">
         <button
           type="button"
@@ -101,7 +107,7 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
         </button>
         <textarea
           ref={boxRef}
-          dir="rtl"
+          dir={dir}
           rows={1}
           maxLength={MAX_LENGTH}
           value={draft}

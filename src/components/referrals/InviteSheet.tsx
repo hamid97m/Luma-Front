@@ -185,7 +185,7 @@ function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClo
           <div className="relative">
             <div className="absolute h-[5px] rounded-full bg-surface-high" style={{ right: '16.6%', left: '16.6%', top: '15px' }}>
               <div
-                className="absolute inset-y-0 right-0 rounded-full bg-primary"
+                className="absolute inset-y-0 start-0 rounded-full bg-primary"
                 style={{ width: `${fillPercent(qualifiedCount)}%` }}
               />
             </div>

@@ -84,7 +84,7 @@ function TicketsEmpty() {
           <Icon name="message-dots" size={36} />
         </div>
         <span
-          className="absolute top-[10px] right-[14px] w-[26px] h-[26px] rounded-full bg-surface text-txt2 flex items-center justify-center"
+          className="absolute top-[10px] start-[14px] w-[26px] h-[26px] rounded-full bg-surface text-txt2 flex items-center justify-center"
           style={{ animation: 'lumaBob 2.8s ease-in-out 1.2s infinite' }}
         >
           <Icon name="check" size={14} />
