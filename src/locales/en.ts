@@ -253,7 +253,7 @@ export const en = {
     // Info card. `needTitle` reads "For {plan} you need" and is followed by a
     // colored ★{stars}, then `needTitleAfter`, composed in the component.
     needTitle: (plan: string) => `For ${plan} you need`,
-    needTitleAfter: 'to continue',
+    needTitleAfter: 'Telegram Stars',
     // Fallback when no specific plan/price is in context.
     needTitleGeneric: 'You need Telegram Stars for Premium',
     whatBody: 'Stars are the in-app currency on Telegram — you buy them with rials and they land in your Telegram account.',
@@ -305,7 +305,7 @@ export const en = {
     ageQ: 'How old are you?',
     ageMin: 'You need to be at least 18.',
     iAm: 'I am a…',
-    genders: ['Woman', 'Man', 'Non-binary'],
+    genders: ['Woman', 'Man', 'Other'],
     interestedIn: 'Interested in…',
     prefOptions: ['Men', 'Women', 'Everyone'],
     pickInterests: 'Pick your interests',
