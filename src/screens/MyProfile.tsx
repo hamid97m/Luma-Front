@@ -12,6 +12,7 @@ import { t } from '../i18n.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
 import { cityError } from '../utils/validateCity.js'
 import { cacheGender } from '../utils/returningUser.js'
+import { icebreakerPromptIndex } from '../utils/icebreaker.js'
 
 // Icebreaker prompts shown in the picker. `prompt` is stored verbatim on the
 // profile (free-text column), `icon` is the glyph tile, and `hint` is the
@@ -492,7 +493,11 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             maxLength={140}
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
-            onBlur={() => save({ icebreaker_prompt: prompt, icebreaker_answer: answer.trim() || null })}
+            onBlur={() => save({
+              // The server rejects non-catalog prompts, so a legacy one stays as stored.
+              ...(icebreakerPromptIndex(prompt) !== null && { icebreaker_prompt: prompt }),
+              icebreaker_answer: answer.trim() || null,
+            })}
             placeholder={t.myProfile.answerPlaceholder}
             className="w-full resize-none outline-none bg-transparent text-[13px] text-on-primary-container placeholder:text-[color-mix(in_srgb,var(--onpc)_50%,transparent)] border-t border-[color-mix(in_srgb,var(--onpc)_20%,transparent)] pt-2.5 leading-relaxed"
           />

@@ -50,6 +50,15 @@ describe('MyProfile icebreaker saving', () => {
     expect(api.profile.update).toHaveBeenCalledWith({ icebreaker_prompt: stored, icebreaker_answer: 'New' })
   })
 
+  it('keeps a legacy prompt by saving only the answer on blur', async () => {
+    const textarea = await renderLoaded({ ...PROFILE, icebreaker_prompt: 'My ideal Sunday…', icebreaker_answer: 'Old' })
+
+    fireEvent.change(textarea, { target: { value: 'New' } })
+    fireEvent.blur(textarea)
+
+    expect(api.profile.update).toHaveBeenCalledWith({ icebreaker_answer: 'New' })
+  })
+
   it('picking a prompt still saves just the prompt', async () => {
     await renderLoaded(PROFILE)
 
