@@ -147,6 +147,20 @@ export function App() {
   // whichever overlay is topmost gets the back-press.
   useBackButton(!!activeChatMatch, closeChat)
 
+  // Discovery/Likes synthesize a minimal Match (no photos or profile details)
+  // from the swipe/direct-chat response. Open it right away, then swap in the
+  // full match — only while that same chat is still the one open.
+  const openChat = (match: Match) => {
+    setActiveChatMatch(match)
+    if (match.user.photos.length > 0) return
+    api.matches.list()
+      .then(({ matches }) => {
+        const full = matches.find((m) => m.id === match.id)
+        if (full) setActiveChatMatch((cur) => (cur?.id === match.id ? full : cur))
+      })
+      .catch(() => {})
+  }
+
   useEffect(() => {
     if (screen !== 'main') return
     api.matches.unreadCount().then(({ count }) => setMatchesBadge(count))
@@ -304,12 +318,12 @@ export function App() {
         <div className="flex-1 overflow-hidden">
           {visited.discovery && (
             <div className={`h-full ${tab === 'discovery' ? '' : 'hidden'}`}>
-              <Discovery onOpenChat={setActiveChatMatch} />
+              <Discovery onOpenChat={openChat} />
             </div>
           )}
           {visited.likes && (
             <div className={`h-full ${tab === 'likes' ? '' : 'hidden'}`}>
-              <Likes onOpenChat={setActiveChatMatch} />
+              <Likes onOpenChat={openChat} />
             </div>
           )}
           {visited.matches && (

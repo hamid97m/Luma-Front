@@ -492,7 +492,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             maxLength={140}
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
-            onBlur={() => save({ icebreaker_answer: answer.trim() || null })}
+            onBlur={() => save({ icebreaker_prompt: prompt, icebreaker_answer: answer.trim() || null })}
             placeholder={t.myProfile.answerPlaceholder}
             className="w-full resize-none outline-none bg-transparent text-[13px] text-on-primary-container placeholder:text-[color-mix(in_srgb,var(--onpc)_50%,transparent)] border-t border-[color-mix(in_srgb,var(--onpc)_20%,transparent)] pt-2.5 leading-relaxed"
           />
