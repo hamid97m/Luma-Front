@@ -82,6 +82,39 @@ describe('Chat icebreakers', () => {
     expect(within(screen.getByRole('log')).getByText('Sara')).toBeInTheDocument()
   })
 
+  it('hides the Answer button once I have replied to their icebreaker', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({
+      messages: [
+        MY_ICEBREAKER,
+        THEIR_ICEBREAKER,
+        {
+          id: 'm3', senderId: 'me-1', body: 'کوه عالیه', createdAt: '2026-01-01T10:05:00Z',
+          readAt: null, replyToMessageId: 'ib-theirs', type: 'text',
+        },
+      ],
+    })
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
+    await waitFor(() => screen.getByText('کوه عالیه'))
+    expect(screen.getByText(t.chat.icebreakerOf('Sara'))).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: t.chat.answerIt })).not.toBeInTheDocument()
+  })
+
+  it('keeps the Answer button when their reply quotes my icebreaker', async () => {
+    vi.mocked(api.messages.list).mockResolvedValue({
+      messages: [
+        MY_ICEBREAKER,
+        THEIR_ICEBREAKER,
+        {
+          id: 'm4', senderId: 'other-1', body: 'سوت؟ جدی؟', createdAt: '2026-01-01T10:06:00Z',
+          readAt: null, replyToMessageId: 'ib-mine', type: 'text',
+        },
+      ],
+    })
+    render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)
+    await waitFor(() => screen.getByText('سوت؟ جدی؟'))
+    expect(screen.getByRole('button', { name: t.chat.answerIt })).toBeInTheDocument()
+  })
+
   it('shows the waiting caption on my icebreaker only until the other person sends something', async () => {
     vi.mocked(api.messages.list).mockResolvedValue({ messages: [MY_ICEBREAKER, THEIR_ICEBREAKER] })
     const { unmount } = render(<Chat match={MATCH} myUserId="me-1" onBack={vi.fn()} />)

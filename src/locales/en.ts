@@ -95,6 +95,7 @@ export const en = {
     waitingForAnswer: (name: string) => `Waiting for ${name}'s answer`,
     answerIt: 'Answer',
     icebreakerPreviewMine: 'Your icebreaker was sent',
+    quoted: (text: string) => `“${text}”`,
   },
   profile: {
     title: 'My profile',

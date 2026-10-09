@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { icebreakerQuestion } from '../src/utils/icebreaker.js'
+import { icebreakerPromptLabel, icebreakerQuestion } from '../src/utils/icebreaker.js'
 import { useLocaleStore } from '../src/i18n.js'
 
 describe('icebreakerQuestion', () => {
@@ -29,5 +29,25 @@ describe('icebreakerQuestion', () => {
 
     useLocaleStore.getState().setLocale('fa')
     expect(icebreakerQuestion('')).toBe('تو چطور؟')
+  })
+})
+
+describe('icebreakerPromptLabel', () => {
+  afterEach(() => useLocaleStore.getState().setLocale('fa'))
+
+  it('shows a catalog prompt from any locale in the active locale', () => {
+    useLocaleStore.getState().setLocale('en')
+    expect(icebreakerPromptLabel('جمعه ایده‌آل من…')).toBe('My ideal Friday…')
+
+    useLocaleStore.getState().setLocale('fa')
+    expect(icebreakerPromptLabel("Green flags I'm looking for…")).toBe('نشانه‌های مثبتی که دنبالشان هستم…')
+
+    useLocaleStore.getState().setLocale('ar')
+    expect(icebreakerPromptLabel('  دو حقیقت و یک دروغ…\n')).toBe('حقيقتان وكذبة…')
+  })
+
+  it('shows a custom prompt verbatim', () => {
+    useLocaleStore.getState().setLocale('en')
+    expect(icebreakerPromptLabel('یکشنبه‌ی ایده‌آلم')).toBe('یکشنبه‌ی ایده‌آلم')
   })
 })

@@ -113,6 +113,7 @@ export const ar = {
     waitingForAnswer: (name: string) => `بانتظار إجابة ${name}`,
     answerIt: 'أجب',
     icebreakerPreviewMine: 'تم إرسال كاسر الجليد الخاص بك',
+    quoted: (text: string) => `«${text}»`,
   },
   profile: {
     title: 'ملفي الشخصي',

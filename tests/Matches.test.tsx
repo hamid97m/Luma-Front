@@ -1,5 +1,5 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Matches } from '../src/screens/Matches.js'
 import { api } from '../src/api.js'
 import { useAuthStore } from '../src/store.js'
@@ -25,6 +25,10 @@ const BASE_MATCH = {
 describe('Matches', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    useAuthStore.setState({ user: null })
+  })
+  afterEach(() => {
+    useAuthStore.setState({ user: null })
   })
   it('shows "Say hi!" when there is no message yet', async () => {
     vi.mocked(api.matches.list).mockResolvedValue({

@@ -94,6 +94,7 @@ export const fa = {
     waitingForAnswer: (name: string) => `منتظر جواب ${name}`,
     answerIt: 'جواب بده',
     icebreakerPreviewMine: 'یخ‌شکن تو فرستاده شد',
+    quoted: (text: string) => `«${text}»`,
   },
   profile: {
     title: 'پروفایل من',

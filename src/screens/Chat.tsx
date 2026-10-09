@@ -256,6 +256,11 @@ export function Chat({ match, myUserId, onBack }: Props) {
   // Their auto-posted icebreaker doesn't count as them having said anything.
   const counterpartSpoke = messages.some((m) => m.senderId !== myUserId && m.type !== 'icebreaker')
 
+  const answeredIds = useMemo(
+    () => new Set(messages.filter((m) => m.senderId === myUserId && m.replyToMessageId).map((m) => m.replyToMessageId)),
+    [messages, myUserId],
+  )
+
   const replyingTo = replyingToId ? messagesRef.current.find((m) => m.id === replyingToId) : undefined
 
   if (loadState === 'loading') {
@@ -335,7 +340,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
                       reply={resolveReply(item.message.replyToMessageId)}
                       counterpartName={match.user.name}
                       awaitingAnswer={!counterpartSpoke}
-                      onAnswer={item.message.type === 'icebreaker' ? beginReply : undefined}
+                      onAnswer={item.message.type === 'icebreaker' && !answeredIds.has(item.message.id) ? beginReply : undefined}
                       onRetry={retry}
                       onLongPress={item.message.status !== 'sending' ? openActions : undefined}
                     />

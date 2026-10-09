@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { MessageBubble } from '../src/components/chat/MessageBubble.js'
-import { t } from '../src/i18n.js'
+import { t, useLocaleStore } from '../src/i18n.js'
 import type { LocalMessage } from '../src/types.js'
 
 const ICEBREAKER: LocalMessage = {
@@ -28,7 +28,7 @@ describe('IcebreakerCard (via MessageBubble)', () => {
     )
     expect(screen.getByText(t.chat.icebreakerOf('Sara'))).toBeInTheDocument()
     expect(screen.getByText('جمعه ایده‌آل من…')).toBeInTheDocument()
-    expect(screen.getByText('“کوه و بعد صبحانه”')).toBeInTheDocument()
+    expect(screen.getByText(t.chat.quoted('کوه و بعد صبحانه'))).toBeInTheDocument()
     expect(screen.getByText('جمعه ایده‌آل تو چه شکلی است؟')).toBeInTheDocument()
     expect(screen.queryByText(t.chat.waitingForAnswer('Sara'))).not.toBeInTheDocument()
 
@@ -72,6 +72,47 @@ describe('IcebreakerCard (via MessageBubble)', () => {
       />
     )
     expect(screen.getByText(t.chat.icebreakerFallbackQuestion)).toBeInTheDocument()
+  })
+
+  describe('locale and direction', () => {
+    afterEach(() => useLocaleStore.getState().setLocale('fa'))
+
+    it('shows a catalog prompt in the viewer locale and quotes the answer per locale', () => {
+      useLocaleStore.getState().setLocale('en')
+      render(
+        <MessageBubble message={ICEBREAKER} mine={false} first last showTicks={false} counterpartName="Sara" />
+      )
+      expect(screen.getByText('My ideal Friday…')).toBeInTheDocument()
+      expect(screen.queryByText('جمعه ایده‌آل من…')).not.toBeInTheDocument()
+      const answer = screen.getByText('“کوه و بعد صبحانه”')
+      expect(answer).toHaveAttribute('dir', 'auto')
+    })
+
+    it('uses guillemets for the answer in Persian and Arabic', () => {
+      useLocaleStore.getState().setLocale('fa')
+      const { unmount } = render(
+        <MessageBubble message={ICEBREAKER} mine={false} first last showTicks={false} counterpartName="Sara" />
+      )
+      expect(screen.getByText('«کوه و بعد صبحانه»')).toHaveAttribute('dir', 'auto')
+      unmount()
+
+      useLocaleStore.getState().setLocale('ar')
+      render(
+        <MessageBubble message={ICEBREAKER} mine={false} first last showTicks={false} counterpartName="Sara" />
+      )
+      expect(screen.getByText('«کوه و بعد صبحانه»')).toBeInTheDocument()
+    })
+
+    it('shows a custom prompt verbatim with dir="auto"', () => {
+      useLocaleStore.getState().setLocale('en')
+      render(
+        <MessageBubble
+          message={{ ...ICEBREAKER, body: 'یکشنبه‌ی ایده‌آلم' }}
+          mine={false} first last showTicks={false} counterpartName="Sara"
+        />
+      )
+      expect(screen.getByText('یکشنبه‌ی ایده‌آلم')).toHaveAttribute('dir', 'auto')
+    })
   })
 
   it('has no long-press action sheet', () => {
