@@ -5,8 +5,10 @@ import { Avatar, Badge, Icon } from '../components/ui/index.js'
 import { MatchesEmpty } from '../components/MatchesEmpty.js'
 import { PremiumBadge } from '../components/premium/PremiumBadge.js'
 import { haptic } from '../telegram.js'
+import { useAuthStore } from '../store.js'
 import { t } from '../i18n.js'
 import { formatShortDate } from '../i18n/format.js'
+import { icebreakerQuestion } from '../utils/icebreaker.js'
 import type { Match } from '../types.js'
 
 function formatDate(iso: string): string {
@@ -22,6 +24,14 @@ function isNewMatch(iso: string): boolean {
   return Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000
 }
 
+function preview(last: Match['lastMessage'], myUserId: string | undefined): string {
+  if (!last) return t.matches.sayHi
+  if (last.type === 'icebreaker') {
+    return last.senderId === myUserId ? t.chat.icebreakerPreviewMine : icebreakerQuestion(last.body)
+  }
+  return last.body
+}
+
 interface Props {
   onOpenChat: (match: Match) => void
   onStartDiscovering: () => void
@@ -31,6 +41,7 @@ interface Props {
 export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
+  const myUserId = useAuthStore((s) => s.user?.id)
 
   useEffect(() => {
     // On silent refreshes (refreshKey bump) a failure just keeps the stale list.
@@ -100,7 +111,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
                   {match.user.premium && <PremiumBadge size={16} />}
                 </p>
                 <p className="text-[13px] text-txt2 truncate">
-                  {match.lastMessage ? match.lastMessage.body : t.matches.sayHi}
+                  {preview(match.lastMessage, myUserId)}
                 </p>
               </div>
 

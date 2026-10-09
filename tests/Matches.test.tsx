@@ -2,6 +2,9 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Matches } from '../src/screens/Matches.js'
 import { api } from '../src/api.js'
+import { useAuthStore } from '../src/store.js'
+import { t } from '../src/i18n.js'
+import type { UserProfile } from '../src/types.js'
 
 const BASE_MATCH = {
   id: 'match-1',
@@ -41,6 +44,29 @@ describe('Matches', () => {
     })
     render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
     await waitFor(() => screen.getByText('hey there'))
+  })
+
+  it('previews my own icebreaker as sent and theirs as the localized question', async () => {
+    useAuthStore.setState({ user: { id: 'me-1' } as UserProfile })
+    vi.mocked(api.matches.list).mockResolvedValue({
+      matches: [
+        {
+          ...BASE_MATCH,
+          lastMessage: { body: 'مهارت عجیب‌وغریبم…', createdAt: '2026-01-02T00:00:00Z', senderId: 'me-1', type: 'icebreaker' },
+          unreadCount: 0,
+        },
+        {
+          ...BASE_MATCH,
+          id: 'match-2',
+          lastMessage: { body: 'My ideal Friday…', createdAt: '2026-01-02T00:00:00Z', senderId: 'other-1', type: 'icebreaker' },
+          unreadCount: 0,
+        },
+      ],
+    })
+    render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
+    await waitFor(() => screen.getByText(t.chat.icebreakerPreviewMine))
+    expect(screen.getByText('جمعه ایده‌آل تو چه شکلی است؟')).toBeInTheDocument()
+    expect(screen.queryByText('مهارت عجیب‌وغریبم…')).not.toBeInTheDocument()
   })
 
   it('shows an unread badge when unreadCount is greater than zero', async () => {

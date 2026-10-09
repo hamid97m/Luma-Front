@@ -90,6 +90,11 @@ export const en = {
     replyingLabel: 'Replying to',
     replyYou: 'You',
     replyDeleted: 'Original message was deleted',
+    icebreakerFallbackQuestion: 'What about you?',
+    yourIcebreaker: 'Your icebreaker',
+    waitingForAnswer: (name: string) => `Waiting for ${name}'s answer`,
+    answerIt: 'Answer',
+    icebreakerPreviewMine: 'Your icebreaker was sent',
   },
   profile: {
     title: 'My profile',
@@ -344,18 +349,18 @@ export const en = {
   // paired 1:1 with the icon list in MyProfile. The prompt text is stored
   // verbatim on the profile.
   icebreakers: [
-    { prompt: 'My ideal Friday…', hint: 'Paint the scene — easy to picture, easy to reply to.' },
-    { prompt: 'Two truths and a lie…', hint: 'Let them guess — great reply rate.' },
-    { prompt: 'The way to my heart…', hint: 'Be specific, not romantic.' },
-    { prompt: "Something I'm crazy about…", hint: 'The thing you talk about way too much.' },
-    { prompt: 'The perfect first date…', hint: 'A real place, not "anywhere with you".' },
-    { prompt: 'My most controversial opinion…', hint: 'Keep it light — pineapple-on-pizza level.' },
-    { prompt: "We'll get along if…", hint: 'Find your kind of people.' },
-    { prompt: 'Slow morning or packed schedule?', hint: 'A simple either/or — the answer says a lot.' },
-    { prompt: 'My weirdest skill…', hint: 'A little playful bragging goes a long way.' },
-    { prompt: "The trip I'd take you on…", hint: 'A whiff of adventure — where are we going?' },
-    { prompt: 'The last thing that made me laugh…', hint: 'Show your sense of humor.' },
-    { prompt: "Green flags I'm looking for…", hint: 'Say what really matters to you.' },
+    { prompt: 'My ideal Friday…', hint: 'Paint the scene — easy to picture, easy to reply to.', question: 'What does your ideal Friday look like?' },
+    { prompt: 'Two truths and a lie…', hint: 'Let them guess — great reply rate.', question: 'Can you guess which one is the lie?' },
+    { prompt: 'The way to my heart…', hint: 'Be specific, not romantic.', question: "And what's the way to your heart?" },
+    { prompt: "Something I'm crazy about…", hint: 'The thing you talk about way too much.', question: 'What are you crazy about?' },
+    { prompt: 'The perfect first date…', hint: 'A real place, not "anywhere with you".', question: "What's your perfect first date?" },
+    { prompt: 'My most controversial opinion…', hint: 'Keep it light — pineapple-on-pizza level.', question: 'Agree or disagree?' },
+    { prompt: "We'll get along if…", hint: 'Find your kind of people.', question: 'So — will we get along?' },
+    { prompt: 'Slow morning or packed schedule?', hint: 'A simple either/or — the answer says a lot.', question: 'And you — slow morning or packed schedule?' },
+    { prompt: 'My weirdest skill…', hint: 'A little playful bragging goes a long way.', question: "What's your weirdest skill?" },
+    { prompt: "The trip I'd take you on…", hint: 'A whiff of adventure — where are we going?', question: 'Would you come along?' },
+    { prompt: 'The last thing that made me laugh…', hint: 'Show your sense of humor.', question: 'What made you laugh lately?' },
+    { prompt: "Green flags I'm looking for…", hint: 'Say what really matters to you.', question: 'What green flags do you look for?' },
   ],
   // MyProfile-only strings — field labels shared with the design live in
   // `profile` above; these are the extras the screen needs.

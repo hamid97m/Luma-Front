@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { haptic } from '../telegram.js'
-import { buildChatItems } from '../utils/chatFormat.js'
+import { buildChatItems, replySnippet } from '../utils/chatFormat.js'
 import { MessageBubble } from '../components/chat/MessageBubble.js'
 import { ChatInputBar } from '../components/chat/ChatInputBar.js'
 import { ChatEmptyState } from '../components/chat/ChatEmptyState.js'
@@ -248,10 +248,15 @@ export function Chat({ match, myUserId, onBack }: Props) {
     if (!parentId) return null
     const parent = byId.get(parentId)
     if (!parent) return { author: '', text: t.chat.replyDeleted }
-    return { author: parent.senderId === myUserId ? t.chat.replyYou : match.user.name, text: parent.body }
+    return { author: parent.senderId === myUserId ? t.chat.replyYou : match.user.name, text: replySnippet(parent) }
   }, [byId, myUserId, match.user.name])
 
   const lastMineId = [...messages].reverse().find((m) => m.senderId === myUserId && !m.status)?.id ?? null
+
+  // Their auto-posted icebreaker doesn't count as them having said anything.
+  const counterpartSpoke = messages.some((m) => m.senderId !== myUserId && m.type !== 'icebreaker')
+
+  const replyingTo = replyingToId ? messagesRef.current.find((m) => m.id === replyingToId) : undefined
 
   if (loadState === 'loading') {
     return (
@@ -329,6 +334,8 @@ export function Chat({ match, myUserId, onBack }: Props) {
                       showTicks={item.message.id === lastMineId}
                       reply={resolveReply(item.message.replyToMessageId)}
                       counterpartName={match.user.name}
+                      awaitingAnswer={!counterpartSpoke}
+                      onAnswer={item.message.type === 'icebreaker' ? beginReply : undefined}
                       onRetry={retry}
                       onLongPress={item.message.status !== 'sending' ? openActions : undefined}
                     />
@@ -354,7 +361,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
             onSend={submit}
             editingBody={editingId ? messagesRef.current.find((m) => m.id === editingId)?.body ?? null : null}
             onCancelEdit={cancelEdit}
-            replyingToBody={replyingToId ? messagesRef.current.find((m) => m.id === replyingToId)?.body ?? null : null}
+            replyingToBody={replyingTo ? replySnippet(replyingTo) : null}
             onCancelReply={cancelReply}
             onGiftClick={() => setGiftOpen(true)}
           />

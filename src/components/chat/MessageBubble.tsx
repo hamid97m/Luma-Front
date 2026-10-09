@@ -2,6 +2,7 @@ import { memo, useRef } from 'react'
 import { t } from '../../i18n.js'
 import { formatTime } from '../../utils/chatFormat.js'
 import { GiftBubble } from '../gifts/GiftBubble.js'
+import { IcebreakerCard } from './IcebreakerCard.js'
 import { Icon } from '../ui/index.js'
 import type { LocalMessage } from '../../types.js'
 
@@ -19,6 +20,10 @@ interface MessageBubbleProps {
   reply?: { author: string; text: string } | null
   /** The other participant's name — needed for the "{name} sent you a gift" caption. */
   counterpartName?: string
+  /** Icebreakers only: the other person hasn't sent anything yet (drives the "waiting" caption on mine). */
+  awaitingAnswer?: boolean
+  /** Icebreakers only: reply to the other person's icebreaker. */
+  onAnswer?: (id: string) => void
 }
 
 function SeenTicks({ seen }: { seen: boolean }) {
@@ -29,13 +34,26 @@ function SeenTicks({ seen }: { seen: boolean }) {
   )
 }
 
-function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onLongPress, reply, counterpartName = '' }: MessageBubbleProps) {
+function MessageBubbleImpl({ message, mine, first, last, showTicks, onRetry, onLongPress, reply, counterpartName = '', awaitingAnswer, onAnswer }: MessageBubbleProps) {
   const failed = message.status === 'failed'
   const pressTimer = useRef<number | null>(null)
   const pressStart = useRef<{ x: number; y: number } | null>(null)
 
   if (message.type === 'gift') {
     return <GiftBubble mine={mine} senderName={counterpartName} emoji={message.gift?.emoji ?? null} />
+  }
+
+  if (message.type === 'icebreaker') {
+    return (
+      <IcebreakerCard
+        mine={mine}
+        counterpartName={counterpartName}
+        prompt={message.body}
+        answer={message.icebreakerAnswer ?? null}
+        awaitingAnswer={awaitingAnswer}
+        onAnswer={onAnswer ? () => onAnswer(message.id) : undefined}
+      />
+    )
   }
 
   const clearPress = () => {

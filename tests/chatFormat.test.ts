@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildChatItems, formatDayLabel } from '../src/utils/chatFormat.js'
+import { buildChatItems, formatDayLabel, replySnippet } from '../src/utils/chatFormat.js'
+import { t } from '../src/i18n.js'
 import type { LocalMessage } from '../src/types.js'
 
 const NOW = new Date('2026-08-03T18:00:00')
@@ -67,5 +68,24 @@ describe('buildChatItems', () => {
     const flags = items.filter((i) => i.kind === 'message')
     expect(flags[0]).toMatchObject({ first: true, last: true })
     expect(flags[1]).toMatchObject({ first: true, last: true })
+  })
+
+  it('never groups an icebreaker card with the bubbles around it', () => {
+    const items = buildChatItems([
+      { ...msg('m1', 'a', '2026-08-03T10:00:00'), type: 'icebreaker' },
+      msg('m2', 'a', '2026-08-03T10:01:00'),
+    ], NOW)
+
+    const flags = items.filter((i) => i.kind === 'message')
+    expect(flags[0]).toMatchObject({ first: true, last: true })
+    expect(flags[1]).toMatchObject({ first: true, last: true })
+  })
+})
+
+describe('replySnippet', () => {
+  it('quotes a text message by its body and an icebreaker by its localized question', () => {
+    expect(replySnippet(msg('m1', 'a', '2026-08-03T10:00:00'))).toBe('body-m1')
+    expect(replySnippet({ ...msg('m2', 'a', '2026-08-03T10:00:00'), type: 'icebreaker', body: 'My ideal Friday…' }))
+      .toBe(t.icebreakers[0].question)
   })
 })

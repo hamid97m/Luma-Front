@@ -1,6 +1,7 @@
 import { t } from '../i18n.js'
 import { formatShortDate, formatTime as formatTimeFa } from '../i18n/format.js'
-import type { LocalMessage } from '../types.js'
+import { icebreakerQuestion } from './icebreaker.js'
+import type { LocalMessage, Message } from '../types.js'
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000
 
@@ -27,10 +28,16 @@ export function formatDayLabel(iso: string, now: Date = new Date()): string {
 
 function grouped(a: LocalMessage, b: LocalMessage): boolean {
   return (
+    a.type !== 'icebreaker' && b.type !== 'icebreaker' && // standalone cards, not bubbles
     a.senderId === b.senderId &&
     sameDay(new Date(a.createdAt), new Date(b.createdAt)) &&
     Math.abs(new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) <= GROUP_WINDOW_MS
   )
+}
+
+/** The text quoted when replying to a message: an icebreaker is quoted by its localized question. */
+export function replySnippet(message: Message): string {
+  return message.type === 'icebreaker' ? icebreakerQuestion(message.body) : message.body
 }
 
 /** Shapes raw messages into renderable items: date chips + messages with group-position flags. */

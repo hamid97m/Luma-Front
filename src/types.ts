@@ -48,7 +48,7 @@ export interface Match {
     icebreakerAnswer: string | null
     premium?: boolean
   }
-  lastMessage: { body: string; createdAt: string; senderId: string } | null
+  lastMessage: { body: string; createdAt: string; senderId: string; type?: 'text' | 'gift' | 'icebreaker' } | null
   unreadCount: number
   premiumRequired?: boolean
 }
@@ -120,8 +120,10 @@ export interface Message {
   editedAt?: string | null
   /** Id of the message this one replies to; null/absent when not a reply. */
   replyToMessageId?: string | null
-  type: 'text' | 'gift'
+  type: 'text' | 'gift' | 'icebreaker'
   gift?: { emoji: string | null; starCost: number } | null
+  /** The owner's icebreaker answer on a `type: 'icebreaker'` message (`body` is the prompt). */
+  icebreakerAnswer?: string | null
 }
 
 /** A chat message plus optional client-only delivery state for optimistic send. */
