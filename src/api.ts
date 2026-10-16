@@ -41,6 +41,17 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+function reportUploadProgress(
+  onProgress: ((pct: number, phase?: 'uploading' | 'finalizing') => void) | undefined,
+  pct: number,
+) {
+  // `upload.onprogress` hits 100 when the bytes have left the phone. Storage
+  // still has to accept the file, and confirm still has to record it. Leaving
+  // the bar on 100 through that wait is what looks stuck.
+  if (pct >= 100) onProgress?.(100, 'finalizing')
+  else onProgress?.(pct, 'uploading')
+}
+
 function putWithProgress(url: string, blob: Blob, onProgress?: (pct: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
@@ -116,8 +127,8 @@ export const api = {
       const { uploadUrl, photoId } = await api.photos.getUploadUrl('image/jpeg')
       // Cap the byte transfer at 99. Confirm still runs after the bytes land, and
       // a frozen "100%" reads as a stuck upload.
-      await putWithProgress(uploadUrl, blob, (pct) => onProgress?.(Math.min(99, pct), 'uploading'))
-      onProgress?.(99, 'finalizing')
+      await putWithProgress(uploadUrl, blob, (pct) => reportUploadProgress(onProgress, pct))
+      onProgress?.(100, 'finalizing')
       const { photo } = await api.photos.confirm(photoId)
       return photo
     },
@@ -129,8 +140,8 @@ export const api = {
     ): Promise<{ id: string; url: string; position: number }> => {
       const blob = await compressImage(file)
       const { uploadUrl, photoId: newPhotoId } = await api.photos.getUploadUrl('image/jpeg', oldPhotoId)
-      await putWithProgress(uploadUrl, blob, (pct) => onProgress?.(Math.min(99, pct), 'uploading'))
-      onProgress?.(99, 'finalizing')
+      await putWithProgress(uploadUrl, blob, (pct) => reportUploadProgress(onProgress, pct))
+      onProgress?.(100, 'finalizing')
       const { photo } = await request<{ photo: { id: string; url: string; position: number } }>(
         `/profile/me/photos/${oldPhotoId}/replace`,
         { method: 'POST', body: JSON.stringify({ newPhotoId }) }
