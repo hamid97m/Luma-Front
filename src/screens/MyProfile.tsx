@@ -4,6 +4,7 @@ import { useAuthStore, useReferralStore } from '../store.js'
 import type { UserProfile } from '../types.js'
 import { SettingsSheet } from '../components/SettingsSheet.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
+import { PhotoUploadProgress } from '../components/PhotoUploadProgress.js'
 import { PremiumCard } from '../components/premium/PremiumCard.js'
 import { Card, IconButton, Icon, Sheet } from '../components/ui/index.js'
 import type { IconName } from '../components/ui/index.js'
@@ -84,7 +85,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const [prompt, setPrompt] = useState(storeUser?.icebreaker_prompt ?? ICEBREAKERS[0].prompt)
   const [answer, setAnswer] = useState(storeUser?.icebreaker_answer ?? '')
   const [promptPicker, setPromptPicker] = useState(false)
-  const [uploading, setUploading] = useState<{ slotId: string; phase: 'processing' | 'uploading'; progress: number } | null>(null)
+  const [uploading, setUploading] = useState<{ slotId: string; phase: 'processing' | 'uploading' | 'finalizing'; progress: number } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editing, setEditing] = useState<{ file: File; slotId: string; replaceId?: string } | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -144,7 +145,11 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const handlePhotoUpload = async (file: File, slotId: string) => {
     setUploading({ slotId, phase: 'processing', progress: 0 })
     try {
-      await api.photos.upload(file, (progress) => setUploading({ slotId, phase: 'uploading', progress }))
+      await api.photos.upload(file, (progress, phase = 'uploading') => setUploading({
+        slotId,
+        phase: phase === 'finalizing' || progress >= 100 ? 'finalizing' : 'uploading',
+        progress,
+      }))
       const p = await api.profile.get()
       setProfile(p)
       setUser(p)
@@ -156,7 +161,11 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const handlePhotoReplace = async (file: File, slotId: string, photoId: string) => {
     setUploading({ slotId, phase: 'processing', progress: 0 })
     try {
-      await api.photos.replace(photoId, file, (progress) => setUploading({ slotId, phase: 'uploading', progress }))
+      await api.photos.replace(photoId, file, (progress, phase = 'uploading') => setUploading({
+        slotId,
+        phase: phase === 'finalizing' || progress >= 100 ? 'finalizing' : 'uploading',
+        progress,
+      }))
       const p = await api.profile.get()
       setProfile(p)
       setUser(p)
@@ -264,15 +273,10 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
                     {uploading.phase === 'processing' ? (
                       <span className="text-[11px] text-primary font-medium animate-pulse">{t.onboarding.resizing}</span>
                     ) : (
-                      <>
-                        <div className="w-full h-1 rounded-full bg-surface-high overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-primary transition-[width]"
-                            style={{ width: `${uploading.progress}%` }}
-                          />
-                        </div>
-                        <span className="text-[11px] text-txt2">{uploading.progress}%</span>
-                      </>
+                      <PhotoUploadProgress
+                        phase={uploading.phase === 'finalizing' ? 'finalizing' : 'uploading'}
+                        progress={uploading.progress}
+                      />
                     )}
                   </div>
                 ) : (

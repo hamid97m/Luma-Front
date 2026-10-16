@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api.js'
 import { mainButtonSupported, useMainButton, telegramFirstName, telegramHasPhoto, haptic } from '../telegram.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
+import { PhotoUploadProgress } from '../components/PhotoUploadProgress.js'
 import { t, useLocaleStore } from '../i18n.js'
 import { Button, IconButton, Input, Textarea, Chip, Icon } from '../components/ui/index.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
@@ -56,7 +57,7 @@ export function Onboarding({ onComplete }: Props) {
   })
   const [photoUploaded, setPhotoUploaded] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [uploadPhase, setUploadPhase] = useState<{ phase: 'processing' | 'uploading'; progress: number } | null>(null)
+  const [uploadPhase, setUploadPhase] = useState<{ phase: 'processing' | 'uploading' | 'finalizing'; progress: number } | null>(null)
   const [saving, setSaving] = useState(false)
   const [ageError, setAgeError] = useState(false)
   const [interestsError, setInterestsError] = useState(false)
@@ -65,10 +66,13 @@ export function Onboarding({ onComplete }: Props) {
 
   const valid = isValid(step, state, photoUploaded)
   const cityHint = step === STEP_CITY ? cityMessage(state.city) : null
+  const onPhotoStep = step === STEP_PHOTO
+  const photoBusy = !!editingFile || !!uploadPhase || tgPhotoLoading
 
   const back = () => setStep((s) => Math.max(0, s - 1))
 
   const next = async () => {
+    if (editingFile || uploadPhase || tgPhotoLoading) return
     // The interests step keeps its button clickable even below the minimum so the
     // tap can surface *why* it's blocked, instead of silently doing nothing.
     if (step === STEP_INTERESTS && state.interests.length < 3) {
@@ -103,13 +107,14 @@ export function Onboarding({ onComplete }: Props) {
     }
   }
 
-  // Native Telegram button drives the primary step action. Falls back to the
-  // in-page button below when Telegram provides no MainButton.
+  // Native Telegram button drives earlier steps. The photo step uses the in-app
+  // button instead: the docked MainButton stays visible over the cropper and
+  // uses Telegram's own accent.
   useMainButton({
-    text: step === TOTAL_STEPS - 1 ? t.onboarding.enter : t.onboarding.continue,
-    visible: true,
+    text: onPhotoStep ? t.onboarding.enter : t.onboarding.continue,
+    visible: !onPhotoStep && !photoBusy,
     // Step 4 stays enabled below the minimum so the tap can explain the block.
-    enabled: (valid || step === STEP_INTERESTS) && !saving,
+    enabled: (valid || step === STEP_INTERESTS) && !saving && !photoBusy,
     loading: saving,
     onClick: next,
   })
@@ -131,7 +136,10 @@ export function Onboarding({ onComplete }: Props) {
     setPhotoPreview(preview)
     setUploadPhase({ phase: 'processing', progress: 0 })
     try {
-      await api.photos.upload(file, (progress) => setUploadPhase({ phase: 'uploading', progress }))
+      await api.photos.upload(file, (progress, phase = 'uploading') => setUploadPhase({
+        phase: phase === 'finalizing' || progress >= 100 ? 'finalizing' : 'uploading',
+        progress,
+      }))
       setPhotoUploaded(true)
     } catch (err) {
       setPhotoPreview(null)
@@ -361,15 +369,7 @@ export function Onboarding({ onComplete }: Props) {
                         {tgPhotoLoading || uploadPhase?.phase === 'processing' ? (
                           <span className="text-[11px] text-white font-medium animate-pulse">{t.onboarding.resizing}</span>
                         ) : (
-                          <>
-                            <div className="w-full h-1 rounded-full bg-white/25 overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-white transition-[width]"
-                                style={{ width: `${uploadPhase?.progress ?? 0}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] text-white">{uploadPhase?.progress ?? 0}%</span>
-                          </>
+                          <PhotoUploadProgress phase={uploadPhase?.phase === 'finalizing' ? 'finalizing' : 'uploading'} progress={uploadPhase?.progress ?? 0} onDark />
                         )}
                       </div>
                     )}
@@ -417,11 +417,13 @@ export function Onboarding({ onComplete }: Props) {
         </div>
       </div>
 
-      {/* Sticky bottom button — fallback when Telegram provides no MainButton */}
-      {!mainButtonSupported() && (
+      {/* Photo step always uses the in-app button (Luma colors, hidden while a
+          photo is being chosen or uploaded). Other steps fall back to it only
+          when Telegram provides no MainButton. */}
+      {(onPhotoStep ? photoUploaded && !photoBusy : !mainButtonSupported()) && (
         <div className="relative z-10 px-6 pb-10 pt-4">
-          <Button block size="lg" onClick={next} disabled={(!valid && step !== STEP_INTERESTS) || saving}>
-            {saving ? '…' : step === TOTAL_STEPS - 1 ? t.onboarding.enter : t.onboarding.continue}
+          <Button block size="lg" onClick={next} disabled={saving || (!onPhotoStep && !valid && step !== STEP_INTERESTS)}>
+            {saving ? '…' : onPhotoStep ? t.onboarding.enter : t.onboarding.continue}
           </Button>
         </div>
       )}

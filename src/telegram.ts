@@ -378,12 +378,20 @@ export interface MainButtonConfig {
   onClick: () => void
 }
 
+function lumaPrimaryHex(): string {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--pr').trim()
+  return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : '#B0295C'
+}
+
 export function useMainButton({ text, visible, enabled = true, loading = false, onClick }: MainButtonConfig) {
   // Visual state.
   useEffect(() => {
     const mb = webApp()?.MainButton
     if (!mb) return
     mb.setText?.(text)
+    // Telegram's default accent is its own blue. Pin the docked button to Luma's
+    // primary so it follows the app theme in light and dark.
+    mb.setParams?.({ color: lumaPrimaryHex(), text_color: '#ffffff' })
     if (loading) mb.showProgress?.(false)
     else mb.hideProgress?.()
     if (enabled && !loading) mb.enable?.()

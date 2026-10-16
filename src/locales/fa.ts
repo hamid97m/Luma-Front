@@ -320,6 +320,7 @@ export const fa = {
     interestsMin: 'حداقل 3 مورد انتخاب کن تا ادامه بدهی.',
     photoBio: 'عکس و بیو اضافه کن',
     resizing: 'در حال تغییر اندازه…',
+    savingPhoto: 'در حال ذخیره…',
     added: 'اضافه شد ✓',
     useTelegramPhoto: 'استفاده از عکس تلگرام',
     telegramPhotoFailed: 'دریافت عکس تلگرام ناموفق بود. لطفاً یک عکس انتخاب کن.',

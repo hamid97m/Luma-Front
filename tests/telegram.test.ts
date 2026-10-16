@@ -233,4 +233,14 @@ describe('useMainButton', () => {
       renderHook(() => useMainButton({ text: 'x', visible: true, onClick: vi.fn() }))
     ).not.toThrow()
   })
+
+  it('paints the button with Luma primary instead of the Telegram accent', () => {
+    document.documentElement.style.setProperty('--pr', '#E0537F')
+    const mb = { ...makeMainButton(), setParams: vi.fn() }
+    setWebApp({ MainButton: mb })
+
+    renderHook(() => useMainButton({ text: 'ورود به لوما', visible: true, onClick: vi.fn() }))
+
+    expect(mb.setParams).toHaveBeenCalledWith({ color: '#E0537F', text_color: '#ffffff' })
+  })
 })

@@ -346,6 +346,7 @@ export const ar = {
     interestsMin: 'اختر 3 على الأقل للمتابعة.',
     photoBio: 'أضف صورة ونبذة',
     resizing: 'جارٍ تغيير الحجم…',
+    savingPhoto: 'جارٍ الحفظ…',
     added: 'تمت الإضافة ✓',
     useTelegramPhoto: 'استخدام صورة تيليجرام',
     telegramPhotoFailed: 'تعذّر جلب صورة تيليجرام. يرجى اختيار صورة.',

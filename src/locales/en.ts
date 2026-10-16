@@ -324,6 +324,7 @@ export const en = {
     interestsMin: 'Pick at least 3 to continue.',
     photoBio: 'Add a photo and bio',
     resizing: 'Resizing…',
+    savingPhoto: 'Saving…',
     added: 'Added ✓',
     useTelegramPhoto: 'Use my Telegram photo',
     telegramPhotoFailed: "Couldn't get your Telegram photo. Please pick a photo.",

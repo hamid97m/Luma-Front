@@ -37,6 +37,7 @@ interface TelegramMainButton {
   hideProgress: () => void
   onClick: (callback: () => void) => void
   offClick: (callback: () => void) => void
+  setParams?: (params: { color?: string; text_color?: string }) => void
 }
 
 interface TelegramHapticFeedback {

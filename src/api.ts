@@ -110,11 +110,14 @@ export const api = {
       }),
     upload: async (
       file: File,
-      onProgress?: (pct: number) => void
+      onProgress?: (pct: number, phase?: 'uploading' | 'finalizing') => void
     ): Promise<{ id: string; url: string; position: number }> => {
       const blob = await compressImage(file)
       const { uploadUrl, photoId } = await api.photos.getUploadUrl('image/jpeg')
-      await putWithProgress(uploadUrl, blob, onProgress)
+      // Cap the byte transfer at 99. Confirm still runs after the bytes land, and
+      // a frozen "100%" reads as a stuck upload.
+      await putWithProgress(uploadUrl, blob, (pct) => onProgress?.(Math.min(99, pct), 'uploading'))
+      onProgress?.(99, 'finalizing')
       const { photo } = await api.photos.confirm(photoId)
       return photo
     },
@@ -122,11 +125,12 @@ export const api = {
     replace: async (
       oldPhotoId: string,
       file: File,
-      onProgress?: (pct: number) => void
+      onProgress?: (pct: number, phase?: 'uploading' | 'finalizing') => void
     ): Promise<{ id: string; url: string; position: number }> => {
       const blob = await compressImage(file)
       const { uploadUrl, photoId: newPhotoId } = await api.photos.getUploadUrl('image/jpeg', oldPhotoId)
-      await putWithProgress(uploadUrl, blob, onProgress)
+      await putWithProgress(uploadUrl, blob, (pct) => onProgress?.(Math.min(99, pct), 'uploading'))
+      onProgress?.(99, 'finalizing')
       const { photo } = await request<{ photo: { id: string; url: string; position: number } }>(
         `/profile/me/photos/${oldPhotoId}/replace`,
         { method: 'POST', body: JSON.stringify({ newPhotoId }) }
