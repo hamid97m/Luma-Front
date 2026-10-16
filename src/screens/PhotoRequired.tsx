@@ -3,18 +3,27 @@ import type { ChangeEvent } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
 import { Icon } from '../components/ui'
+import { PhotoEditor } from '../components/PhotoEditor.js'
 
 // Shown when the account is paused for photo re-verification. Non-terminal:
 // uploading any new profile photo lifts the pause server-side (see photos
 // confirm), so we just reload afterwards to re-run auth and land in the app.
+// The picked file goes through the same crop editor as a profile photo.
 export function PhotoRequired() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
+  const [editingFile, setEditingFile] = useState<File | null>(null)
 
-  async function onPick(e: ChangeEvent<HTMLInputElement>) {
+  function onPick(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
+    setError(false)
+    setEditingFile(file)
+  }
+
+  async function onConfirm(file: File) {
+    setEditingFile(null)
     setError(false)
     setBusy(true)
     try {
@@ -45,6 +54,13 @@ export function PhotoRequired() {
         {busy ? t.photoRequired.uploading : t.photoRequired.upload}
         <input type="file" accept="image/*" className="sr-only" disabled={busy} onChange={onPick} />
       </label>
+      {editingFile && (
+        <PhotoEditor
+          file={editingFile}
+          onCancel={() => setEditingFile(null)}
+          onConfirm={onConfirm}
+        />
+      )}
     </div>
   )
 }
