@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import type { Match } from '../src/types.js'
 
 vi.mock('../src/api.ts', () => ({
+  onAccountPaused: () => () => {},
   api: {
     auth: { verify: vi.fn() },
     profile: { get: vi.fn(), update: vi.fn(), setLocale: vi.fn(() => Promise.resolve({ ok: true })) },

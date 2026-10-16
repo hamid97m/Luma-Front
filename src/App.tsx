@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from './api.js'
+import { api, onAccountPaused } from './api.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
 import { useAuthStore, usePremiumStore, useReferralStore } from './store.js'
 import { cacheGender, isReturningUser, markReturningUser } from './utils/returningUser.js'
@@ -130,6 +130,23 @@ export function App() {
 
   // One-time Telegram setup: ready/expand, fullscreen, swipe-lock, safe-area vars.
   useEffect(() => { initTelegram() }, [])
+
+  // Mid-session pause (AI photo reject or report auto-pause): drop overlays
+  // and lock the app on the "upload a fresh photo" screen.
+  useEffect(() => onAccountPaused(() => {
+    setActiveChatMatch(null)
+    setShowSupport(false)
+    setPlansOpen(false)
+    setShowNotifyPrompt(false)
+    setScreen('photoRequired')
+  }), [])
+
+  // Catch a pause even if the user is sitting still (no swipe / send).
+  useEffect(() => {
+    if (screen !== 'main') return
+    const id = setInterval(() => { api.profile.get().catch(() => {}) }, 8_000)
+    return () => clearInterval(id)
+  }, [screen])
 
   useEffect(() => {
     setVisited((v) => (v[tab] ? v : { ...v, [tab]: true }))

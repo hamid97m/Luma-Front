@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.unmock('../src/api.ts')
 
-import { api } from '../src/api.js'
+import { api, onAccountPaused } from '../src/api.js'
 
 describe('api request', () => {
   beforeEach(() => {
@@ -75,6 +75,37 @@ describe('api request', () => {
       expect.stringContaining('/matches/match-1/messages/m1'),
       expect.objectContaining({ method: 'DELETE' })
     )
+  })
+
+  it('notifies listeners on a mid-session account_paused 403', async () => {
+    const heard = vi.fn()
+    const off = onAccountPaused(heard)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: () => Promise.resolve(JSON.stringify({ error: 'account_paused' })),
+    }))
+
+    await expect(api.swipes.swipe('them', 'like')).rejects.toMatchObject({ status: 403 })
+    expect(heard).toHaveBeenCalledTimes(1)
+
+    off()
+    await expect(api.swipes.swipe('them', 'like')).rejects.toMatchObject({ status: 403 })
+    expect(heard).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not notify on other 403s', async () => {
+    const heard = vi.fn()
+    const off = onAccountPaused(heard)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: () => Promise.resolve(JSON.stringify({ error: 'swipe_limit' })),
+    }))
+
+    await expect(api.swipes.swipe('them', 'like')).rejects.toMatchObject({ status: 403 })
+    expect(heard).not.toHaveBeenCalled()
+    off()
   })
 
   it('attaches the HTTP status to thrown errors', async () => {

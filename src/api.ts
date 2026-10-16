@@ -4,6 +4,19 @@ import { compressImage } from './utils/compress.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
 
+type PausedListener = () => void
+const pausedListeners = new Set<PausedListener>()
+
+/** Subscribe to a mid-session pause. Returns an unsubscribe. */
+export function onAccountPaused(fn: PausedListener): () => void {
+  pausedListeners.add(fn)
+  return () => { pausedListeners.delete(fn) }
+}
+
+function notifyAccountPaused(): void {
+  for (const fn of pausedListeners) fn()
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const initData = window.Telegram?.WebApp?.initData ?? ''
   // Only advertise a JSON content-type when we actually send a body — Fastify 4
@@ -22,6 +35,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const text = await res.text()
+    if (res.status === 403 && text.includes('account_paused')) notifyAccountPaused()
     throw Object.assign(new Error(text), { status: res.status })
   }
   return res.json() as Promise<T>

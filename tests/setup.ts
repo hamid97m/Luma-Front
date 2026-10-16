@@ -34,6 +34,7 @@ vi.mock('@telegram-apps/sdk-react', () => ({
 }))
 
 vi.mock('../src/api.ts', () => ({
+  onAccountPaused: () => () => {},
   api: {
     auth: { verify: vi.fn() },
     profile: {
