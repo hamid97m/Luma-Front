@@ -132,7 +132,7 @@ export function App() {
   useEffect(() => { initTelegram() }, [])
 
   // Mid-session pause (AI photo reject or report auto-pause): drop overlays
-  // and lock the app on the "upload a fresh photo" screen.
+  // and lock the app on the "upload a fresh photo" screen. Redeploy 2026-10-16.
   useEffect(() => onAccountPaused(() => {
     setActiveChatMatch(null)
     setShowSupport(false)
