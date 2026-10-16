@@ -32,6 +32,9 @@ function putWithProgress(url: string, blob: Blob, onProgress?: (pct: number) => 
     const xhr = new XMLHttpRequest()
     xhr.open('PUT', url)
     xhr.setRequestHeader('Content-Type', 'image/jpeg')
+    // Supabase Storage stores raw (non-multipart) uploads without this header as
+    // `no-cache`, forcing a round trip to the origin on every photo view.
+    xhr.setRequestHeader('Cache-Control', 'max-age=604800')
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100))
     }
