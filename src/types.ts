@@ -87,12 +87,26 @@ export interface PremiumPlan {
   originalPriceStars: number | null
   durationDays: number
   discountEndsAt: string | null
+  /** Toman price — present only when `PremiumStatus.paymentProvider` is 'tonpays'. */
+  priceToman?: number
+  /** Pre-discount Toman price; null unless this plan is currently discounted. */
+  originalPriceToman?: number | null
 }
 
 export interface PremiumStatus {
   enabled: boolean
   premiumUntil: string | null
+  /** Which checkout flow applies to this user — resolved server-side (geo). */
+  paymentProvider?: 'stars' | 'tonpays'
   plans: PremiumPlan[]
+}
+
+/** TonPays card-to-card payment instructions returned by `/premium/checkout`. */
+export interface TonPaysPaymentInfo {
+  cardNumber: string
+  cardHolder: string
+  amountToman: number
+  invoiceId: string
 }
 
 export interface GiftCatalogItem {

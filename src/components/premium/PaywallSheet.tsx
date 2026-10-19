@@ -6,6 +6,8 @@ import { usePremiumStore, useReferralStore } from '../../store.js'
 import { formatCountdown } from '../../utils/premium.js'
 import { Icon, Sheet } from '../ui'
 import { HowToBuyStars } from './HowToBuyStars.js'
+import { TonPaysPaymentStep } from './TonPaysPaymentStep.js'
+import type { TonPaysPaymentInfo } from '../../types.js'
 
 interface PaywallSheetProps {
   open: boolean
@@ -14,7 +16,7 @@ interface PaywallSheetProps {
   subtitle?: string
 }
 
-type Phase = 'idle' | 'activating' | 'refunded' | 'error'
+type Phase = 'idle' | 'activating' | 'refunded' | 'error' | 'tonpays_payment'
 
 const POLL_INTERVAL_MS = 1500
 const POLL_MAX_TRIES = 8
@@ -24,8 +26,10 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   const referralEnabled = useReferralStore((s) => s.status?.enabled)
   const locale = useLocaleStore((s) => s.locale)
   const dir = LOCALE_META[locale].dir
-  // The "how to buy Stars" guide is Iran-specific (rial resellers) — fa only.
-  const showIranGuide = locale === 'fa'
+  // The "how to buy Stars" guide is Iran-specific (rial resellers) — fa only,
+  // and only relevant at all on the Stars flow (TonPays has no Stars to buy).
+  const isTonpays = status?.paymentProvider === 'tonpays'
+  const showIranGuide = locale === 'fa' && !isTonpays
   const plans = status?.plans ?? []
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
@@ -33,6 +37,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   const [now, setNow] = useState(() => Date.now())
   const [showHowTo, setShowHowTo] = useState(false)
   const [showOtherWays, setShowOtherWays] = useState(false)
+  const [tonpaysTx, setTonpaysTx] = useState<{ transactionId: string; payment: TonPaysPaymentInfo } | null>(null)
 
   const mountedRef = useRef(true)
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -71,6 +76,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
     setBusy(false)
     setShowHowTo(false)
     setShowOtherWays(false)
+    setTonpaysTx(null)
     setNow(Date.now())
     expiredRefreshFiredKeysRef.current = new Set()
     usePremiumStore.getState().refresh()
@@ -112,6 +118,8 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   // so preselect as soon as they're available rather than in the open effect.
   const perWeekOf = (p: { priceStars: number; durationDays: number }) =>
     p.priceStars / (Math.max(1, p.durationDays) / 7)
+  const perWeekOfToman = (p: { priceToman?: number; durationDays: number }) =>
+    (p.priceToman ?? 0) / (Math.max(1, p.durationDays) / 7)
   const bestValueId =
     plans.length > 1 ? plans.reduce((a, b) => (perWeekOf(b) < perWeekOf(a) ? b : a)).id : null
 
@@ -169,13 +177,18 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
     setBusy(true)
     setPhase('idle')
     try {
-      const { transactionId, invoiceLink } = await api.premium.checkout(plan.id)
+      const res = await api.premium.checkout(plan.id)
       if (!mountedRef.current || session !== sessionRef.current) return
-      const result = await openInvoice(invoiceLink)
+      if (res.provider === 'tonpays' && res.payment) {
+        setTonpaysTx({ transactionId: res.transactionId, payment: res.payment })
+        setPhase('tonpays_payment')
+        return
+      }
+      const result = await openInvoice(res.invoiceLink!)
       if (!mountedRef.current || session !== sessionRef.current) return
       if (result === 'paid') {
         setPhase('activating')
-        startPolling(transactionId, session)
+        startPolling(res.transactionId, session)
       } else if (result === 'cancelled') {
         // keep the sheet open — the user may pick another plan
       } else {
@@ -186,6 +199,21 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
     } finally {
       if (mountedRef.current && session === sessionRef.current) setBusy(false)
     }
+  }
+
+  // Called by TonPaysPaymentStep once its own poll sees `status === 'paid'` —
+  // identical success path to the Stars flow's startPolling above.
+  const handleTonpaysPaid = async () => {
+    const session = sessionRef.current
+    await usePremiumStore.getState().refresh()
+    if (!mountedRef.current || session !== sessionRef.current) return
+    haptic.notification('success')
+    handleClose()
+  }
+
+  const handleTonpaysBack = () => {
+    setTonpaysTx(null)
+    setPhase('idle')
   }
 
   const selected = plans.find((p) => p.id === selectedId) ?? null
@@ -208,6 +236,15 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
         </span>
       }
     >
+      {phase === 'tonpays_payment' && tonpaysTx ? (
+        <TonPaysPaymentStep
+          payment={tonpaysTx.payment}
+          transactionId={tonpaysTx.transactionId}
+          onPaid={handleTonpaysPaid}
+          onBack={handleTonpaysBack}
+        />
+      ) : (
+      <>
       <p className="text-txt2 text-[14px] mb-3.5 -mt-1">{subtitle ?? t.premium.subtitle}</p>
 
       {phase === 'refunded' && <p className="text-error text-[14px] mb-4">{t.premium.refunded}</p>}
@@ -272,17 +309,34 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
                     <div className="text-[12px] text-txt2 mt-0.5">{plan.description}</div>
                   )}
                   <div className="flex items-baseline gap-2 mt-2">
-                    {plan.originalPriceStars != null && (
-                      <span className="text-[13px] line-through text-txt3 inline-flex items-center gap-0.5">
-                        <Icon name="star" size={12} className="text-primary" />{plan.originalPriceStars}
-                      </span>
+                    {isTonpays ? (
+                      <>
+                        {plan.originalPriceToman != null && (
+                          <span dir="ltr" className="text-[13px] line-through text-txt3">
+                            {t.premium.priceToman(plan.originalPriceToman)}
+                          </span>
+                        )}
+                        <span dir="ltr" className="font-bold text-[16px] text-txt">
+                          {t.premium.priceToman(plan.priceToman ?? 0)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {plan.originalPriceStars != null && (
+                          <span className="text-[13px] line-through text-txt3 inline-flex items-center gap-0.5">
+                            <Icon name="star" size={12} className="text-primary" />{plan.originalPriceStars}
+                          </span>
+                        )}
+                        <span className="font-bold text-[16px] text-txt inline-flex items-center gap-1">
+                          <Icon name="star" size={15} className="text-primary" />{plan.priceStars}
+                        </span>
+                      </>
                     )}
-                    <span className="font-bold text-[16px] text-txt inline-flex items-center gap-1">
-                      <Icon name="star" size={15} className="text-primary" />{plan.priceStars}
-                    </span>
                     <span className="text-[12px] text-txt2">· {t.premium.days(plan.durationDays)}</span>
-                    <span className="ms-auto text-[12px] text-txt2">
-                      {t.premium.perWeek(Math.round(perWeekOf(plan)))}
+                    <span dir="ltr" className="ms-auto text-[12px] text-txt2">
+                      {isTonpays
+                        ? t.premium.perWeekToman(Math.round(perWeekOfToman(plan)))
+                        : t.premium.perWeek(Math.round(perWeekOf(plan)))}
                     </span>
                   </div>
                   {plan.discountPercent != null && plan.discountEndsAt && (
@@ -308,13 +362,13 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
                 style={{ animation: 'lumaSpin .8s linear infinite' }}
               />
             ) : selected ? (
-              t.premium.buy(selected.priceStars)
+              isTonpays ? t.premium.payToman(selected.priceToman ?? 0) : t.premium.buy(selected.priceStars)
             ) : (
               t.premium.selectPrompt
             )}
           </button>
 
-          {/* Prominent "don't have Stars?" CTA → opens the full 3-step guide (fa only). */}
+          {/* Prominent "don't have Stars?" CTA → opens the full 3-step guide (fa only, Stars flow only). */}
           {showIranGuide && (
             <button
               type="button"
@@ -336,13 +390,16 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             </button>
           )}
 
-          <div className="flex items-center justify-center gap-1.5 mt-3">
-            <Icon name="lock" size={13} className="text-txt3" />
-            <span className="text-[12px] text-txt3">{t.premium.payHint}</span>
-          </div>
+          {!isTonpays && (
+            <div className="flex items-center justify-center gap-1.5 mt-3">
+              <Icon name="lock" size={13} className="text-txt3" />
+              <span className="text-[12px] text-txt3">{t.premium.payHint}</span>
+            </div>
+          )}
           <p className="text-center text-[12px] text-txt2 mt-2.5 mb-0">{t.premium.socialProof}</p>
 
-          {/* Secondary collapsible — alternative ways to get Stars. */}
+          {/* Secondary collapsible — alternative ways to get Stars (Stars flow only). */}
+          {!isTonpays && (
           <button
             type="button"
             onClick={() => { haptic.selection(); setShowOtherWays((v) => !v) }}
@@ -356,7 +413,8 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
               className={`flex-none transition-transform ${showOtherWays ? 'rotate-180' : ''}`}
             />
           </button>
-          {showOtherWays && (
+          )}
+          {!isTonpays && showOtherWays && (
             <div dir={dir} className="bg-surface rounded-m3-lg p-4 mt-1 flex flex-col gap-3.5">
               <p className="m-0 text-[11px] font-semibold tracking-wide uppercase text-txt3">
                 {t.premium.otherWaysLabel}
@@ -403,6 +461,8 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
             <Icon name={dir === 'rtl' ? 'chevron-left' : 'chevron-right'} size={15} className="text-txt3 flex-none" />
           </button>
         </>
+      )}
+      </>
       )}
     </Sheet>
     {showHowTo && showIranGuide && (

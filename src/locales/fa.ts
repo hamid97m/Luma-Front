@@ -225,6 +225,10 @@ export const fa = {
     benefitLikes: 'ببین چه کسی لایکت کرده',
     bestValue: 'به‌صرفه‌ترین',
     perWeek: (stars: number) => `≈ ★${stars}/هفته`,
+    // TonPays (card-to-card, IR) price/CTA copy — parallels the Stars equivalents above.
+    priceToman: (amount: number) => `${amount.toLocaleString('en-US')} تومان`,
+    perWeekToman: (amount: number) => `≈ ${amount.toLocaleString('en-US')} تومان/هفته`,
+    payToman: (amount: number) => `پرداخت ${amount.toLocaleString('en-US')} تومان`,
     payHint: 'پرداخت با استار تلگرام · لغو در هر زمان',
     socialProof: 'از هر 10 عضو پرمیوم، 8 نفر ظرف یک ماه مچ می‌شوند',
     // Prominent CTA on the paywall that opens the full 3-step "buy Stars" guide.
@@ -247,6 +251,34 @@ export const fa = {
         body: 'فروشگاه‌های معتبر زیادی استار را به‌صورت هدیه به حساب تلگرامت می‌فروشند. پرداخت ریالی — قبل از خرید نظرات را بررسی کن.',
       },
     ],
+    // TonPays card-to-card payment step (IR users) — replaces the Telegram
+    // invoice flow when `PremiumStatus.paymentProvider === 'tonpays'`.
+    tonpays: {
+      title: 'پرداخت کارت به کارت',
+      back: 'بازگشت',
+      instructions: 'مبلغ زیر را دقیقاً به شماره کارت زیر واریز کن.',
+      amountLabel: 'مبلغ واریزی',
+      tomanUnit: 'تومان',
+      cardLabel: 'شماره کارت مقصد',
+      copy: 'کپی',
+      copied: 'کپی شد',
+      changeCardLink: 'کارت مقصد کار نمی‌کند؟',
+      changeCardCooldown: 'به‌تازگی کارت را عوض کردی. چند دقیقه دیگر دوباره تلاش کن.',
+      changeCardError: 'تغییر کارت ممکن نشد. لطفاً دوباره تلاش کن.',
+      warning: 'دقیقاً همین مبلغ را از کارتی به نام خودت، فقط در یک تراکنش، و در اسرع وقت واریز کن.',
+      waiting: 'در انتظار تایید پرداخت…',
+      remainingTitle: 'مبلغ واریزی کمتر از مقدار لازم بود',
+      remainingBody: (amount: number) => `باقی‌مانده را دقیقاً به همین کارت واریز کن: ${amount.toLocaleString('en-US')} تومان`,
+      overpaidTitle: 'مبلغ واریزی بیشتر از مقدار لازم بود',
+      overpaidBody: 'پرمیوم به‌هرحال برایت فعال می‌شود. برای بازگشت مبلغ اضافه، شماره کارتت را وارد کن.',
+      refundCardNumberLabel: 'شماره کارت (16 رقم)',
+      refundCardHolderLabel: 'به نام',
+      refundSubmit: 'ثبت شماره کارت',
+      refundSubmitted: 'ثبت شد — مبلغ اضافه به‌زودی به این کارت واریز می‌شود.',
+      refundError: 'ثبت شماره کارت ممکن نشد. لطفاً دوباره تلاش کن.',
+      failed: 'پرداخت تکمیل نشد.',
+      retry: 'بازگشت به انتخاب طرح',
+    },
   },
   // Persian/RTL "How to buy Stars" guide — a 3-step flow that sends Iranian
   // users to a rial reseller (Asan Star recommended) then back to the paywall.

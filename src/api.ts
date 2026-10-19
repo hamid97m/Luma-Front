@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus, TonPaysPaymentInfo } from './types.js'
 import type { Locale } from './i18n/locale.js'
 import { compressImage } from './utils/compress.js'
 
@@ -205,10 +205,30 @@ export const api = {
   premium: {
     status: () => request<PremiumStatus>('/premium/status'),
     checkout: (planId: string) =>
-      request<{ transactionId: string; invoiceLink: string }>('/premium/checkout', {
+      request<{
+        transactionId: string
+        provider?: 'stars' | 'tonpays'
+        invoiceLink?: string
+        payment?: TonPaysPaymentInfo
+      }>('/premium/checkout', {
         method: 'POST', body: JSON.stringify({ planId }),
       }),
-    transaction: (id: string) => request<{ status: string }>(`/premium/transactions/${id}`),
+    transaction: (id: string) =>
+      request<{
+        status: string
+        provider?: 'stars' | 'tonpays'
+        tonpaysStatus?: string | null
+        remainingAmount?: number | null
+        refundPending?: boolean
+      }>(`/premium/transactions/${id}`),
+    changeCard: (id: string) =>
+      request<{ cardNumber: string; cardHolder: string }>(
+        `/premium/transactions/${id}/change-card`, { method: 'POST' }
+      ),
+    refundCard: (id: string, cardNumber: string, cardHolder: string) =>
+      request<{ ok: true }>(`/premium/transactions/${id}/refund-card`, {
+        method: 'POST', body: JSON.stringify({ cardNumber, cardHolder }),
+      }),
   },
   referrals: {
     me: () => request<ReferralStatus>('/referrals/me'),

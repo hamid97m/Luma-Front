@@ -249,6 +249,11 @@ export const ar = {
     benefitLikes: 'اعرف من أُعجب بك',
     bestValue: 'الأوفر',
     perWeek: (stars: number) => `≈ ★${stars}/أسبوع`,
+    // TonPays (card-to-card, IR) price/CTA copy — flow is IR-only, mirrors the
+    // English literal copy rather than a dedicated Arabic translation.
+    priceToman: (amount: number) => `${amount.toLocaleString('en-US')} Toman`,
+    perWeekToman: (amount: number) => `≈ ${amount.toLocaleString('en-US')} Toman/week`,
+    payToman: (amount: number) => `Pay ${amount.toLocaleString('en-US')} Toman`,
     payHint: 'الدفع بنجوم تيليجرام · إلغاء في أي وقت',
     socialProof: 'من كل 10 أعضاء بريميوم، 8 يجدون توافقًا خلال شهر',
     // Prominent CTA on the paywall that opens the full 3-step "buy Stars" guide.
@@ -271,6 +276,34 @@ export const ar = {
         body: 'كثير من المتاجر الموثوقة تبيع النجوم كهدية إلى حساب تيليجرام الخاص بك. الدفع بالريال — راجع التقييمات قبل الشراء.',
       },
     ],
+    // TonPays card-to-card payment step (IR users) — flow is IR-only, mirrors
+    // the English literal copy rather than a dedicated Arabic translation.
+    tonpays: {
+      title: 'Card-to-card payment',
+      back: 'Back',
+      instructions: 'Transfer the exact amount below to the card number below.',
+      amountLabel: 'Amount to transfer',
+      tomanUnit: 'Toman',
+      cardLabel: 'Destination card number',
+      copy: 'Copy',
+      copied: 'Copied',
+      changeCardLink: 'Destination card not working?',
+      changeCardCooldown: 'You just changed the card. Please wait a few minutes and try again.',
+      changeCardError: "Couldn't change the card. Please try again.",
+      warning: 'Transfer exactly this amount, from a card in your own name, in a single transfer, as soon as possible.',
+      waiting: 'Waiting for payment confirmation…',
+      remainingTitle: 'You transferred less than required',
+      remainingBody: (amount: number) => `Transfer the remaining ${amount.toLocaleString('en-US')} Toman to the same card.`,
+      overpaidTitle: 'You transferred more than required',
+      overpaidBody: 'Premium will activate regardless. To get the extra amount refunded, enter your card number.',
+      refundCardNumberLabel: 'Card number (16 digits)',
+      refundCardHolderLabel: 'Cardholder name',
+      refundSubmit: 'Submit card',
+      refundSubmitted: 'Submitted — the extra amount will be refunded to this card soon.',
+      refundError: "Couldn't submit the card. Please try again.",
+      failed: "Payment didn't complete.",
+      retry: 'Back to plan selection',
+    },
   },
   // "How to buy Stars" guide — a 3-step flow that sends Iranian users to a
   // rial reseller (Asan Star recommended) then back to the paywall.
