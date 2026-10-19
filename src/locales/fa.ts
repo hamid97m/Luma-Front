@@ -278,6 +278,9 @@ export const fa = {
       refundError: 'ثبت شماره کارت ممکن نشد. لطفاً دوباره تلاش کن.',
       failed: 'پرداخت تکمیل نشد.',
       retry: 'بازگشت به انتخاب طرح',
+      // Money WAS received but the premium grant failed internally — unlike
+      // `failed` above, no retry CTA (retrying would charge a new invoice).
+      grantFailed: 'پرداخت شما دریافت شد، اما فعال‌سازی پرمیوم با خطا مواجه شد. لطفاً با پشتیبانی تماس بگیرید.',
     },
   },
   // Persian/RTL "How to buy Stars" guide — a 3-step flow that sends Iranian

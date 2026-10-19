@@ -333,7 +333,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
                       </>
                     )}
                     <span className="text-[12px] text-txt2">· {t.premium.days(plan.durationDays)}</span>
-                    <span dir="ltr" className="ms-auto text-[12px] text-txt2">
+                    <span dir={isTonpays ? 'ltr' : undefined} className="ms-auto text-[12px] text-txt2">
                       {isTonpays
                         ? t.premium.perWeekToman(Math.round(perWeekOfToman(plan)))
                         : t.premium.perWeek(Math.round(perWeekOf(plan)))}

@@ -34,7 +34,12 @@ export function TonPaysPaymentStep({ payment, transactionId, onPaid, onBack }: T
   const [copied, setCopied] = useState<'amount' | 'card' | null>(null)
   const [remainingAmount, setRemainingAmount] = useState<number | null>(null)
   const [overpaid, setOverpaid] = useState(false)
-  const [terminal, setTerminal] = useState<'failed' | null>(null)
+  // 'failed' = definitively won't pay (canceled/refunded/timeout) → retry CTA
+  // back to plan selection is safe. 'grant_failed' = the money WAS received
+  // but the premium grant failed server-side — that row is terminal, so a
+  // "retry" would create a brand-new invoice and double-charge the user.
+  // Distinct copy, no retry CTA.
+  const [terminal, setTerminal] = useState<'failed' | 'grant_failed' | null>(null)
 
   const [changeCardBusy, setChangeCardBusy] = useState(false)
   const [changeCardCooldown, setChangeCardCooldown] = useState(false)
@@ -69,14 +74,27 @@ export function TonPaysPaymentStep({ payment, transactionId, onPaid, onBack }: T
       try {
         const res = await api.premium.transaction(transactionId)
         if (!mountedRef.current) { clearPolling(); return }
+        // A resumed invoice (back → buy again) can poll straight into a row
+        // where the refund card was already submitted on a prior attempt —
+        // seed the "submitted" view instead of showing the blank form again.
+        if (res.refundPending) setRefundSubmitted(true)
         if (res.status === 'paid') {
           clearPolling()
           onPaid()
           return
         }
-        // Treat any definitive non-success status as a terminal failure
-        // instead of burning the rest of the poll budget.
-        if (res.status === 'canceled' || res.status === 'refunded' || res.status === 'paid_grant_failed') {
+        // The money was received but the grant failed internally — this row
+        // is terminal, but unlike canceled/refunded/timeout the user must NOT
+        // be invited to pay again (that would create a new invoice and
+        // double-charge them). Separate terminal state, no retry CTA.
+        if (res.status === 'paid_grant_failed') {
+          clearPolling()
+          setTerminal('grant_failed')
+          return
+        }
+        // Treat any other definitive non-success status as a terminal
+        // failure instead of burning the rest of the poll budget.
+        if (res.status === 'canceled' || res.status === 'refunded') {
           clearPolling()
           setTerminal('failed')
           return
@@ -176,6 +194,17 @@ export function TonPaysPaymentStep({ payment, transactionId, onPaid, onBack }: T
   const copyPillClass =
     'flex-none flex items-center gap-1 rounded-full bg-primary-container text-on-primary-container ' +
     'text-[12px] font-medium px-3 py-1.5 transition-opacity active:opacity-70'
+
+  if (terminal === 'grant_failed') {
+    // Payment received, grant failed — no retry CTA (retrying would re-charge
+    // the user on a brand-new invoice). Only a support-contact message.
+    return (
+      <div dir={dir} className="flex flex-col items-center text-center py-8 gap-3">
+        <Icon name="alert-triangle" size={30} className="text-error" />
+        <p className="m-0 text-txt text-[14px]">{c.grantFailed}</p>
+      </div>
+    )
+  }
 
   if (terminal === 'failed') {
     return (

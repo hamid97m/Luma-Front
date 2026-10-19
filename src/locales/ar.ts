@@ -303,6 +303,9 @@ export const ar = {
       refundError: "Couldn't submit the card. Please try again.",
       failed: "Payment didn't complete.",
       retry: 'Back to plan selection',
+      // Money WAS received but the premium grant failed internally — unlike
+      // `failed` above, no retry CTA (retrying would charge a new invoice).
+      grantFailed: 'Your payment was received, but activating Premium failed. Please contact support.',
     },
   },
   // "How to buy Stars" guide — a 3-step flow that sends Iranian users to a
