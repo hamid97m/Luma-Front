@@ -34,12 +34,14 @@ export function TonPaysPaymentStep({ payment, transactionId, onPaid, onBack }: T
   const [copied, setCopied] = useState<'amount' | 'card' | null>(null)
   const [remainingAmount, setRemainingAmount] = useState<number | null>(null)
   const [overpaid, setOverpaid] = useState(false)
-  // 'failed' = definitively won't pay (canceled/refunded/timeout) → retry CTA
-  // back to plan selection is safe. 'grant_failed' = the money WAS received
-  // but the premium grant failed server-side — that row is terminal, so a
-  // "retry" would create a brand-new invoice and double-charge the user.
-  // Distinct copy, no retry CTA.
-  const [terminal, setTerminal] = useState<'failed' | 'grant_failed' | null>(null)
+  // 'failed' = definitively won't pay (canceled/refunded) → retry CTA back to
+  // plan selection is safe. 'grant_failed' = the money WAS received but the
+  // premium grant failed server-side — that row is terminal, so a "retry"
+  // would create a brand-new invoice and double-charge the user. Distinct
+  // copy, no retry CTA. 'timeout' = we simply ran out of poll budget; the
+  // payment may well still be settling (the server keeps granting for up to
+  // 48h), so the copy must tell the buyer to wait, never to pay again.
+  const [terminal, setTerminal] = useState<'failed' | 'grant_failed' | 'timeout' | null>(null)
 
   const [changeCardBusy, setChangeCardBusy] = useState(false)
   const [changeCardCooldown, setChangeCardCooldown] = useState(false)
@@ -109,7 +111,9 @@ export function TonPaysPaymentStep({ payment, transactionId, onPaid, onBack }: T
       }
       if (triesRef.current >= TONPAYS_POLL_MAX_TRIES && pollTimerRef.current != null) {
         clearPolling()
-        if (mountedRef.current) setTerminal('failed')
+        // Out of poll budget is NOT "payment failed" — see the `terminal` state
+        // comment above.
+        if (mountedRef.current) setTerminal('timeout')
       }
     }, TONPAYS_POLL_INTERVAL_MS)
     return () => { mountedRef.current = false; clearPolling() }
@@ -202,6 +206,26 @@ export function TonPaysPaymentStep({ payment, transactionId, onPaid, onBack }: T
       <div dir={dir} className="flex flex-col items-center text-center py-8 gap-3">
         <Icon name="alert-triangle" size={30} className="text-error" />
         <p className="m-0 text-txt text-[14px]">{c.grantFailed}</p>
+      </div>
+    )
+  }
+
+  if (terminal === 'timeout') {
+    // Verification is still pending, not failed: the only CTA is leaving this
+    // screen (`retry` reads "Back to plan selection" in every locale) — there
+    // is deliberately no "try again"/"pay again" affordance here, because a
+    // buyer who already transferred must not transfer a second time.
+    return (
+      <div dir={dir} className="flex flex-col items-center text-center py-8 gap-3">
+        <Icon name="clock" size={30} className="text-primary" />
+        <p className="m-0 text-txt text-[14px] leading-relaxed">{c.timeout}</p>
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full h-12 rounded-full bg-surface text-txt font-medium text-[15px] mt-1"
+        >
+          {c.retry}
+        </button>
       </div>
     )
   }

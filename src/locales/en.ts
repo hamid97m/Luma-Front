@@ -281,6 +281,11 @@ export const en = {
       refundError: "Couldn't submit the card. Please try again.",
       failed: "Payment didn't complete.",
       retry: 'Back to plan selection',
+      // Poll budget exhausted — NOT a failure: card-to-card settlement can
+      // take longer than the 10-minute poll window and the server keeps
+      // granting for up to 48h. Must never read as "pay again", or the buyer
+      // transfers twice.
+      timeout: "Verification is taking longer than usual. If you already completed the transfer, don't transfer again — Premium activates automatically as soon as the money arrives.",
       // Money WAS received but the premium grant failed internally — unlike
       // `failed` above, no retry CTA (retrying would charge a new invoice).
       grantFailed: 'Your payment was received, but activating Premium failed. Please contact support.',

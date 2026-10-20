@@ -278,6 +278,11 @@ export const fa = {
       refundError: 'ثبت شماره کارت ممکن نشد. لطفاً دوباره تلاش کن.',
       failed: 'پرداخت تکمیل نشد.',
       retry: 'بازگشت به انتخاب طرح',
+      // Poll budget exhausted — NOT a failure: card-to-card settlement can
+      // take longer than the 10-minute poll window and the server keeps
+      // granting for up to 48h. Must never read as "pay again", or the buyer
+      // transfers twice.
+      timeout: 'تایید پرداخت بیشتر از حد معمول طول کشیده است. اگر مبلغ را واریز کرده‌ای، نگران نباش — پرمیوم به‌صورت خودکار و به‌محض رسیدن پول فعال می‌شود. دوباره واریز نکن.',
       // Money WAS received but the premium grant failed internally — unlike
       // `failed` above, no retry CTA (retrying would charge a new invoice).
       grantFailed: 'پرداخت شما دریافت شد، اما فعال‌سازی پرمیوم با خطا مواجه شد. لطفاً با پشتیبانی تماس بگیرید.',
