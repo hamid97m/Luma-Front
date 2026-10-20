@@ -134,7 +134,8 @@ export function TonPaysPaymentStep({ payment, transactionId, onPaid, onBack }: T
 
   const copyAmount = async () => {
     try {
-      await navigator.clipboard.writeText(String(payment.amountToman))
+      // Banking apps take the amount in Rial; the shown Toman figure × 10.
+      await navigator.clipboard.writeText(String(payment.amountToman * 10))
       haptic.notification('success')
       flashCopied('amount')
     } catch {
