@@ -22,6 +22,8 @@ export type RealtimeEvent =
   | { type: 'message'; matchId: string; message: Message }
   | { type: 'message_updated'; matchId: string; message: Message }
   | { type: 'message_deleted'; matchId: string; messageId: string }
+  /** The other participant is typing in this chat (ephemeral, never stored). */
+  | { type: 'typing'; matchId: string; userId: string }
 
 type Handler = (event: RealtimeEvent) => void
 
@@ -70,6 +72,8 @@ export function toRealtimeEvent(sse: SseEvent): RealtimeEvent | null {
     }
     case 'message_deleted':
       return typeof data.messageId === 'string' ? { type: 'message_deleted', matchId, messageId: data.messageId } : null
+    case 'typing':
+      return typeof data.userId === 'string' ? { type: 'typing', matchId, userId: data.userId } : null
     default:
       return null
   }

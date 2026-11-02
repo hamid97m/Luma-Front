@@ -210,6 +210,7 @@ export function App() {
     const unsubscribe = subscribe((ev) => {
       const me = useAuthStore.getState().user?.id
       if (ev.type === 'sync' || ev.type === 'message_deleted') { refreshBadge(); return }
+      if (ev.type === 'typing') return
       if (ev.message.senderId === me) return
       if (ev.type === 'message_updated' || ev.matchId !== activeChatIdRef.current) refreshBadge()
     })

@@ -181,6 +181,9 @@ export const api = {
     /** Mark the counterpart's unread messages in this chat as read. */
     markRead: (matchId: string) =>
       request<{ ok: boolean }>(`/matches/${matchId}/read`, { method: 'POST' }),
+    /** Tell the counterpart I'm typing (ephemeral; callers throttle and ignore failures). */
+    typing: (matchId: string) =>
+      request<{ ok: boolean }>(`/matches/${matchId}/typing`, { method: 'POST' }),
     send: (matchId: string, body: string, replyToMessageId?: string) =>
       request<{ message: Message }>(`/matches/${matchId}/messages`, {
         method: 'POST',
