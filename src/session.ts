@@ -49,3 +49,12 @@ export function endSession(end: SessionEnd): void {
 export function isInsideTelegram(): boolean {
   return !!window.Telegram?.WebApp?.initData
 }
+
+/** Authorization for every API call and the realtime stream. Inside Telegram:
+ *  the raw initData, as always (a stored web token is ignored). On the
+ *  website: the session token as Bearer, if signed in. */
+export function authHeader(): Record<string, string> {
+  if (isInsideTelegram()) return { Authorization: window.Telegram?.WebApp?.initData ?? '' }
+  const token = getSessionToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}

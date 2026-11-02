@@ -1,7 +1,7 @@
 import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus, TonPaysPaymentInfo } from './types.js'
 import type { Locale } from './i18n/locale.js'
 import { compressImage } from './utils/compress.js'
-import { endSession, getSessionToken, isInsideTelegram } from './session.js'
+import { authHeader, endSession, isInsideTelegram } from './session.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
 
@@ -16,14 +16,6 @@ export function onAccountPaused(fn: PausedListener): () => void {
 
 function notifyAccountPaused(): void {
   for (const fn of pausedListeners) fn()
-}
-
-/** Inside Telegram: the raw initData, as always (a stored web token is
- *  ignored). On the website: the session token, if signed in. */
-function authHeader(): Record<string, string> {
-  if (isInsideTelegram()) return { Authorization: window.Telegram?.WebApp?.initData ?? '' }
-  const token = getSessionToken()
-  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {

@@ -67,6 +67,29 @@ describe('realtime connection', () => {
     off()
   })
 
+  it('outside Telegram sends the website session as Bearer, or no Authorization without one', async () => {
+    const { setSessionToken, clearSessionToken } = await import('../src/session.js')
+    const wa = window.Telegram!.WebApp! as { initData: string }
+    const initData = wa.initData
+    wa.initData = ''
+    try {
+      fetchMock.mockImplementation(() => Promise.resolve(streamingResponse().res))
+      setSessionToken('web-token')
+      rt.startRealtime()
+      await flush()
+      expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ Authorization: 'Bearer web-token' })
+      rt.stopRealtime()
+
+      clearSessionToken()
+      rt.startRealtime()
+      await flush()
+      expect((fetchMock.mock.calls[1][1] as RequestInit).headers).not.toHaveProperty('Authorization')
+    } finally {
+      wa.initData = initData
+      clearSessionToken()
+    }
+  })
+
   it('reconnects with backoff after the stream ends', async () => {
     vi.useFakeTimers()
     const first = streamingResponse()
