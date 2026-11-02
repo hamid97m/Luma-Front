@@ -1,7 +1,7 @@
 /** IP-country lookup for the first-open language default.
  *
- * Served by the Vercel Edge Function in `api/geo.ts`, which just echoes the
- * `x-vercel-ip-country` header — same origin, no third-party geo service.
+ * Served by nginx on the app's own origin from a local IP→country database
+ * (see deploy/server/nginx/snippets/luma-geo.conf) — no third-party geo service.
  * Only requested when the picker will actually be shown (brand-new user), and
  * memoised so the picker can read the result synchronously when it mounts.
  * Any failure (dev server, timeout, offline) resolves to null → the Telegram
