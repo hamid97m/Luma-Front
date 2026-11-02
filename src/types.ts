@@ -47,8 +47,18 @@ export interface Match {
     icebreakerPrompt: string | null
     icebreakerAnswer: string | null
     premium?: boolean
+    /** Has a live connection right now (GET /matches). */
+    online?: boolean
   }
-  lastMessage: { body: string; createdAt: string; senderId: string; type?: 'text' | 'gift' | 'icebreaker' } | null
+  lastMessage: {
+    id?: string
+    body: string
+    createdAt: string
+    senderId: string
+    type?: 'text' | 'gift' | 'icebreaker'
+    /** When the counterpart read it (meaningful for my own last message). */
+    readAt?: string | null
+  } | null
   unreadCount: number
   premiumRequired?: boolean
 }

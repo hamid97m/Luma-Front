@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { IntrosSection } from '../components/gifts/IntrosSection.js'
 import { Avatar, Badge, Icon } from '../components/ui/index.js'
@@ -6,6 +6,11 @@ import { MatchesEmpty } from '../components/MatchesEmpty.js'
 import { PremiumBadge } from '../components/premium/PremiumBadge.js'
 import { haptic } from '../telegram.js'
 import { useAuthStore } from '../store.js'
+import { subscribe, useRealtimeStore } from '../realtime.js'
+import { useTypingStore } from '../typing.js'
+import { seedPresence, useIsOnline } from '../presence.js'
+import { TypingIndicator } from '../components/chat/TypingIndicator.js'
+import { SeenTicks } from '../components/chat/MessageBubble.js'
 import { t } from '../i18n.js'
 import { formatShortDate } from '../i18n/format.js'
 import { icebreakerQuestion } from '../utils/icebreaker.js'
@@ -36,20 +41,97 @@ interface Props {
   onOpenChat: (match: Match) => void
   onStartDiscovering: () => void
   refreshKey: number
+  /** The chat currently open on top of this list — its new messages aren't unread. */
+  activeChatId?: string | null
 }
 
-export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
+/** Without the live stream, refresh the list this often. */
+const FALLBACK_POLL_MS = 30_000
+
+export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChatId = null }: Props) {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const myUserId = useAuthStore((s) => s.user?.id)
+  const connected = useRealtimeStore((s) => s.connected)
+  const typingByMatch = useTypingStore((s) => s.byMatch)
+  const matchesRef = useRef(matches)
+  matchesRef.current = matches
+  const activeChatRef = useRef(activeChatId)
+  activeChatRef.current = activeChatId
+  const myUserIdRef = useRef(myUserId)
+  myUserIdRef.current = myUserId
+
+  // Every list load also refreshes who's online.
+  const applyList = useCallback((m: Match[]) => {
+    seedPresence(m)
+    setMatches(m)
+  }, [])
+
+  // Silent refetch; a failure keeps the stale list.
+  const refetch = useCallback(() => {
+    api.matches.list().then(({ matches: m }) => applyList(m)).catch(() => {})
+  }, [applyList])
+
+  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const refetchSoon = useCallback(() => {
+    if (refetchTimer.current) clearTimeout(refetchTimer.current)
+    refetchTimer.current = setTimeout(() => { refetchTimer.current = null; refetch() }, 500)
+  }, [refetch])
+  useEffect(() => () => { if (refetchTimer.current) clearTimeout(refetchTimer.current) }, [])
 
   useEffect(() => {
     // On silent refreshes (refreshKey bump) a failure just keeps the stale list.
     api.matches.list()
-      .then(({ matches: m }) => setMatches(m))
+      .then(({ matches: m }) => applyList(m))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [refreshKey])
+  }, [refreshKey, applyList])
+
+  // Live updates: a new message bumps its row to the top with a fresh preview.
+  useEffect(() => subscribe((ev) => {
+    if (ev.type === 'sync') { refetch(); return }
+    const me = myUserIdRef.current
+    if (ev.type === 'message') {
+      const { matchId, message } = ev
+      if (!matchesRef.current.some((m) => m.id === matchId)) { refetchSoon(); return } // brand-new match
+      const unread = message.senderId !== me && matchId !== activeChatRef.current
+      setMatches((prev) => {
+        const row = prev.find((m) => m.id === matchId)
+        if (!row) return prev
+        const updated: Match = {
+          ...row,
+          lastMessage: {
+            id: message.id, body: message.body, createdAt: message.createdAt,
+            senderId: message.senderId, type: message.type, readAt: message.readAt ?? null,
+          },
+          unreadCount: row.unreadCount + (unread ? 1 : 0),
+        }
+        return [updated, ...prev.filter((m) => m.id !== matchId)]
+      })
+    } else if (ev.type === 'message_updated') {
+      const { matchId, message } = ev
+      if (message.senderId !== me) { refetchSoon(); return } // they edited / I read theirs elsewhere → counts may change
+      // My own last message edited (another device) or read by them: update
+      // its preview and seen tick in place.
+      setMatches((prev) => prev.map((m) => {
+        const last = m.lastMessage
+        if (m.id !== matchId || !last || last.senderId !== message.senderId) return m
+        const same = last.id ? last.id === message.id : last.createdAt === message.createdAt
+        return same ? { ...m, lastMessage: { ...last, body: message.body, readAt: message.readAt ?? null } } : m
+      }))
+    } else if (ev.type === 'message_deleted') {
+      if (matchesRef.current.some((m) => m.id === ev.matchId)) refetchSoon() // the preview may change
+    }
+  }), [refetch, refetchSoon])
+
+  // Fallback while the live stream is down: poll the list.
+  useEffect(() => {
+    if (connected) return
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'hidden') refetch()
+    }, FALLBACK_POLL_MS)
+    return () => clearInterval(id)
+  }, [connected, refetch])
 
   // Accepting an intro only returns a matchId, so it may not be in the
   // already-loaded list (it's a brand-new match). Reuse the same
@@ -63,7 +145,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
     }
     api.matches.list()
       .then(({ matches: fresh }) => {
-        setMatches(fresh)
+        applyList(fresh)
         const found = fresh.find((m) => m.id === matchId)
         if (found) onOpenChat(found)
       })
@@ -96,7 +178,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
             >
               {/* Avatar */}
               <div className="relative flex-none">
-                <Avatar src={match.user.photos[0]} alt={match.user.name} size={56} />
+                <RowAvatar user={match.user} />
                 {isNewMatch(match.matchedAt) && (
                   <span className="absolute -top-1 -end-1.5 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary">
                     {t.matches.newBadge}
@@ -110,9 +192,21 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
                   <span className="truncate">{match.user.name}</span>
                   {match.user.premium && <PremiumBadge size={16} />}
                 </p>
-                <p className="text-[13px] text-txt2 truncate">
-                  {preview(match.lastMessage, myUserId)}
-                </p>
+                {typingByMatch[match.id] ? (
+                  <p className="text-[13px] text-primary truncate flex">
+                    <TypingIndicator />
+                  </p>
+                ) : (
+                  <p className="text-[13px] text-txt2 flex items-center gap-1 min-w-0">
+                    {match.lastMessage && match.lastMessage.senderId === myUserId && (
+                      <SeenTicks
+                        seen={!!match.lastMessage.readAt}
+                        className={`flex-none ${match.lastMessage.readAt ? 'text-primary' : 'text-txt3'}`}
+                      />
+                    )}
+                    <span className="truncate">{preview(match.lastMessage, myUserId)}</span>
+                  </p>
+                )}
               </div>
 
               {/* Time + unread */}
@@ -131,4 +225,10 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
       )}
     </div>
   )
+}
+
+/** A row's avatar with the counterpart's presence dot. */
+function RowAvatar({ user }: { user: Match['user'] }) {
+  const online = useIsOnline(user.id)
+  return <Avatar src={user.photos[0]} alt={user.name} size={56} online={online} />
 }

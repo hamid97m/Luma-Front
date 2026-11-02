@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, onAccountPaused, type AuthUser } from './api.js'
 import { clearSessionToken, getSessionToken, isInsideTelegram, onSessionEnded, setSessionToken } from './session.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
 import { useAuthStore, usePremiumStore, useReferralStore } from './store.js'
+import { startRealtime, stopRealtime, subscribe } from './realtime.js'
+import { seedPresence } from './presence.js'
 import { cacheGender, isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
 import { Reconnect } from './screens/Reconnect.js'
@@ -191,6 +193,7 @@ export function App() {
     if (match.user.photos.length > 0) return
     api.matches.list()
       .then(({ matches }) => {
+        seedPresence(matches)
         const full = matches.find((m) => m.id === match.id)
         if (full) setActiveChatMatch((cur) => (cur?.id === match.id ? full : cur))
       })
@@ -203,6 +206,43 @@ export function App() {
     api.likes.unreadCount().then(({ count }) => setLikesBadge(count))
   }, [screen, matchesRefreshKey, tab])
 
+  // Live chat stream — open only inside the main app.
+  useEffect(() => {
+    if (screen !== 'main') return
+    startRealtime()
+    return () => stopRealtime()
+  }, [screen])
+
+  // Matches badge follows live events: a message from the other person in a
+  // chat that isn't open, any change to their messages (read elsewhere, edits,
+  // deletes), or a resync. Debounced — read receipts arrive in bursts.
+  const activeChatIdRef = useRef<string | null>(null)
+  activeChatIdRef.current = activeChatMatch?.id ?? null
+  useEffect(() => {
+    if (screen !== 'main') return
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const refreshBadge = () => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        timer = null
+        api.matches.unreadCount().then(({ count }) => setMatchesBadge(count)).catch(() => {})
+      }, 500)
+    }
+    const unsubscribe = subscribe((ev) => {
+      const me = useAuthStore.getState().user?.id
+      if (ev.type === 'sync' || ev.type === 'message_deleted') { refreshBadge(); return }
+      // Only message events from here on — typing, presence and any future
+      // event type never touch the badge.
+      if (ev.type !== 'message' && ev.type !== 'message_updated') return
+      if (ev.message.senderId === me) return
+      if (ev.type === 'message_updated' || ev.matchId !== activeChatIdRef.current) refreshBadge()
+    })
+    return () => {
+      unsubscribe()
+      if (timer) clearTimeout(timer)
+    }
+  }, [screen])
+
   // Message-notification deep link: once in the app, resolve ?chat=<matchId> to
   // its Match and open the chat overlay. Runs once — guarded so returning from
   // the chat (which clears activeChatMatch) doesn't reopen it.
@@ -213,6 +253,7 @@ export function App() {
     if (!chatId) return
     api.matches.list()
       .then(({ matches }) => {
+        seedPresence(matches)
         const found = matches.find((m) => m.id === chatId)
         if (found) setActiveChatMatch(found)
       })
@@ -402,7 +443,7 @@ export function App() {
           )}
           {visited.matches && (
             <div className={`h-full ${tab === 'matches' ? '' : 'hidden'}`}>
-              <Matches onOpenChat={setActiveChatMatch} onStartDiscovering={() => setTab('discovery')} refreshKey={matchesRefreshKey} />
+              <Matches onOpenChat={setActiveChatMatch} onStartDiscovering={() => setTab('discovery')} refreshKey={matchesRefreshKey} activeChatId={activeChatMatch?.id ?? null} />
             </div>
           )}
           {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile onOpenSupport={() => setShowSupport(true)} /></div>}

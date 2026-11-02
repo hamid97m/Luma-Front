@@ -210,7 +210,17 @@ export const api = {
     unreadCount: () => request<{ count: number }>('/likes/unread-count'),
   },
   messages: {
-    list: (matchId: string) => request<{ messages: Message[] }>(`/matches/${matchId}/messages`),
+    /** `after` → only messages newer than that message id (incremental refresh). */
+    list: (matchId: string, after?: string) =>
+      request<{ messages: Message[] }>(
+        `/matches/${matchId}/messages${after ? `?after=${encodeURIComponent(after)}` : ''}`,
+      ),
+    /** Mark the counterpart's unread messages in this chat as read. */
+    markRead: (matchId: string) =>
+      request<{ ok: boolean }>(`/matches/${matchId}/read`, { method: 'POST' }),
+    /** Tell the counterpart I'm typing (ephemeral; callers throttle and ignore failures). */
+    typing: (matchId: string) =>
+      request<{ ok: boolean }>(`/matches/${matchId}/typing`, { method: 'POST' }),
     send: (matchId: string, body: string, replyToMessageId?: string) =>
       request<{ message: Message }>(`/matches/${matchId}/messages`, {
         method: 'POST',

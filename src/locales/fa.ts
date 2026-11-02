@@ -66,6 +66,8 @@ export const fa = {
     retry: 'تلاش دوباره',
     failed: 'ارسال نشد — برای تلاش دوباره ضربه بزن',
     sendingLabel: 'در حال ارسال',
+    /** Header subtitle / chat-list preview while they type; animated dots follow. */
+    typing: 'در حال نوشتن',
     matched: (name: string) => `تو و ${name} مچ شدید`,
     matchedOn: (date: string) => date,
     icebreakerOf: (name: string) => `یخ‌شکن ${name}`,
@@ -172,7 +174,7 @@ export const fa = {
   },
   photoRequired: {
     title: 'یک عکس تازه لازم داریم',
-    body: 'پروفایلت موقتاً از نمایش خارج شده. برای برگشتن به لوما، یک عکس تازه و واضح از خودت بارگذاری کن.',
+    body: 'عکس پروفایلت را بررسی کردیم و به نظر می‌رسد غیرواقعی است یا مشکلی دارد، برای همین پروفایلت موقتاً از نمایش خارج شده. لطفاً یک عکس واقعی و استاندارد از خودت بارگذاری کن.',
     upload: 'بارگذاری عکس',
     uploading: 'در حال بارگذاری…',
     error: 'بارگذاری نشد. لطفاً دوباره تلاش کن.',

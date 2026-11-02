@@ -48,11 +48,19 @@ vi.mock('../src/api.ts', () => ({
     discovery: { feed: vi.fn() },
     swipes: { swipe: vi.fn() },
     matches: { list: vi.fn(), unreadCount: vi.fn() },
-    messages: { list: vi.fn(), send: vi.fn() },
+    messages: { list: vi.fn(), send: vi.fn(), markRead: vi.fn(() => Promise.resolve({ ok: true })), typing: vi.fn(() => Promise.resolve({ ok: true })) },
     gifts: {
       intros: vi.fn(() => Promise.resolve({ intros: [] })),
       acceptIntro: vi.fn(),
       dismissIntro: vi.fn(),
     },
   },
+}))
+
+// Never open a real /events stream in tests; subscribe/dispatch stay real so
+// screens can be driven with `dispatch(...)`.
+vi.mock('../src/realtime.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/realtime.ts')>()),
+  startRealtime: vi.fn(),
+  stopRealtime: vi.fn(),
 }))

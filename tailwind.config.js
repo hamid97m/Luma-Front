@@ -27,6 +27,7 @@ export default {
         'destructive-hover': 'var(--erbtnh)',
         gold: 'var(--gold)',
         'gold-btn': 'var(--goldbtn)',
+        online: 'var(--online)',
       },
       fontFamily: {
         sans: ['Vazirmatn', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
