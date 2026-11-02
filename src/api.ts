@@ -1,7 +1,7 @@
 import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus, TonPaysPaymentInfo } from './types.js'
 import type { Locale } from './i18n/locale.js'
 import { compressImage } from './utils/compress.js'
-import { getSessionToken, isInsideTelegram } from './session.js'
+import { endSession, getSessionToken, isInsideTelegram } from './session.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
 
@@ -44,7 +44,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const text = await res.text()
     if (res.status === 403 && text.includes('account_paused')) notifyAccountPaused()
-    throw Object.assign(new Error(text), { status: res.status })
+    const err = Object.assign(new Error(text), { status: res.status })
+    // Website only: the session was rejected mid-use. Sign-in calls (/auth/*)
+    // report their own failures; inside Telegram nothing changes.
+    if (res.status === 401 && !isInsideTelegram() && !path.startsWith('/auth/')) {
+      endSession(text.includes('account_banned') ? { kind: 'banned', error: err } : { kind: 'signedOut' })
+    }
+    throw err
   }
   return res.json() as Promise<T>
 }

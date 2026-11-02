@@ -213,6 +213,7 @@ export const en = {
     error: 'Something went wrong. Please try again.',
     close: 'Close',
     noPlans: "Premium isn't available right now",
+    webUnavailable: "Premium isn't available on the website yet.",
     active: 'Active',
     badge: 'Premium',
     daysLeft: (n: number) => (n === 1 ? '1 day left' : `${n} days left`),
@@ -433,6 +434,7 @@ export const en = {
     pauseHint: "You won't be shown in Discovery. Your current matches can still reach you.",
     dangerZone: 'Danger zone',
     deleteAccount: 'Delete my account',
+    logout: 'Log out',
     confirmTitle: 'Delete your account?',
     confirmBody:
       "This is permanent. You'll be removed from Discovery, your matches will lose contact with you, and all your photos and profile info will be erased.",
@@ -474,6 +476,7 @@ export const en = {
     telegramHint: 'Already use Luma in Telegram? Sign in with Telegram to keep your profile.',
     unavailable: "Sign-in options couldn't load. Check your connection and reload the page.",
     signingIn: 'Signing in…',
+    devLogin: 'Dev login',
     errors: {
       invalidTelegram: "Telegram sign-in didn't work. Please try again.",
       invalidGoogle: "Google sign-in didn't work. Please try again.",

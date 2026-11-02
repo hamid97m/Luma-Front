@@ -18,7 +18,7 @@ afterEach(() => {
 describe('NotifyPrompt', () => {
   it('calls onDone without requesting access when Not now is clicked', () => {
     const requestWriteAccess = vi.fn()
-    setWebApp({ requestWriteAccess, isVersionAtLeast: () => true, initDataUnsafe: {} })
+    setWebApp({ requestWriteAccess, isVersionAtLeast: () => true, initData: 'mock_init_data', initDataUnsafe: {} })
     const onDone = vi.fn()
     render(<NotifyPrompt onDone={onDone} />)
 
@@ -34,6 +34,7 @@ describe('NotifyPrompt', () => {
     setWebApp({
       requestWriteAccess: (cb?: (granted: boolean) => void) => cb?.(true),
       isVersionAtLeast: () => true,
+      initData: 'mock_init_data',
       initDataUnsafe: {},
       HapticFeedback: { notificationOccurred: vi.fn() },
     })
@@ -50,6 +51,7 @@ describe('NotifyPrompt', () => {
     setWebApp({
       requestWriteAccess: (cb?: (granted: boolean) => void) => cb?.(false),
       isVersionAtLeast: () => true,
+      initData: 'mock_init_data',
       initDataUnsafe: {},
     })
     const onDone = vi.fn()

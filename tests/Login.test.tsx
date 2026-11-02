@@ -157,6 +157,31 @@ describe('Login', () => {
     expect(screen.getByLabelText(t.login.telegram)).toBeInTheDocument()
   })
 
+  it('a later visit after a failed Google load retries instead of leaving a blank gap', () => {
+    const first = render(<Login onSignedIn={vi.fn()} onBanned={vi.fn()} />)
+    act(() => { fireEvent.error(googleScript()!) })
+    // The failed element is gone, so it can't be mistaken for a pending load.
+    expect(googleScript()).toBeNull()
+    first.unmount()
+
+    renderLogin()
+    expect(googleScript()).not.toBeNull()
+    act(() => { fireEvent.error(googleScript()!) })
+    expect(screen.queryByLabelText(t.login.google)).not.toBeInTheDocument()
+  })
+
+  it('an error thrown while continuing after sign-in is not shown as a sign-in error', async () => {
+    vi.mocked(api.auth.telegramWeb).mockResolvedValue({ token: 'tok', user: USER } as never)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(<Login onSignedIn={() => { throw new Error('boom') }} onBanned={vi.fn()} />)
+
+    await act(async () => { telegramAuth(TG_PAYLOAD) })
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
   it('hides the Telegram button when its script fails to load', () => {
     renderLogin()
     act(() => { fireEvent.error(telegramScript()!) })
@@ -180,7 +205,7 @@ describe('Login', () => {
     vi.mocked(api.auth.dev).mockResolvedValue({ token: 'dev-tok', user: USER } as never)
     const { onSignedIn } = renderLogin()
 
-    fireEvent.click(screen.getByRole('button', { name: /dev/i }))
+    fireEvent.click(screen.getByRole('button', { name: t.login.devLogin }))
 
     await waitFor(() => expect(onSignedIn).toHaveBeenCalledWith('dev-tok', USER))
     expect(api.auth.dev).toHaveBeenCalledTimes(1)
@@ -190,6 +215,6 @@ describe('Login', () => {
     vi.stubEnv('DEV', false)
     renderLogin()
 
-    expect(screen.queryByRole('button', { name: /dev/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: t.login.devLogin })).not.toBeInTheDocument()
   })
 })

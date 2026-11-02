@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 vi.unmock('../src/api.ts')
 
 import { api, onAccountPaused } from '../src/api.js'
-import { setSessionToken, clearSessionToken } from '../src/session.js'
+import { setSessionToken, clearSessionToken, getSessionToken, onSessionEnded } from '../src/session.js'
 
 describe('api request', () => {
   beforeEach(() => {
@@ -188,5 +188,69 @@ describe('api request auth header', () => {
     expect(calls[0][1]).toMatchObject({ method: 'POST', body: JSON.stringify({ credential: 'id-token' }) })
     expect(calls[1][0]).toContain('/auth/telegram-web')
     expect(calls[1][1]).toMatchObject({ method: 'POST', body: JSON.stringify(widget) })
+  })
+})
+
+describe('api request: rejected website session', () => {
+  const TG_INIT_DATA = window.Telegram!.WebApp!.initData
+  const reply401 = (body: object) =>
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: () => Promise.resolve(JSON.stringify(body)),
+    }))
+  let ended: ReturnType<typeof vi.fn>
+  let unsubscribe: () => void
+
+  beforeEach(() => {
+    ended = vi.fn()
+    unsubscribe = onSessionEnded(ended)
+    setSessionToken('web-token')
+  })
+
+  afterEach(() => {
+    unsubscribe()
+    clearSessionToken()
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = TG_INIT_DATA
+  })
+
+  it('outside Telegram, a 401 mid-session clears the token and signs out', async () => {
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
+    reply401({ error: 'invalid_session' })
+
+    await expect(api.profile.get()).rejects.toMatchObject({ status: 401 })
+
+    expect(getSessionToken()).toBeNull()
+    expect(ended).toHaveBeenCalledWith({ kind: 'signedOut' })
+  })
+
+  it('outside Telegram, account_banned mid-session reports a ban and keeps the token', async () => {
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
+    reply401({ error: 'account_banned', botUsername: 'LumaDatingBot' })
+
+    const err = await api.profile.get().catch((e: unknown) => e)
+
+    expect(ended).toHaveBeenCalledWith({ kind: 'banned', error: err })
+    expect(getSessionToken()).toBe('web-token')
+  })
+
+  it('outside Telegram, a 401 from a sign-in call is left to the caller', async () => {
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
+    reply401({ error: 'invalid_google_login' })
+
+    await expect(api.auth.google('bad')).rejects.toMatchObject({ status: 401 })
+    await expect(api.auth.me()).rejects.toMatchObject({ status: 401 })
+
+    expect(ended).not.toHaveBeenCalled()
+    expect(getSessionToken()).toBe('web-token')
+  })
+
+  it('inside Telegram, a 401 changes nothing', async () => {
+    reply401({ error: 'invalid_init_data' })
+
+    await expect(api.profile.get()).rejects.toMatchObject({ status: 401 })
+
+    expect(ended).not.toHaveBeenCalled()
+    expect(getSessionToken()).toBe('web-token')
   })
 })

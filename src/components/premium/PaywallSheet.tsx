@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api.js'
 import { t, useLocaleStore, LOCALE_META } from '../../i18n.js'
 import { openInvoice, haptic } from '../../telegram.js'
+import { isInsideTelegram } from '../../session.js'
 import { usePremiumStore, useReferralStore } from '../../store.js'
 import { formatCountdown } from '../../utils/premium.js'
 import { Icon, Sheet } from '../ui'
@@ -262,7 +263,10 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
         ))}
       </div>
 
-      {phase === 'activating' ? (
+      {/* Website: Stars invoices only open inside Telegram — no purchase here. */}
+      {!isInsideTelegram() ? (
+        <p className="text-txt2 text-[14px] text-center py-10">{t.premium.webUnavailable}</p>
+      ) : phase === 'activating' ? (
         <div className="flex flex-col items-center justify-center py-10">
           <div
             className="w-7 h-7 border-[3px] border-primary-container border-t-primary rounded-full mb-3"

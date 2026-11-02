@@ -5,6 +5,7 @@ import { haptic, isDarkTheme, setThemePref } from '../telegram.js'
 import { t, useLocaleStore } from '../i18n.js'
 import { LOCALE_META, clearStoredLocale, setLocalePending, type Locale } from '../i18n/locale.js'
 import { LanguageOptions } from './LanguageOptions.js'
+import { endSession, isInsideTelegram } from '../session.js'
 import { Button, Icon, Sheet } from './ui'
 
 interface Props {
@@ -167,6 +168,28 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
               {t.settings.pauseHint}
             </p>
           </button>
+
+          {/* Website only — inside Telegram the account is the Telegram one. */}
+          {!isInsideTelegram() && (
+            <button
+              type="button"
+              onClick={() => {
+                haptic.selection()
+                // App drops the token and shows the Login screen.
+                endSession({ kind: 'signedOut' })
+              }}
+              className="w-full text-start bg-surface rounded-m3-lg p-4 mb-2.5"
+            >
+              <span className="text-txt font-medium text-[15px] flex items-center gap-2.5">
+                <Icon
+                  name="log-out"
+                  size={17}
+                  className={`text-txt2 ${LOCALE_META[locale].dir === 'rtl' ? '-scale-x-100' : ''}`}
+                />
+                {t.settings.logout}
+              </span>
+            </button>
+          )}
 
           <button
             type="button"

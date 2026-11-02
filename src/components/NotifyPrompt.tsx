@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { t } from '../i18n.js'
 import { api } from '../api.js'
 import { haptic, markWriteAccessDismissed, markWriteAccessPrompted, requestWriteAccess } from '../telegram.js'
+import { isInsideTelegram } from '../session.js'
 import { Button, Icon, Sheet } from './ui'
 
 interface Props {
@@ -11,10 +12,14 @@ interface Props {
 // Soft explainer shown before Telegram's native "Allow bot to message you?"
 // popup — an unexplained system dialog gets reflexively declined, so we make
 // the ask at a moment of intent and let the user opt into the native prompt.
+// The popup only exists inside Telegram, so on the website this renders nothing.
 export function NotifyPrompt({ onDone }: Props) {
   const [busy, setBusy] = useState(false)
+  const insideTelegram = isInsideTelegram()
 
-  useEffect(() => { markWriteAccessPrompted() }, [])
+  useEffect(() => { if (insideTelegram) markWriteAccessPrompted() }, [insideTelegram])
+
+  if (!insideTelegram) return null
 
   const enable = async () => {
     setBusy(true)

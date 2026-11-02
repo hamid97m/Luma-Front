@@ -69,12 +69,17 @@ export function Login({ onSignedIn, onBanned }: Props) {
     busyRef.current = true
     setBusy(true)
     setError(null)
+    // Only the API call's rejection is a sign-in error; a throw while the app
+    // continues after a successful sign-in is a bug, not a network failure.
     call()
-      .then(({ token, user }) => handlers.current.onSignedIn(token, user))
-      .catch((err: unknown) => {
-        if (errorCode(err) === 'account_banned') handlers.current.onBanned(err)
-        else setError(errorMessage(err))
-      })
+      .then(
+        ({ token, user }) => handlers.current.onSignedIn(token, user),
+        (err: unknown) => {
+          if (errorCode(err) === 'account_banned') handlers.current.onBanned(err)
+          else setError(errorMessage(err))
+        },
+      )
+      .catch((err: unknown) => console.error(err))
       .finally(() => {
         busyRef.current = false
         setBusy(false)
@@ -138,6 +143,10 @@ export function Login({ onSignedIn, onBanned }: Props) {
       script = document.createElement('script')
       script.async = true
       script.src = GOOGLE_GSI_SRC
+      // A failed element would never fire again; drop it (even if this screen
+      // is gone by then) so a later visit retries instead of waiting forever.
+      const failed = script
+      failed.addEventListener('error', () => failed.remove(), { once: true })
       document.head.appendChild(script)
     }
     const onError = () => { if (!cancelled) setGoogleFailed(true) }
@@ -198,7 +207,7 @@ export function Login({ onSignedIn, onBanned }: Props) {
         {/* Dev builds only: sign in as the backend's dev user (POST /auth/dev). */}
         {import.meta.env.DEV && (
           <Button variant="outlined" icon="settings" disabled={busy} onClick={() => signIn(() => api.auth.dev())}>
-            Dev login
+            {t.login.devLogin}
           </Button>
         )}
 

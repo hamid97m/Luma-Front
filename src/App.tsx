@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, onAccountPaused, type AuthUser } from './api.js'
-import { clearSessionToken, getSessionToken, isInsideTelegram, setSessionToken } from './session.js'
+import { clearSessionToken, getSessionToken, isInsideTelegram, onSessionEnded, setSessionToken } from './session.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
 import { useAuthStore, usePremiumStore, useReferralStore } from './store.js'
 import { cacheGender, isReturningUser, markReturningUser } from './utils/returningUser.js'
@@ -144,6 +144,22 @@ export function App() {
     setScreen('photoRequired')
   }), [])
 
+  // Website only: logged out, or the session rejected / banned mid-use (see
+  // endSession in session.ts) — drop overlays and go to Login (or Blocked).
+  // Setting authResult too lets the next sign-in advance the screen again.
+  useEffect(() => onSessionEnded((end) => {
+    setActiveChatMatch(null)
+    setShowSupport(false)
+    setPlansOpen(false)
+    setShowNotifyPrompt(false)
+    if (end.kind === 'banned' && handleBanned(end.error)) {
+      setScreen('blocked')
+      return
+    }
+    setAuthResult('login')
+    setScreen('login')
+  }), [])
+
   // Catch a pause even if the user is sitting still (no swipe / send).
   useEffect(() => {
     if (screen !== 'main') return
@@ -219,7 +235,8 @@ export function App() {
   // profile right after onboarding and returning users who never granted it.
   // Cooldown-gated so "Not now" isn't re-asked on every launch.
   useEffect(() => {
-    if (screen === 'main') setShowNotifyPrompt(shouldPromptWriteAccessOnLaunch())
+    // Bot DM permission is a Telegram popup — never asked on the website.
+    if (screen === 'main') setShowNotifyPrompt(isInsideTelegram() && shouldPromptWriteAccessOnLaunch())
   }, [screen])
 
   // Advance only when both the splash timer has fired and auth has resolved.

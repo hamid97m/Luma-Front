@@ -10,12 +10,38 @@ export function getSessionToken(): string | null {
   }
 }
 
+// Storage can throw (private / sandboxed browsers). Signing in must still
+// work for this page load, so failures are swallowed.
 export function setSessionToken(token: string): void {
-  localStorage.setItem(SESSION_KEY, token)
+  try {
+    localStorage.setItem(SESSION_KEY, token)
+  } catch { /* not persisted */ }
 }
 
 export function clearSessionToken(): void {
-  localStorage.removeItem(SESSION_KEY)
+  try {
+    localStorage.removeItem(SESSION_KEY)
+  } catch { /* nothing stored */ }
+}
+
+/** How a website session ended mid-use: logged out / rejected by the server
+ *  (→ Login screen), or the account was banned (→ Blocked screen). */
+export type SessionEnd = { kind: 'signedOut' } | { kind: 'banned'; error: unknown }
+
+type SessionEndListener = (end: SessionEnd) => void
+const sessionEndListeners = new Set<SessionEndListener>()
+
+/** Subscribe to the website session ending. Returns an unsubscribe. */
+export function onSessionEnded(fn: SessionEndListener): () => void {
+  sessionEndListeners.add(fn)
+  return () => { sessionEndListeners.delete(fn) }
+}
+
+/** End the website session. A sign-out also forgets the stored token; a ban
+ *  keeps it so the next launch lands on the Blocked screen again. */
+export function endSession(end: SessionEnd): void {
+  if (end.kind === 'signedOut') clearSessionToken()
+  for (const fn of sessionEndListeners) fn(end)
 }
 
 /** Opened as a Telegram Mini App. Telegram always wins: initData auth, and
