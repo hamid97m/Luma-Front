@@ -185,6 +185,7 @@ export const en = {
     title: (name: string) => `Send a gift to ${name}`,
     close: 'Close',
     unavailable: "Gifts aren't available right now",
+    webUnavailable: "Sending gifts isn't available on the website yet.",
     notePlaceholder: 'Note (optional)',
     selectPrompt: 'Pick a gift',
     send: (emoji: string, stars: number) => `Send ${emoji} for ★${stars}`,

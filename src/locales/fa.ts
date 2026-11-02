@@ -183,6 +183,7 @@ export const fa = {
     title: (name: string) => `ارسال هدیه به ${name}`,
     close: 'بستن',
     unavailable: 'هدیه‌ها فعلاً در دسترس نیستند',
+    webUnavailable: 'ارسال هدیه فعلاً روی نسخه وب در دسترس نیست.',
     notePlaceholder: 'یادداشت (اختیاری)',
     selectPrompt: 'یک هدیه انتخاب کن',
     send: (emoji: string, stars: number) => `ارسال ${emoji} با ★${stars}`,

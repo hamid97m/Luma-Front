@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api.js'
 import { t } from '../../i18n.js'
 import { openInvoice, haptic } from '../../telegram.js'
+import { isInsideTelegram } from '../../session.js'
 import type { GiftCatalogItem } from '../../types.js'
 import { Button, Icon, Sheet, Textarea } from '../ui'
 
@@ -64,6 +65,9 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
     setNote('')
     setPhase('idle')
     setBusy(false)
+
+    // Website: Stars invoices only open inside Telegram — nothing to load.
+    if (!isInsideTelegram()) return
 
     api.gifts
       .catalog()
@@ -133,7 +137,7 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
 
   const handleSend = async () => {
     const gift = gifts?.find((g) => g.giftId === selectedGiftId)
-    if (!gift || busy) return
+    if (!gift || busy || !isInsideTelegram()) return
 
     // Capture the session this checkout belongs to. If the sheet is closed
     // (or closed+reopened) before an await below resolves, sessionRef will
@@ -183,7 +187,10 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
         <p className="text-error text-[14px] mb-4">{t.gifts.error}</p>
       )}
 
-      {phase === 'sending' ? (
+      {/* Website: Stars invoices only open inside Telegram — no gifting here. */}
+      {!isInsideTelegram() ? (
+        <p className="text-txt2 text-[14px] text-center py-10">{t.gifts.webUnavailable}</p>
+      ) : phase === 'sending' ? (
         <div className="flex flex-col items-center justify-center py-10">
           <div
             className="w-7 h-7 border-[3px] border-primary-container border-t-primary rounded-full mb-3"

@@ -201,6 +201,7 @@ export const ar = {
     title: (name: string) => `إرسال هدية إلى ${name}`,
     close: 'إغلاق',
     unavailable: 'الهدايا غير متاحة حاليًا',
+    webUnavailable: 'إرسال الهدايا غير متاح على موقع الويب حاليًا.',
     notePlaceholder: 'ملاحظة (اختياري)',
     selectPrompt: 'اختر هدية',
     send: (emoji: string, stars: number) => `إرسال ${emoji} مقابل ★${stars}`,
