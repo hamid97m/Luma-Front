@@ -9,6 +9,7 @@ import { useAuthStore } from '../store.js'
 import { subscribe, useRealtimeStore } from '../realtime.js'
 import { useTypingStore } from '../typing.js'
 import { TypingIndicator } from '../components/chat/TypingIndicator.js'
+import { SeenTicks } from '../components/chat/MessageBubble.js'
 import { t } from '../i18n.js'
 import { formatShortDate } from '../i18n/format.js'
 import { icebreakerQuestion } from '../utils/icebreaker.js'
@@ -92,7 +93,10 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
         if (!row) return prev
         const updated: Match = {
           ...row,
-          lastMessage: { body: message.body, createdAt: message.createdAt, senderId: message.senderId, type: message.type },
+          lastMessage: {
+            id: message.id, body: message.body, createdAt: message.createdAt,
+            senderId: message.senderId, type: message.type, readAt: message.readAt ?? null,
+          },
           unreadCount: row.unreadCount + (unread ? 1 : 0),
         }
         return [updated, ...prev.filter((m) => m.id !== matchId)]
@@ -100,13 +104,14 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
     } else if (ev.type === 'message_updated') {
       const { matchId, message } = ev
       if (message.senderId !== me) { refetchSoon(); return } // they edited / I read theirs elsewhere → counts may change
-      // My own message edited (another device): refresh the preview if it's the last one.
-      setMatches((prev) => prev.map((m) => (
-        m.id === matchId && m.lastMessage
-          && m.lastMessage.senderId === message.senderId && m.lastMessage.createdAt === message.createdAt
-          ? { ...m, lastMessage: { ...m.lastMessage, body: message.body } }
-          : m
-      )))
+      // My own last message edited (another device) or read by them: update
+      // its preview and seen tick in place.
+      setMatches((prev) => prev.map((m) => {
+        const last = m.lastMessage
+        if (m.id !== matchId || !last || last.senderId !== message.senderId) return m
+        const same = last.id ? last.id === message.id : last.createdAt === message.createdAt
+        return same ? { ...m, lastMessage: { ...last, body: message.body, readAt: message.readAt ?? null } } : m
+      }))
     } else if (ev.type === 'message_deleted') {
       if (matchesRef.current.some((m) => m.id === ev.matchId)) refetchSoon() // the preview may change
     }
@@ -185,8 +190,14 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
                     <TypingIndicator />
                   </p>
                 ) : (
-                  <p className="text-[13px] text-txt2 truncate">
-                    {preview(match.lastMessage, myUserId)}
+                  <p className="text-[13px] text-txt2 flex items-center gap-1 min-w-0">
+                    {match.lastMessage && match.lastMessage.senderId === myUserId && (
+                      <SeenTicks
+                        seen={!!match.lastMessage.readAt}
+                        className={`flex-none ${match.lastMessage.readAt ? 'text-primary' : 'text-txt3'}`}
+                      />
+                    )}
+                    <span className="truncate">{preview(match.lastMessage, myUserId)}</span>
                   </p>
                 )}
               </div>

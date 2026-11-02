@@ -26,9 +26,10 @@ interface MessageBubbleProps {
   onAnswer?: (id: string) => void
 }
 
-function SeenTicks({ seen }: { seen: boolean }) {
+/** ✓ sent / ✓✓ seen. Colour defaults to the in-bubble style (on primary). */
+export function SeenTicks({ seen, className = 'text-white/70' }: { seen: boolean; className?: string }) {
   return (
-    <span role="img" aria-label={seen ? t.aria.seen : t.aria.sent} className="inline-flex text-white/70">
+    <span role="img" aria-label={seen ? t.aria.seen : t.aria.sent} className={`inline-flex ${className}`}>
       <Icon name={seen ? 'check-check' : 'check'} size={13} strokeWidth={2.2} />
     </span>
   )

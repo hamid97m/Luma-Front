@@ -72,4 +72,31 @@ describe('Matches — live events', () => {
     expect(screen.queryByText(t.chat.typing)).not.toBeInTheDocument()
     expect(screen.getByText('new b')).toBeInTheDocument()
   })
+
+  it('ticks my last message and flips it to seen when they read it', async () => {
+    const mine: Match = {
+      ...row('c', 'Cleo', 'my hi'),
+      lastMessage: { id: 'c1', body: 'my hi', createdAt: '2025-01-02T00:00:00Z', senderId: 'me-1', type: 'text', readAt: null },
+    }
+    vi.mocked(api.matches.list).mockResolvedValue({ matches: [mine, row('a', 'Ava', 'old a')] })
+    render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
+    await waitFor(() => screen.getByText('my hi'))
+    expect(screen.getAllByRole('img', { name: t.aria.sent })).toHaveLength(1) // not on their message
+    expect(screen.queryByRole('img', { name: t.aria.seen })).not.toBeInTheDocument()
+
+    act(() => dispatch({ type: 'message_updated', matchId: 'c', message: { id: 'c1', senderId: 'me-1', body: 'my hi', createdAt: '2025-01-02T00:00:00Z', readAt: '2025-01-02T00:05:00Z', type: 'text' } }))
+    expect(screen.getByRole('img', { name: t.aria.seen })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: t.aria.sent })).not.toBeInTheDocument()
+    expect(api.matches.list).toHaveBeenCalledTimes(1) // updated in place, no refetch
+
+    act(() => dispatch({ type: 'typing', matchId: 'c', userId: 'u-c' }))
+    expect(screen.queryByRole('img', { name: t.aria.seen })).not.toBeInTheDocument()
+  })
+
+  it('a live message of mine shows the sent tick', async () => {
+    render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
+    await waitFor(() => screen.getByText('old a'))
+    act(() => dispatch({ type: 'message', matchId: 'a', message: { id: 'z', senderId: 'me-1', body: 'sent now', createdAt: '2025-01-03T00:00:00Z', readAt: null, type: 'text' } }))
+    expect(screen.getByRole('img', { name: t.aria.sent })).toBeInTheDocument()
+  })
 })
