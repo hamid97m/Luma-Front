@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { api, onAccountPaused } from './api.js'
+import { api, onAccountPaused, type AuthUser } from './api.js'
+import { clearSessionToken, getSessionToken, isInsideTelegram, setSessionToken } from './session.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
 import { useAuthStore, usePremiumStore, useReferralStore } from './store.js'
 import { cacheGender, isReturningUser, markReturningUser } from './utils/returningUser.js'
@@ -24,7 +25,7 @@ import { BottomNav } from './components/BottomNav.js'
 import { NotifyPrompt } from './components/NotifyPrompt.js'
 import type { Match, UserProfile } from './types.js'
 
-type Screen = 'splash' | 'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired'
+type Screen = 'splash' | 'login' | 'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired'
 type Tab = 'discovery' | 'likes' | 'matches' | 'profile'
 
 const TABS: readonly Tab[] = ['discovery', 'likes', 'matches', 'profile']
@@ -64,6 +65,12 @@ function readDeepLinkPlans(): boolean {
 // keyed <App> (see main.tsx) — that remount must not replay the 2.6 s intro.
 let splashPlayed = false
 
+/** Stand-in for the website Login screen (Task 10 replaces it): it signs the
+ *  user in and hands the result to `onSignedIn`. */
+function LoginPlaceholder(_props: { onSignedIn: (token: string, user: AuthUser) => void }) {
+  return <div className="h-full bg-bg" data-testid="login-screen" />
+}
+
 /** Reconcile the server's saved locale with the local store on launch.
  * Server wins — unless a Settings change failed to reach it, in which case
  * the local value is re-sent first (and the pending flag cleared on success). */
@@ -90,11 +97,12 @@ export function healMissingLocale(serverLocale: Locale | null): boolean {
 }
 
 export function App() {
-  const initDataRaw = window.Telegram?.WebApp?.initData ?? null
+  // Inside Telegram initData always wins; a stored web session token is ignored.
+  const initDataRaw = isInsideTelegram() ? window.Telegram?.WebApp?.initData ?? null : null
   const { setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('splash')
   const [splashDone, setSplashDone] = useState(splashPlayed)
-  const [authResult, setAuthResult] = useState<'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired' | null>(null)
+  const [authResult, setAuthResult] = useState<Exclude<Screen, 'splash'> | null>(null)
   // Locale the server returned from /auth/verify. Reconciled with the local
   // store only once the splash is over (see the advance effect below).
   const [serverLocale, setServerLocale] = useState<Locale | null | undefined>(undefined)
@@ -229,45 +237,78 @@ export function App() {
     setScreen(authResult)
   }, [splashDone, authResult, serverLocale])
 
+  // Shared by every sign-in path (initData, stored web session, fresh website
+  // sign-in): route the signed-in user to onboarding, the app or photo review.
+  const applySignedInUser = (partial: AuthUser) => {
+    const locale = (partial as { locale?: Locale | null }).locale ?? null
+    setServerLocale(locale)
+    // Only a brand-new user (server has no locale yet) gets the picker.
+    if (isLocale(locale)) setLocaleChosen(true)
+    // Picker is coming — start the IP-country lookup now so its default
+    // row is settled by the time the splash ends (see LanguagePicker).
+    else if (!partial.setupComplete && !isLocaleChosenHere()) prefetchGeoCountry()
+    if (partial.setupComplete) {
+      healMissingLocale(locale)
+      markReturningUser()
+      const gender = (partial as Partial<UserProfile>).gender
+      if (gender) cacheGender(gender)
+      setUser(partial as UserProfile)
+      setAuthResult(partial.paused ? 'photoRequired' : 'main')
+    } else {
+      setAuthResult('onboarding')
+    }
+  }
+
+  // Banned → the terminal Blocked screen (with the bot handle for support).
+  // Returns false for any other failure.
+  const handleBanned = (err: unknown): boolean => {
+    const status = (err as { status?: number } | null)?.status
+    const message = err instanceof Error ? err.message : ''
+    if (!(status === 401 && message.includes('account_banned'))) return false
+    try {
+      setSupportBot((JSON.parse(message) as { botUsername?: string | null }).botUsername ?? null)
+    } catch { /* older backend: plain-text body, no bot handle */ }
+    setAuthResult('blocked')
+    return true
+  }
+
+  // Website Login screen succeeded: keep the session, then continue exactly
+  // like a launch with that session.
+  const completeSignIn = (token: string, user: AuthUser) => {
+    setSessionToken(token)
+    applySignedInUser(user)
+  }
+
   useEffect(() => {
     if (!initDataRaw) {
-      // Dev / no-Telegram context — skip auth, show onboarding
-      if (!isLocaleChosenHere()) prefetchGeoCountry()
-      setAuthResult('onboarding')
+      // Website (no Telegram): resume a stored session, otherwise sign in.
+      if (!getSessionToken()) {
+        setAuthResult('login')
+        return
+      }
+      api.auth.me()
+        .then(({ user }) => applySignedInUser(user))
+        .catch((err: unknown) => {
+          if (handleBanned(err)) return
+          const status = (err as { status?: number } | null)?.status
+          // The session itself was rejected (expired, deleted account, …):
+          // drop it and ask to sign in again. Anything else (network, 5xx)
+          // keeps it for a retry.
+          if (status === 401) {
+            clearSessionToken()
+            setAuthResult('login')
+            return
+          }
+          setAuthResult('reconnect')
+        })
       return
     }
     setInitDataRaw(initDataRaw)
 
     api.auth.verify(initDataRaw)
-      .then(({ user: partial }) => {
-        const locale = (partial as { locale?: Locale | null }).locale ?? null
-        setServerLocale(locale)
-        // Only a brand-new user (server has no locale yet) gets the picker.
-        if (isLocale(locale)) setLocaleChosen(true)
-        // Picker is coming — start the IP-country lookup now so its default
-        // row is settled by the time the splash ends (see LanguagePicker).
-        else if (!partial.setupComplete && !isLocaleChosenHere()) prefetchGeoCountry()
-        if (partial.setupComplete) {
-          healMissingLocale(locale)
-          markReturningUser()
-          const gender = (partial as Partial<UserProfile>).gender
-          if (gender) cacheGender(gender)
-          setUser(partial as UserProfile)
-          setAuthResult(partial.paused ? 'photoRequired' : 'main')
-        } else {
-          setAuthResult('onboarding')
-        }
-      })
+      .then(({ user: partial }) => applySignedInUser(partial))
       .catch((err: unknown) => {
-        const status = (err as { status?: number } | null)?.status
-        const message = err instanceof Error ? err.message : ''
-        if (status === 401 && message.includes('account_banned')) {
-          try {
-            setSupportBot((JSON.parse(message) as { botUsername?: string | null }).botUsername ?? null)
-          } catch { /* older backend: plain-text body, no bot handle */ }
-          setAuthResult('blocked')
-          return
-        }
+        if (handleBanned(err)) return
         setAuthResult(isReturningUser() ? 'reconnect' : 'onboarding')
       })
   }, [initDataRaw])
@@ -277,6 +318,10 @@ export function App() {
     // canvas for those few hundred ms instead of replaying the intro.
     if (splashPlayed) return <div className="h-full bg-bg" />
     return <Splash onDone={() => { splashPlayed = true; setSplashDone(true) }} />
+  }
+
+  if (screen === 'login') {
+    return <LoginPlaceholder onSignedIn={completeSignIn} />
   }
 
   if (screen === 'blocked') {

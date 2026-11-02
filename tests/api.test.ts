@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 vi.unmock('../src/api.ts')
 
 import { api, onAccountPaused } from '../src/api.js'
+import { setSessionToken, clearSessionToken } from '../src/session.js'
 
 describe('api request', () => {
   beforeEach(() => {
@@ -116,5 +117,76 @@ describe('api request', () => {
     }))
 
     await expect(api.matches.list()).rejects.toMatchObject({ status: 404 })
+  })
+})
+
+describe('api request auth header', () => {
+  const TG_INIT_DATA = window.Telegram!.WebApp!.initData
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) }))
+  })
+
+  afterEach(() => {
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = TG_INIT_DATA
+    clearSessionToken()
+  })
+
+  it('sends Bearer <token> outside Telegram', async () => {
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
+    setSessionToken('web-token')
+
+    await api.matches.list()
+
+    const [, opts] = vi.mocked(fetch).mock.calls[0]
+    expect((opts?.headers as Record<string, string>).Authorization).toBe('Bearer web-token')
+  })
+
+  it('sends initData inside Telegram even with a stored token', async () => {
+    setSessionToken('web-token')
+
+    await api.matches.list()
+
+    const [, opts] = vi.mocked(fetch).mock.calls[0]
+    expect((opts?.headers as Record<string, string>).Authorization).toBe(TG_INIT_DATA)
+  })
+
+  it('GET /auth/me sends the token and no JSON content-type', async () => {
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
+    setSessionToken('web-token')
+
+    await api.auth.me()
+
+    const [url, opts] = vi.mocked(fetch).mock.calls[0]
+    expect(url).toContain('/auth/me')
+    expect(opts?.method).toBeUndefined()
+    const headers = opts?.headers as Record<string, string>
+    expect(headers.Authorization).toBe('Bearer web-token')
+    expect(headers['Content-Type']).toBeUndefined()
+  })
+
+  it('body-less POST /auth/dev sends no JSON content-type', async () => {
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
+
+    await api.auth.dev()
+
+    const [url, opts] = vi.mocked(fetch).mock.calls[0]
+    expect(url).toContain('/auth/dev')
+    expect(opts?.method).toBe('POST')
+    expect((opts?.headers as Record<string, string>)['Content-Type']).toBeUndefined()
+  })
+
+  it('posts the Google credential and the Telegram widget payload as JSON', async () => {
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
+    const widget = { id: 1, first_name: 'Ali', auth_date: 1, hash: 'h' }
+
+    await api.auth.google('id-token')
+    await api.auth.telegramWeb(widget)
+
+    const calls = vi.mocked(fetch).mock.calls
+    expect(calls[0][0]).toContain('/auth/google')
+    expect(calls[0][1]).toMatchObject({ method: 'POST', body: JSON.stringify({ credential: 'id-token' }) })
+    expect(calls[1][0]).toContain('/auth/telegram-web')
+    expect(calls[1][1]).toMatchObject({ method: 'POST', body: JSON.stringify(widget) })
   })
 })

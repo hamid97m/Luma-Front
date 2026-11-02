@@ -1,6 +1,7 @@
 import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus, TonPaysPaymentInfo } from './types.js'
 import type { Locale } from './i18n/locale.js'
 import { compressImage } from './utils/compress.js'
+import { getSessionToken, isInsideTelegram } from './session.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
 
@@ -17,8 +18,15 @@ function notifyAccountPaused(): void {
   for (const fn of pausedListeners) fn()
 }
 
+/** Inside Telegram: the raw initData, as always (a stored web token is
+ *  ignored). On the website: the session token, if signed in. */
+function authHeader(): Record<string, string> {
+  if (isInsideTelegram()) return { Authorization: window.Telegram?.WebApp?.initData ?? '' }
+  const token = getSessionToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const initData = window.Telegram?.WebApp?.initData ?? ''
   // Only advertise a JSON content-type when we actually send a body — Fastify 4
   // rejects an empty body carrying `application/json` with FST_ERR_CTP_EMPTY_JSON_BODY,
   // which is what body-less POSTs (e.g. photos.fromTelegram, gift intro accept/dismiss)
@@ -29,7 +37,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     keepalive: true,
     headers: {
       ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-      Authorization: initData,
+      ...authHeader(),
       ...options?.headers,
     },
   })
@@ -69,13 +77,36 @@ function putWithProgress(url: string, blob: Blob, onProgress?: (pct: number) => 
   })
 }
 
+/** The `user` every sign-in endpoint answers with (same shape as /auth/verify). */
+export type AuthUser = Pick<UserProfile, 'id' | 'name' | 'setupComplete' | 'paused'> | UserProfile
+
+/** Telegram Login Widget callback payload, posted as-is to /auth/telegram-web. */
+export interface TelegramWidgetPayload {
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+  auth_date: number
+  hash: string
+}
+
+export type WebSignInResult = { token: string; user: AuthUser }
+
 export const api = {
   auth: {
     verify: (initData: string) =>
-      request<{ user: Pick<UserProfile, 'id' | 'name' | 'setupComplete' | 'paused'> | UserProfile }>(
+      request<{ user: AuthUser }>(
         '/auth/verify',
         { method: 'POST', body: JSON.stringify({ initData }) }
       ),
+    me: () => request<{ user: AuthUser }>('/auth/me'),
+    telegramWeb: (payload: TelegramWidgetPayload) =>
+      request<WebSignInResult>('/auth/telegram-web', { method: 'POST', body: JSON.stringify(payload) }),
+    google: (credential: string) =>
+      request<WebSignInResult>('/auth/google', { method: 'POST', body: JSON.stringify({ credential }) }),
+    // Non-production backends only.
+    dev: () => request<WebSignInResult>('/auth/dev', { method: 'POST' }),
   },
   profile: {
     get: () => request<UserProfile>('/profile/me'),
