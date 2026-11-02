@@ -2,14 +2,15 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Chat } from '../src/screens/Chat.js'
 import { api } from '../src/api.js'
-import { dispatch } from '../src/realtime.js'
+import { dispatch, useRealtimeStore } from '../src/realtime.js'
+import { resetTyping } from '../src/typing.js'
 import { t } from '../src/i18n.js'
 import type { Match, Message } from '../src/types.js'
 
 vi.mock('../src/api.js', () => ({
   api: {
     matches: { list: vi.fn() },
-    messages: { list: vi.fn(), send: vi.fn(), edit: vi.fn(), delete: vi.fn(), markRead: vi.fn(() => Promise.resolve({ ok: true })) },
+    messages: { list: vi.fn(), send: vi.fn(), edit: vi.fn(), delete: vi.fn(), markRead: vi.fn(() => Promise.resolve({ ok: true })), typing: vi.fn(() => Promise.resolve({ ok: true })) },
     premium: { status: vi.fn() },
   },
 }))
@@ -101,5 +102,58 @@ describe('Chat — live events', () => {
     await waitFor(() => screen.getByText('missed'))
     expect(api.messages.list).toHaveBeenLastCalledWith('match-1', 'm0')
     expect(screen.getByText('first')).toBeInTheDocument()
+  })
+})
+
+describe('Chat — typing', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetTyping()
+    useRealtimeStore.setState({ connected: true })
+  })
+
+  const edit = (text: string) =>
+    fireEvent.change(screen.getByPlaceholderText(t.chat.placeholder), { target: { value: text } })
+
+  it('shows typing in the header until their message arrives', async () => {
+    await openChat()
+    expect(screen.queryByText(t.chat.typing)).not.toBeInTheDocument()
+    act(() => dispatch({ type: 'typing', matchId: 'match-2', userId: 'other-2' }))
+    expect(screen.queryByText(t.chat.typing)).not.toBeInTheDocument()
+    act(() => dispatch({ type: 'typing', matchId: 'match-1', userId: 'other-1' }))
+    expect(screen.getByText(t.chat.typing)).toBeInTheDocument()
+    act(() => dispatch({ type: 'message', matchId: 'match-1', message: m('t1', 'hey', 'other-1', '10:02:00') }))
+    expect(screen.queryByText(t.chat.typing)).not.toBeInTheDocument()
+  })
+
+  it('pings typing at most once per 3 s while editing, not on send, and again right after', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+    try {
+      await openChat()
+      vi.mocked(api.messages.send).mockReturnValue(new Promise(() => {}))
+      edit('h')
+      edit('he')
+      edit('hel')
+      expect(api.messages.typing).toHaveBeenCalledTimes(1)
+      expect(api.messages.typing).toHaveBeenCalledWith('match-1')
+      now.mockReturnValue(1_003_000)
+      edit('hell')
+      expect(api.messages.typing).toHaveBeenCalledTimes(2)
+      fireEvent.click(screen.getByLabelText(t.chat.send))
+      expect(api.messages.typing).toHaveBeenCalledTimes(2)
+      edit('n')
+      expect(api.messages.typing).toHaveBeenCalledTimes(3)
+      edit('')
+      expect(api.messages.typing).toHaveBeenCalledTimes(3)
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('does not ping while the live stream is down', async () => {
+    useRealtimeStore.setState({ connected: false })
+    await openChat()
+    edit('hello')
+    expect(api.messages.typing).not.toHaveBeenCalled()
   })
 })

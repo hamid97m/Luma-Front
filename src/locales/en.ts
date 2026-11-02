@@ -67,6 +67,7 @@ export const en = {
     retry: 'Try again',
     failed: 'Not sent — tap to try again',
     sendingLabel: 'Sending',
+    typing: 'typing',
     matched: (name: string) => `You and ${name} matched`,
     matchedOn: (date: string) => date,
     icebreakerOf: (name: string) => `${name}'s icebreaker`,

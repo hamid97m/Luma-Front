@@ -7,6 +7,8 @@ import { PremiumBadge } from '../components/premium/PremiumBadge.js'
 import { haptic } from '../telegram.js'
 import { useAuthStore } from '../store.js'
 import { subscribe, useRealtimeStore } from '../realtime.js'
+import { useTypingStore } from '../typing.js'
+import { TypingIndicator } from '../components/chat/TypingIndicator.js'
 import { t } from '../i18n.js'
 import { formatShortDate } from '../i18n/format.js'
 import { icebreakerQuestion } from '../utils/icebreaker.js'
@@ -49,6 +51,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
   const [loading, setLoading] = useState(true)
   const myUserId = useAuthStore((s) => s.user?.id)
   const connected = useRealtimeStore((s) => s.connected)
+  const typingByMatch = useTypingStore((s) => s.byMatch)
   const matchesRef = useRef(matches)
   matchesRef.current = matches
   const activeChatRef = useRef(activeChatId)
@@ -177,9 +180,15 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
                   <span className="truncate">{match.user.name}</span>
                   {match.user.premium && <PremiumBadge size={16} />}
                 </p>
-                <p className="text-[13px] text-txt2 truncate">
-                  {preview(match.lastMessage, myUserId)}
-                </p>
+                {typingByMatch[match.id] ? (
+                  <p className="text-[13px] text-primary truncate flex">
+                    <TypingIndicator />
+                  </p>
+                ) : (
+                  <p className="text-[13px] text-txt2 truncate">
+                    {preview(match.lastMessage, myUserId)}
+                  </p>
+                )}
               </div>
 
               {/* Time + unread */}

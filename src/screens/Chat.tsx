@@ -3,10 +3,13 @@ import { api } from '../api.js'
 import { haptic } from '../telegram.js'
 import { buildChatItems, replySnippet } from '../utils/chatFormat.js'
 import { lastServerId, mergeFullList, mergeIncoming, mergeSent, mergeUpdated } from '../utils/chatMerge.js'
-import { subscribe } from '../realtime.js'
+import { subscribe, useRealtimeStore } from '../realtime.js'
+import { useIsTyping } from '../typing.js'
+import { leadingThrottle } from '../utils/throttle.js'
 import { MessageBubble } from '../components/chat/MessageBubble.js'
 import { ChatInputBar } from '../components/chat/ChatInputBar.js'
 import { ChatEmptyState } from '../components/chat/ChatEmptyState.js'
+import { TypingIndicator } from '../components/chat/TypingIndicator.js'
 import { ProfilePeekSheet } from '../components/chat/ProfilePeekSheet.js'
 import { MessageActionSheet } from '../components/chat/MessageActionSheet.js'
 import { ReportSheet } from '../components/ReportSheet.js'
@@ -27,6 +30,9 @@ interface Props {
 }
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error'
+
+/** While the draft changes, tell the counterpart at most this often. */
+const TYPING_PING_MS = 3_000
 
 let localSeq = 0
 
@@ -51,6 +57,8 @@ export function Chat({ match, myUserId, onBack }: Props) {
   const [showJump, setShowJump] = useState(false)
   const messagesRef = useRef(messages)
   messagesRef.current = messages
+  const theyAreTyping = useIsTyping(match.id)
+  const connected = useRealtimeStore((s) => s.connected)
 
   const load = useCallback(() => {
     api.messages.list(match.id)
@@ -173,9 +181,24 @@ export function Chat({ match, myUserId, onBack }: Props) {
       })
   }, [match.id, myUserId])
 
+  // "typing…" pings: leading-edge throttled; pointless without a live stream
+  // on our side (the counterpart's delivery is the server's business).
+  const typingPing = useMemo(
+    () => leadingThrottle(() => { api.messages.typing(match.id).catch(() => {}) }, TYPING_PING_MS),
+    [match.id],
+  )
+
+  const changeDraft = (value: string) => {
+    setDraft(value)
+    if (!value.trim() || value === draft) return
+    if (editingId || !connected || premiumSendBlocked(match, premiumStatus)) return
+    typingPing.call()
+  }
+
   const send = () => {
     const body = draft.trim()
     if (!body) return
+    typingPing.reset() // the message ends this burst; the next one pings right away
     const replyTo = replyingToId
     setDraft('')
     setReplyingToId(null)
@@ -315,13 +338,26 @@ export function Chat({ match, myUserId, onBack }: Props) {
           className="flex items-center gap-3 text-start flex-1 min-w-0"
         >
           <Avatar src={match.user.photos[0]} alt={match.user.name} size={40} />
-          <p className="font-medium text-txt text-[16px] truncate flex items-center gap-1.5 min-w-0">
-            <span className="truncate">
-              {match.user.name}
-              {match.user.age != null && <span className="text-txt2 font-normal">, {match.user.age}</span>}
-            </span>
-            {match.user.premium && <PremiumBadge size={16} />}
-          </p>
+          {/* Fixed-height block: the name slides up to make room for the
+              typing line instead of growing the header. */}
+          <div className="relative flex-1 min-w-0 h-10 flex items-center">
+            <p
+              className={`font-medium text-txt text-[16px] truncate flex items-center gap-1.5 min-w-0 transition-transform duration-200 ${
+                theyAreTyping ? '-translate-y-2' : ''
+              }`}
+            >
+              <span className="truncate">
+                {match.user.name}
+                {match.user.age != null && <span className="text-txt2 font-normal">, {match.user.age}</span>}
+              </span>
+              {match.user.premium && <PremiumBadge size={16} />}
+            </p>
+            {theyAreTyping && (
+              <span className="absolute inset-x-0 bottom-0 flex text-[12px] leading-4 text-primary">
+                <TypingIndicator />
+              </span>
+            )}
+          </div>
         </button>
         <IconButton
           icon="flag"
@@ -396,7 +432,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
 
           <ChatInputBar
             draft={draft}
-            onDraftChange={setDraft}
+            onDraftChange={changeDraft}
             onSend={submit}
             editingBody={editingId ? messagesRef.current.find((m) => m.id === editingId)?.body ?? null : null}
             onCancelEdit={cancelEdit}

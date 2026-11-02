@@ -4,6 +4,7 @@ import { Matches } from '../src/screens/Matches.js'
 import { api } from '../src/api.js'
 import { dispatch, useRealtimeStore } from '../src/realtime.js'
 import { useAuthStore } from '../src/store.js'
+import { resetTyping } from '../src/typing.js'
 import { t } from '../src/i18n.js'
 import type { Match, UserProfile } from '../src/types.js'
 
@@ -24,6 +25,7 @@ describe('Matches — live events', () => {
     vi.clearAllMocks()
     useAuthStore.setState({ user: { id: 'me-1' } as UserProfile })
     useRealtimeStore.setState({ connected: true })
+    resetTyping()
     vi.mocked(api.matches.list).mockResolvedValue({ matches: [row('a', 'Ava', 'old a'), row('b', 'Bea', 'old b')] })
   })
 
@@ -57,5 +59,17 @@ describe('Matches — live events', () => {
     await waitFor(() => expect(api.matches.list).toHaveBeenCalledTimes(2))
     act(() => dispatch({ type: 'message', matchId: 'zzz', message: { id: 'q', senderId: 'u-z', body: 'hi', createdAt: '2025-01-03T00:00:00Z', readAt: null, type: 'text' } }))
     await waitFor(() => expect(api.matches.list).toHaveBeenCalledTimes(3), { timeout: 2000 })
+  })
+
+  it('shows typing instead of the preview until their message lands', async () => {
+    render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
+    await waitFor(() => screen.getByText('old b'))
+    act(() => dispatch({ type: 'typing', matchId: 'b', userId: 'u-b' }))
+    expect(screen.queryByText('old b')).not.toBeInTheDocument()
+    expect(screen.getByText(t.chat.typing)).toBeInTheDocument()
+    expect(screen.getByText('old a')).toBeInTheDocument()
+    act(() => dispatch({ type: 'message', matchId: 'b', message: { id: 'x', senderId: 'u-b', body: 'new b', createdAt: '2025-01-03T00:00:00Z', readAt: null, type: 'text' } }))
+    expect(screen.queryByText(t.chat.typing)).not.toBeInTheDocument()
+    expect(screen.getByText('new b')).toBeInTheDocument()
   })
 })

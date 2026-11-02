@@ -48,7 +48,7 @@ vi.mock('../src/api.ts', () => ({
     discovery: { feed: vi.fn() },
     swipes: { swipe: vi.fn() },
     matches: { list: vi.fn(), unreadCount: vi.fn() },
-    messages: { list: vi.fn(), send: vi.fn(), markRead: vi.fn(() => Promise.resolve({ ok: true })) },
+    messages: { list: vi.fn(), send: vi.fn(), markRead: vi.fn(() => Promise.resolve({ ok: true })), typing: vi.fn(() => Promise.resolve({ ok: true })) },
     gifts: {
       intros: vi.fn(() => Promise.resolve({ intros: [] })),
       acceptIntro: vi.fn(),

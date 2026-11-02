@@ -66,6 +66,8 @@ export const fa = {
     retry: 'تلاش دوباره',
     failed: 'ارسال نشد — برای تلاش دوباره ضربه بزن',
     sendingLabel: 'در حال ارسال',
+    /** Header subtitle / chat-list preview while they type; animated dots follow. */
+    typing: 'در حال نوشتن',
     matched: (name: string) => `تو و ${name} مچ شدید`,
     matchedOn: (date: string) => date,
     icebreakerOf: (name: string) => `یخ‌شکن ${name}`,

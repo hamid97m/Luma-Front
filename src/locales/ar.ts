@@ -85,6 +85,7 @@ export const ar = {
     retry: 'إعادة المحاولة',
     failed: 'لم يتم الإرسال — انقر لإعادة المحاولة',
     sendingLabel: 'جارٍ الإرسال',
+    typing: 'يكتب',
     matched: (name: string) => `حدث توافق بينك وبين ${name}`,
     matchedOn: (date: string) => date,
     icebreakerOf: (name: string) => `كاسر جليد ${name}`,
