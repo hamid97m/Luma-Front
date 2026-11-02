@@ -10,6 +10,7 @@ import { Blocked } from './screens/Blocked.js'
 import { PhotoRequired } from './screens/PhotoRequired.js'
 import { Onboarding } from './screens/Onboarding.js'
 import { LanguagePicker } from './screens/LanguagePicker.js'
+import { Login } from './screens/Login.js'
 import { useLocaleStore } from './i18n.js'
 import { isLocale, isLocaleChosenHere, isLocalePending, markLocaleChosen, setLocalePending, type Locale } from './i18n/locale.js'
 import { prefetchGeoCountry } from './i18n/geo.js'
@@ -64,12 +65,6 @@ function readDeepLinkPlans(): boolean {
 // The intro splash plays once per page load. A locale change remounts the
 // keyed <App> (see main.tsx) — that remount must not replay the 2.6 s intro.
 let splashPlayed = false
-
-/** Stand-in for the website Login screen (Task 10 replaces it): it signs the
- *  user in and hands the result to `onSignedIn`. */
-function LoginPlaceholder(_props: { onSignedIn: (token: string, user: AuthUser) => void }) {
-  return <div className="h-full bg-bg" data-testid="login-screen" />
-}
 
 /** Reconcile the server's saved locale with the local store on launch.
  * Server wins — unless a Settings change failed to reach it, in which case
@@ -321,7 +316,7 @@ export function App() {
   }
 
   if (screen === 'login') {
-    return <LoginPlaceholder onSignedIn={completeSignIn} />
+    return <Login onSignedIn={completeSignIn} onBanned={handleBanned} />
   }
 
   if (screen === 'blocked') {

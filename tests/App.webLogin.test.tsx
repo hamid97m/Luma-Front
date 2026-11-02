@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import { useEffect } from 'react'
 
 vi.mock('../src/api.ts', () => ({
   onAccountPaused: () => () => {},
   api: {
-    auth: { verify: vi.fn(), me: vi.fn() },
+    auth: { verify: vi.fn(), me: vi.fn(), telegramWeb: vi.fn(), google: vi.fn(), dev: vi.fn() },
     profile: { get: vi.fn(), update: vi.fn(), setLocale: vi.fn(() => Promise.resolve({ ok: true })) },
     matches: { list: vi.fn(), unreadCount: vi.fn(() => Promise.resolve({ count: 0 })) },
     likes: { unreadCount: vi.fn(() => Promise.resolve({ count: 0 })) },
@@ -56,6 +56,7 @@ describe('App boot: web login vs Telegram', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllEnvs()
     ;(window.Telegram!.WebApp! as { initData: string }).initData = TG_INIT_DATA
     clearSessionToken()
   })
@@ -136,5 +137,37 @@ describe('App boot: web login vs Telegram', () => {
     await waitFor(() => expect(screen.getByText(t.reconnect.title)).toBeInTheDocument())
     expect(screen.queryByTestId('login-screen')).not.toBeInTheDocument()
     expect(getSessionToken()).toBe('web-token')
+  })
+  it('outside Telegram, Login sign-in → session stored, main app', async () => {
+    leaveTelegram()
+    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'LumaDatingBot')
+    vi.mocked(api.auth.telegramWeb).mockResolvedValue({ token: 'new-token', user: USER } as never)
+    render(<App />)
+
+    await waitFor(() => expect(screen.getByTestId('login-screen')).toBeInTheDocument())
+    await act(async () => {
+      ;(window as unknown as { onTelegramAuth: (u: object) => void }).onTelegramAuth({ id: 1, first_name: 'A', auth_date: 1, hash: 'h' })
+    })
+
+    await waitFor(() => expect(screen.getByTestId('discovery')).toBeInTheDocument())
+    expect(getSessionToken()).toBe('new-token')
+  })
+
+  it('outside Telegram, Login sign-in of a banned account → blocked screen', async () => {
+    leaveTelegram()
+    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'LumaDatingBot')
+    vi.mocked(api.auth.telegramWeb).mockRejectedValue(
+      Object.assign(new Error(JSON.stringify({ error: 'account_banned', botUsername: 'LumaDatingBot' })), { status: 401 }),
+    )
+    render(<App />)
+
+    await waitFor(() => expect(screen.getByTestId('login-screen')).toBeInTheDocument())
+    await act(async () => {
+      ;(window as unknown as { onTelegramAuth: (u: object) => void }).onTelegramAuth({ id: 1, first_name: 'A', auth_date: 1, hash: 'h' })
+    })
+
+    await waitFor(() => expect(screen.getByText(t.blocked.title)).toBeInTheDocument())
+    expect(screen.getByText(t.blocked.support)).toBeInTheDocument()
+    expect(getSessionToken()).toBeNull()
   })
 })

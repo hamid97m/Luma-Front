@@ -465,6 +465,23 @@ export const en = {
   viewer: {
     counter: (i: number, n: number) => `${i} of ${n}`,
   },
+  login: {
+    tagline: 'Find your other half',
+    title: 'Sign in to Luma',
+    subtitle: 'Choose one of the options below to continue.',
+    telegram: 'Log in with Telegram',
+    google: 'Continue with Google',
+    telegramHint: 'Already use Luma in Telegram? Sign in with Telegram to keep your profile.',
+    unavailable: "Sign-in options couldn't load. Check your connection and reload the page.",
+    signingIn: 'Signing in…',
+    errors: {
+      invalidTelegram: "Telegram sign-in didn't work. Please try again.",
+      invalidGoogle: "Google sign-in didn't work. Please try again.",
+      googleMismatch: 'This email is linked to a different Google account. Sign in with that Google account.',
+      network: "Couldn't connect. Check your internet and try again.",
+      generic: 'Something went wrong. Please try again.',
+    },
+  },
   reconnect: {
     title: "Couldn't reconnect",
     body: 'Something went wrong while loading your account. If this keeps happening, close Luma in Telegram and open it again.',
