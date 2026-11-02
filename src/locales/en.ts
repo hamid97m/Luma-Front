@@ -176,7 +176,7 @@ export const en = {
   },
   photoRequired: {
     title: 'We need a fresh photo',
-    body: 'Your profile is temporarily hidden. To get back on Luma, upload a recent, clear photo of yourself.',
+    body: 'We reviewed your profile photo and it looks fake or has a problem, so your profile is temporarily hidden. Please upload a real, standard photo of yourself.',
     upload: 'Upload photo',
     uploading: 'Uploading…',
     error: "Upload didn't go through. Please try again.",
