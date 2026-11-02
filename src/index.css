@@ -37,6 +37,7 @@
   --prtint: rgba(176, 41, 92, 0.12);    /* primary tint  */
   --gold:   #B98900;   /* premium accent (sparkle)  */
   --goldbtn:#E2A926;   /* premium buy button        */
+  --online: #1E9E55;   /* online-presence dot       */
 
   /* Legacy tokens kept so not-yet-restyled components still resolve during the
      redesign migration. Point them at the new palette. */
@@ -81,6 +82,7 @@
   --prtint: rgba(224, 83, 127, 0.22);
   --gold:   #ECC248;
   --goldbtn:#ECC248;
+  --online: #3FCB7A;
 }
 
 @layer base {
