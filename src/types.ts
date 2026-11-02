@@ -47,6 +47,8 @@ export interface Match {
     icebreakerPrompt: string | null
     icebreakerAnswer: string | null
     premium?: boolean
+    /** Has a live connection right now (GET /matches). */
+    online?: boolean
   }
   lastMessage: {
     id?: string

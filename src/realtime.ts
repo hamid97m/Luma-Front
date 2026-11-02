@@ -24,6 +24,8 @@ export type RealtimeEvent =
   | { type: 'message_deleted'; matchId: string; messageId: string }
   /** The other participant is typing in this chat (ephemeral, never stored). */
   | { type: 'typing'; matchId: string; userId: string }
+  /** A counterpart came online or went offline (offline is debounced server-side). */
+  | { type: 'presence'; userId: string; online: boolean }
 
 type Handler = (event: RealtimeEvent) => void
 
@@ -61,7 +63,13 @@ export function toRealtimeEvent(sse: SseEvent): RealtimeEvent | null {
   } catch {
     return null
   }
-  if (!data || typeof data.matchId !== 'string') return null
+  if (!data || typeof data !== 'object') return null
+  if (sse.event === 'presence') {
+    return typeof data.userId === 'string' && typeof data.online === 'boolean'
+      ? { type: 'presence', userId: data.userId, online: data.online }
+      : null
+  }
+  if (typeof data.matchId !== 'string') return null
   const matchId = data.matchId
   switch (sse.event) {
     case 'message':

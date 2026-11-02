@@ -8,6 +8,7 @@ import { haptic } from '../telegram.js'
 import { useAuthStore } from '../store.js'
 import { subscribe, useRealtimeStore } from '../realtime.js'
 import { useTypingStore } from '../typing.js'
+import { seedPresence, useIsOnline } from '../presence.js'
 import { TypingIndicator } from '../components/chat/TypingIndicator.js'
 import { SeenTicks } from '../components/chat/MessageBubble.js'
 import { t } from '../i18n.js'
@@ -60,10 +61,16 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
   const myUserIdRef = useRef(myUserId)
   myUserIdRef.current = myUserId
 
+  // Every list load also refreshes who's online.
+  const applyList = useCallback((m: Match[]) => {
+    seedPresence(m)
+    setMatches(m)
+  }, [])
+
   // Silent refetch; a failure keeps the stale list.
   const refetch = useCallback(() => {
-    api.matches.list().then(({ matches: m }) => setMatches(m)).catch(() => {})
-  }, [])
+    api.matches.list().then(({ matches: m }) => applyList(m)).catch(() => {})
+  }, [applyList])
 
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const refetchSoon = useCallback(() => {
@@ -75,10 +82,10 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
   useEffect(() => {
     // On silent refreshes (refreshKey bump) a failure just keeps the stale list.
     api.matches.list()
-      .then(({ matches: m }) => setMatches(m))
+      .then(({ matches: m }) => applyList(m))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [refreshKey])
+  }, [refreshKey, applyList])
 
   // Live updates: a new message bumps its row to the top with a fresh preview.
   useEffect(() => subscribe((ev) => {
@@ -138,7 +145,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
     }
     api.matches.list()
       .then(({ matches: fresh }) => {
-        setMatches(fresh)
+        applyList(fresh)
         const found = fresh.find((m) => m.id === matchId)
         if (found) onOpenChat(found)
       })
@@ -171,7 +178,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
             >
               {/* Avatar */}
               <div className="relative flex-none">
-                <Avatar src={match.user.photos[0]} alt={match.user.name} size={56} />
+                <RowAvatar user={match.user} />
                 {isNewMatch(match.matchedAt) && (
                   <span className="absolute -top-1 -end-1.5 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary">
                     {t.matches.newBadge}
@@ -218,4 +225,10 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
       )}
     </div>
   )
+}
+
+/** A row's avatar with the counterpart's presence dot. */
+function RowAvatar({ user }: { user: Match['user'] }) {
+  const online = useIsOnline(user.id)
+  return <Avatar src={user.photos[0]} alt={user.name} size={56} online={online} />
 }
