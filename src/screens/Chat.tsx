@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { haptic } from '../telegram.js'
 import { buildChatItems, replySnippet } from '../utils/chatFormat.js'
+import { lastServerId, mergeFullList, mergeIncoming, mergeSent, mergeUpdated } from '../utils/chatMerge.js'
+import { subscribe } from '../realtime.js'
 import { MessageBubble } from '../components/chat/MessageBubble.js'
 import { ChatInputBar } from '../components/chat/ChatInputBar.js'
 import { ChatEmptyState } from '../components/chat/ChatEmptyState.js'
@@ -53,13 +55,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
   const load = useCallback(() => {
     api.messages.list(match.id)
       .then(({ messages: server }) => {
-        setMessages((prev) => {
-          const unconfirmed = prev.filter((m) => m.status)
-          const byId = new Map(unconfirmed.map((m) => [m.id, m]))
-          const merged = server.map((m) => byId.get(m.id) ?? m)
-          const extras = unconfirmed.filter((m) => !server.some((s) => s.id === m.id))
-          return [...merged, ...extras]
-        })
+        setMessages((prev) => mergeFullList(prev, server, myUserId))
         setLoadState('ready')
       })
       .catch((err: unknown) => {
@@ -68,12 +64,51 @@ export function Chat({ match, myUserId, onBack }: Props) {
           return (err as { status?: number } | null)?.status === 404 ? 'unavailable' : 'error'
         })
       })
-  }, [match.id])
+  }, [match.id, myUserId])
 
   useEffect(() => { load() }, [load])
 
-  // Weak-server constraint: no polling. Refresh only when the user returns
-  // to the app (e.g. after switching to another Telegram chat).
+  // Catch-up after the live stream (re)connects: fetch only what's newer than
+  // the last confirmed message. Falls back to a full load before the first one.
+  const loadNewer = useCallback(() => {
+    const after = lastServerId(messagesRef.current)
+    if (!after) { load(); return }
+    api.messages.list(match.id, after)
+      .then(({ messages: server }) => {
+        setMessages((prev) => server.reduce((acc, m) => mergeIncoming(acc, m, myUserId), prev))
+        setLoadState('ready')
+      })
+      .catch(() => {}) // the next sync / foreground return retries
+  }, [match.id, myUserId, load])
+
+  // Opening a chat marks it read (GET /messages); a message arriving live
+  // while it's open needs an explicit mark-read. Debounced for bursts.
+  const readTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scheduleMarkRead = useCallback(() => {
+    if (readTimer.current) clearTimeout(readTimer.current)
+    readTimer.current = setTimeout(() => {
+      readTimer.current = null
+      api.messages.markRead(match.id).catch(() => {})
+    }, 400)
+  }, [match.id])
+  useEffect(() => () => { if (readTimer.current) clearTimeout(readTimer.current) }, [])
+
+  // Live updates for this chat.
+  useEffect(() => subscribe((ev) => {
+    if (ev.type === 'sync') { loadNewer(); return }
+    if (ev.matchId !== match.id) return
+    if (ev.type === 'message') {
+      setMessages((prev) => mergeIncoming(prev, ev.message, myUserId))
+      if (ev.message.senderId !== myUserId) scheduleMarkRead()
+    } else if (ev.type === 'message_updated') {
+      setMessages((prev) => mergeUpdated(prev, ev.message))
+    } else if (ev.type === 'message_deleted') {
+      setMessages((prev) => prev.filter((m) => m.id !== ev.messageId))
+    }
+  }), [match.id, myUserId, loadNewer, scheduleMarkRead])
+
+  // No polling: live events cover the foreground; refresh fully when the user
+  // returns to the app (e.g. after switching to another Telegram chat).
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') load()
@@ -118,9 +153,8 @@ export function Chat({ match, myUserId, onBack }: Props) {
     haptic.impact('light')
     api.messages.send(match.id, body, replyToMessageId)
       .then(({ message }) => {
-        setMessages((prev) => prev.some((m) => m.id === message.id)
-          ? prev.filter((m) => m.id !== id) // server copy already merged in via a background refresh — drop the local one
-          : prev.map((m) => (m.id === id ? message : m)))
+        // The live event / a refresh may have merged the server copy first.
+        setMessages((prev) => mergeSent(prev, id, message))
       })
       .catch((err: unknown) => {
         const status = (err as { status?: number } | null)?.status
