@@ -3,6 +3,7 @@ import { api, onAccountPaused } from './api.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
 import { useAuthStore, usePremiumStore, useReferralStore } from './store.js'
 import { startRealtime, stopRealtime, subscribe } from './realtime.js'
+import { seedPresence } from './presence.js'
 import { cacheGender, isReturningUser, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
 import { Reconnect } from './screens/Reconnect.js'
@@ -173,6 +174,7 @@ export function App() {
     if (match.user.photos.length > 0) return
     api.matches.list()
       .then(({ matches }) => {
+        seedPresence(matches)
         const full = matches.find((m) => m.id === match.id)
         if (full) setActiveChatMatch((cur) => (cur?.id === match.id ? full : cur))
       })
@@ -210,7 +212,9 @@ export function App() {
     const unsubscribe = subscribe((ev) => {
       const me = useAuthStore.getState().user?.id
       if (ev.type === 'sync' || ev.type === 'message_deleted') { refreshBadge(); return }
-      if (ev.type === 'typing') return
+      // Only message events from here on — typing, presence and any future
+      // event type never touch the badge.
+      if (ev.type !== 'message' && ev.type !== 'message_updated') return
       if (ev.message.senderId === me) return
       if (ev.type === 'message_updated' || ev.matchId !== activeChatIdRef.current) refreshBadge()
     })
@@ -230,6 +234,7 @@ export function App() {
     if (!chatId) return
     api.matches.list()
       .then(({ matches }) => {
+        seedPresence(matches)
         const found = matches.find((m) => m.id === chatId)
         if (found) setActiveChatMatch(found)
       })
