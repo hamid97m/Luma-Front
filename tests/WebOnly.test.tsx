@@ -64,6 +64,13 @@ const PLANS: PremiumPlan[] = [
 ]
 
 const TG_INIT_DATA = window.Telegram!.WebApp!.initData
+const ORIGINAL_LOCATION = window.location
+
+function mockReload() {
+  const reload = vi.fn()
+  Object.defineProperty(window, 'location', { configurable: true, value: { ...ORIGINAL_LOCATION, reload } })
+  return reload
+}
 
 function leaveTelegram() {
   ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
@@ -91,6 +98,7 @@ describe('web-only UI', () => {
 
   afterEach(() => {
     ;(window.Telegram!.WebApp! as { initData: string }).initData = TG_INIT_DATA
+    Object.defineProperty(window, 'location', { configurable: true, value: ORIGINAL_LOCATION })
     window.history.replaceState(null, '', '/')
     clearSessionToken()
   })
@@ -105,22 +113,24 @@ describe('web-only UI', () => {
     expect(screen.getByRole('button', { name: t.settings.logout })).toBeInTheDocument()
   })
 
-  it('log out clears token and shows login', async () => {
+  it('log out clears the token and reloads the page', async () => {
     await bootWebsite('profile')
+    const reload = mockReload()
 
     fireEvent.click(screen.getByRole('button', { name: t.settings.logout }))
 
-    await waitFor(() => expect(screen.getByTestId('login-screen')).toBeInTheDocument())
     expect(getSessionToken()).toBeNull()
+    expect(reload).toHaveBeenCalledTimes(1)
   })
 
-  it('a rejected session mid-session shows login', async () => {
+  it('a rejected session mid-session clears the token and reloads the page', async () => {
     await bootWebsite()
+    const reload = mockReload()
 
     act(() => endSession({ kind: 'signedOut' }))
 
-    await waitFor(() => expect(screen.getByTestId('login-screen')).toBeInTheDocument())
     expect(getSessionToken()).toBeNull()
+    expect(reload).toHaveBeenCalledTimes(1)
   })
 
   it('a ban mid-session shows the blocked screen', async () => {

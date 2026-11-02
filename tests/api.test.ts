@@ -199,16 +199,21 @@ describe('api request: rejected website session', () => {
       status: 401,
       text: () => Promise.resolve(JSON.stringify(body)),
     }))
+  const originalLocation = window.location
   let ended: ReturnType<typeof vi.fn>
+  let reload: ReturnType<typeof vi.fn>
   let unsubscribe: () => void
 
   beforeEach(() => {
+    reload = vi.fn()
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...originalLocation, reload } })
     ended = vi.fn()
     unsubscribe = onSessionEnded(ended)
     setSessionToken('web-token')
   })
 
   afterEach(() => {
+    Object.defineProperty(window, 'location', { configurable: true, value: originalLocation })
     unsubscribe()
     clearSessionToken()
     ;(window.Telegram!.WebApp! as { initData: string }).initData = TG_INIT_DATA
@@ -221,7 +226,7 @@ describe('api request: rejected website session', () => {
     await expect(api.profile.get()).rejects.toMatchObject({ status: 401 })
 
     expect(getSessionToken()).toBeNull()
-    expect(ended).toHaveBeenCalledWith({ kind: 'signedOut' })
+    expect(reload).toHaveBeenCalledTimes(1)
   })
 
   it('outside Telegram, account_banned mid-session reports a ban and keeps the token', async () => {
@@ -232,6 +237,7 @@ describe('api request: rejected website session', () => {
 
     expect(ended).toHaveBeenCalledWith({ kind: 'banned', error: err })
     expect(getSessionToken()).toBe('web-token')
+    expect(reload).not.toHaveBeenCalled()
   })
 
   it('outside Telegram, a 401 from a sign-in call is left to the caller', async () => {

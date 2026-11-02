@@ -2,23 +2,27 @@
 // the backend hands out a session token that we keep here and send as Bearer.
 const SESSION_KEY = 'luma_session'
 
+// In-memory copy: storage can throw or drop writes (private / sandboxed
+// browsers), and signing in must still work for this page load.
+let memoryToken: string | null = null
+
 export function getSessionToken(): string | null {
   try {
-    return localStorage.getItem(SESSION_KEY)
+    return localStorage.getItem(SESSION_KEY) ?? memoryToken
   } catch {
-    return null
+    return memoryToken
   }
 }
 
-// Storage can throw (private / sandboxed browsers). Signing in must still
-// work for this page load, so failures are swallowed.
 export function setSessionToken(token: string): void {
+  memoryToken = token
   try {
     localStorage.setItem(SESSION_KEY, token)
-  } catch { /* not persisted */ }
+  } catch { /* not persisted — the memory copy covers this page load */ }
 }
 
 export function clearSessionToken(): void {
+  memoryToken = null
   try {
     localStorage.removeItem(SESSION_KEY)
   } catch { /* nothing stored */ }
@@ -37,10 +41,16 @@ export function onSessionEnded(fn: SessionEndListener): () => void {
   return () => { sessionEndListeners.delete(fn) }
 }
 
-/** End the website session. A sign-out also forgets the stored token; a ban
- *  keeps it so the next launch lands on the Blocked screen again. */
+/** End the website session. A sign-out forgets the stored token and reloads
+ *  the page, so no state from the old account survives (the fresh launch has
+ *  no token and shows Login). A ban keeps the token so the next launch lands
+ *  on the Blocked screen again. */
 export function endSession(end: SessionEnd): void {
-  if (end.kind === 'signedOut') clearSessionToken()
+  if (end.kind === 'signedOut') {
+    clearSessionToken()
+    window.location.reload()
+    return
+  }
   for (const fn of sessionEndListeners) fn(end)
 }
 

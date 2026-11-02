@@ -146,9 +146,9 @@ export function App() {
     setScreen('photoRequired')
   }), [])
 
-  // Website only: logged out, or the session rejected / banned mid-use (see
-  // endSession in session.ts) — drop overlays and go to Login (or Blocked).
-  // Setting authResult too lets the next sign-in advance the screen again.
+  // Website only: the account was banned mid-use (see endSession in
+  // session.ts) — drop overlays and go to Blocked. A sign-out / rejected
+  // session reloads the page instead, so it never reaches here.
   useEffect(() => onSessionEnded((end) => {
     setActiveChatMatch(null)
     setShowSupport(false)
