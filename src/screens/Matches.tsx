@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { IntrosSection } from '../components/gifts/IntrosSection.js'
 import { Avatar, Badge, Icon } from '../components/ui/index.js'
@@ -6,6 +6,7 @@ import { MatchesEmpty } from '../components/MatchesEmpty.js'
 import { PremiumBadge } from '../components/premium/PremiumBadge.js'
 import { haptic } from '../telegram.js'
 import { useAuthStore } from '../store.js'
+import { subscribe, useRealtimeStore } from '../realtime.js'
 import { t } from '../i18n.js'
 import { formatShortDate } from '../i18n/format.js'
 import { icebreakerQuestion } from '../utils/icebreaker.js'
@@ -36,12 +37,36 @@ interface Props {
   onOpenChat: (match: Match) => void
   onStartDiscovering: () => void
   refreshKey: number
+  /** The chat currently open on top of this list — its new messages aren't unread. */
+  activeChatId?: string | null
 }
 
-export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
+/** Without the live stream, refresh the list this often. */
+const FALLBACK_POLL_MS = 30_000
+
+export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChatId = null }: Props) {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const myUserId = useAuthStore((s) => s.user?.id)
+  const connected = useRealtimeStore((s) => s.connected)
+  const matchesRef = useRef(matches)
+  matchesRef.current = matches
+  const activeChatRef = useRef(activeChatId)
+  activeChatRef.current = activeChatId
+  const myUserIdRef = useRef(myUserId)
+  myUserIdRef.current = myUserId
+
+  // Silent refetch; a failure keeps the stale list.
+  const refetch = useCallback(() => {
+    api.matches.list().then(({ matches: m }) => setMatches(m)).catch(() => {})
+  }, [])
+
+  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const refetchSoon = useCallback(() => {
+    if (refetchTimer.current) clearTimeout(refetchTimer.current)
+    refetchTimer.current = setTimeout(() => { refetchTimer.current = null; refetch() }, 500)
+  }, [refetch])
+  useEffect(() => () => { if (refetchTimer.current) clearTimeout(refetchTimer.current) }, [])
 
   useEffect(() => {
     // On silent refreshes (refreshKey bump) a failure just keeps the stale list.
@@ -50,6 +75,48 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey }: Props) {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [refreshKey])
+
+  // Live updates: a new message bumps its row to the top with a fresh preview.
+  useEffect(() => subscribe((ev) => {
+    if (ev.type === 'sync') { refetch(); return }
+    const me = myUserIdRef.current
+    if (ev.type === 'message') {
+      const { matchId, message } = ev
+      if (!matchesRef.current.some((m) => m.id === matchId)) { refetchSoon(); return } // brand-new match
+      const unread = message.senderId !== me && matchId !== activeChatRef.current
+      setMatches((prev) => {
+        const row = prev.find((m) => m.id === matchId)
+        if (!row) return prev
+        const updated: Match = {
+          ...row,
+          lastMessage: { body: message.body, createdAt: message.createdAt, senderId: message.senderId, type: message.type },
+          unreadCount: row.unreadCount + (unread ? 1 : 0),
+        }
+        return [updated, ...prev.filter((m) => m.id !== matchId)]
+      })
+    } else if (ev.type === 'message_updated') {
+      const { matchId, message } = ev
+      if (message.senderId !== me) { refetchSoon(); return } // they edited / I read theirs elsewhere → counts may change
+      // My own message edited (another device): refresh the preview if it's the last one.
+      setMatches((prev) => prev.map((m) => (
+        m.id === matchId && m.lastMessage
+          && m.lastMessage.senderId === message.senderId && m.lastMessage.createdAt === message.createdAt
+          ? { ...m, lastMessage: { ...m.lastMessage, body: message.body } }
+          : m
+      )))
+    } else if (ev.type === 'message_deleted') {
+      if (matchesRef.current.some((m) => m.id === ev.matchId)) refetchSoon() // the preview may change
+    }
+  }), [refetch, refetchSoon])
+
+  // Fallback while the live stream is down: poll the list.
+  useEffect(() => {
+    if (connected) return
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'hidden') refetch()
+    }, FALLBACK_POLL_MS)
+    return () => clearInterval(id)
+  }, [connected, refetch])
 
   // Accepting an intro only returns a matchId, so it may not be in the
   // already-loaded list (it's a brand-new match). Reuse the same
