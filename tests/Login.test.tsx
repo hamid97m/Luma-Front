@@ -128,6 +128,15 @@ describe('Login', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(t.login.errors.googleMismatch)
   })
 
+  it('web_login_unavailable (server not configured) shows the generic error', async () => {
+    vi.mocked(api.auth.telegramWeb).mockRejectedValue(apiError(503, { error: 'web_login_unavailable' }))
+    renderLogin()
+
+    await act(async () => { telegramAuth(TG_PAYLOAD) })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(t.login.errors.generic)
+  })
+
   it('a network failure shows an inline error', async () => {
     vi.mocked(api.auth.telegramWeb).mockRejectedValue(new TypeError('Failed to fetch'))
     renderLogin()

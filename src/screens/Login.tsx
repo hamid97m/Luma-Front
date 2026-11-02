@@ -40,6 +40,8 @@ function errorMessage(err: unknown): string {
   if (code === 'invalid_telegram_login') return t.login.errors.invalidTelegram
   if (code === 'invalid_google_login') return t.login.errors.invalidGoogle
   if (code === 'google_account_mismatch') return t.login.errors.googleMismatch
+  // Website login switched off on the server (no signing secret).
+  if (code === 'web_login_unavailable') return t.login.errors.generic
   // No HTTP status → the request never got an answer.
   if ((err as { status?: number } | null)?.status == null) return t.login.errors.network
   return t.login.errors.generic
