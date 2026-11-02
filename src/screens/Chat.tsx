@@ -4,6 +4,7 @@ import { haptic } from '../telegram.js'
 import { buildChatItems, replySnippet } from '../utils/chatFormat.js'
 import { lastServerId, mergeFullList, mergeIncoming, mergeSent, mergeUpdated } from '../utils/chatMerge.js'
 import { subscribe, useRealtimeStore } from '../realtime.js'
+import { useIsOnline } from '../presence.js'
 import { useIsTyping } from '../typing.js'
 import { leadingThrottle } from '../utils/throttle.js'
 import { MessageBubble } from '../components/chat/MessageBubble.js'
@@ -59,6 +60,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
   messagesRef.current = messages
   const theyAreTyping = useIsTyping(match.id)
   const connected = useRealtimeStore((s) => s.connected)
+  const theyAreOnline = useIsOnline(match.user.id !== myUserId ? match.user.id : null)
 
   const load = useCallback(() => {
     api.messages.list(match.id)
@@ -104,7 +106,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
   // Live updates for this chat.
   useEffect(() => subscribe((ev) => {
     if (ev.type === 'sync') { loadNewer(); return }
-    if (ev.matchId !== match.id) return
+    if (!('matchId' in ev) || ev.matchId !== match.id) return
     if (ev.type === 'message') {
       setMessages((prev) => mergeIncoming(prev, ev.message, myUserId))
       if (ev.message.senderId !== myUserId) scheduleMarkRead()
@@ -337,7 +339,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
           onClick={() => setPeeking(true)}
           className="flex items-center gap-3 text-start flex-1 min-w-0"
         >
-          <Avatar src={match.user.photos[0]} alt={match.user.name} size={40} />
+          <Avatar src={match.user.photos[0]} alt={match.user.name} size={40} online={theyAreOnline} />
           {/* Fixed-height block: the name slides up to make room for the
               typing line instead of growing the header. */}
           <div className="relative flex-1 min-w-0 h-10 flex items-center">

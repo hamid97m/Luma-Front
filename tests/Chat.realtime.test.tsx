@@ -156,4 +156,15 @@ describe('Chat — typing', () => {
     edit('hello')
     expect(api.messages.typing).not.toHaveBeenCalled()
   })
+
+  it('the header avatar shows their online dot from presence events', async () => {
+    useRealtimeStore.setState({ connected: true })
+    await openChat()
+    const dot = screen.getByTestId('online-dot')
+    expect(dot.dataset.online).toBe('false')
+    act(() => dispatch({ type: 'presence', userId: 'other-1', online: true }))
+    expect(dot.dataset.online).toBe('true')
+    act(() => dispatch({ type: 'presence', userId: 'other-1', online: false }))
+    expect(dot.dataset.online).toBe('false')
+  })
 })

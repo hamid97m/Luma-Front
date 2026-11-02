@@ -5,6 +5,7 @@ import { api } from '../src/api.js'
 import { dispatch, useRealtimeStore } from '../src/realtime.js'
 import { useAuthStore } from '../src/store.js'
 import { resetTyping } from '../src/typing.js'
+import { resetPresence } from '../src/presence.js'
 import { t } from '../src/i18n.js'
 import type { Match, UserProfile } from '../src/types.js'
 
@@ -26,6 +27,7 @@ describe('Matches — live events', () => {
     useAuthStore.setState({ user: { id: 'me-1' } as UserProfile })
     useRealtimeStore.setState({ connected: true })
     resetTyping()
+    resetPresence()
     vi.mocked(api.matches.list).mockResolvedValue({ matches: [row('a', 'Ava', 'old a'), row('b', 'Bea', 'old b')] })
   })
 
@@ -98,5 +100,21 @@ describe('Matches — live events', () => {
     await waitFor(() => screen.getByText('old a'))
     act(() => dispatch({ type: 'message', matchId: 'a', message: { id: 'z', senderId: 'me-1', body: 'sent now', createdAt: '2025-01-03T00:00:00Z', readAt: null, type: 'text' } }))
     expect(screen.getByRole('img', { name: t.aria.sent })).toBeInTheDocument()
+  })
+
+  it('shows the online dot from the list and follows presence events', async () => {
+    vi.mocked(api.matches.list).mockResolvedValue({
+      matches: [{ ...row('a', 'Ava', 'old a'), user: { ...row('a', 'Ava', 'old a').user, online: true } }, row('b', 'Bea', 'old b')],
+    })
+    render(<Matches onOpenChat={vi.fn()} onStartDiscovering={vi.fn()} refreshKey={0} />)
+    await waitFor(() => screen.getByText('old b'))
+    const dots = () => screen.getAllByTestId('online-dot').map((d) => d.dataset.online)
+    expect(dots()).toEqual(['true', 'false'])
+    act(() => dispatch({ type: 'presence', userId: 'u-b', online: true }))
+    expect(dots()).toEqual(['true', 'true'])
+    act(() => dispatch({ type: 'presence', userId: 'u-a', online: false }))
+    expect(dots()).toEqual(['false', 'true'])
+    act(() => useRealtimeStore.setState({ connected: false }))
+    expect(dots()).toEqual(['false', 'false'])
   })
 })
