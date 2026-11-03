@@ -52,8 +52,13 @@ describe('mainButtonSupported', () => {
     expect(mainButtonSupported()).toBe(false)
   })
 
+  it('is false on the website, where the script exposes a MainButton but no initData', () => {
+    setWebApp({ MainButton: {}, initData: '' })
+    expect(mainButtonSupported()).toBe(false)
+  })
+
   it('is true when Telegram provides a MainButton', () => {
-    setWebApp({ MainButton: {} })
+    setWebApp({ MainButton: {}, initData: 'query_id=1' })
     expect(mainButtonSupported()).toBe(true)
   })
 })

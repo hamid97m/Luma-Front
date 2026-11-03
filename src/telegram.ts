@@ -365,9 +365,13 @@ export function requestWriteAccess(): Promise<boolean> {
 // Main button — the native docked button. We only "take over" a screen's
 // primary action when Telegram actually provides a MainButton; otherwise the
 // screen keeps rendering its own in-page button (browser dev, tests).
+// index.html loads telegram-web-app.js everywhere, so in a plain browser
+// WebApp.MainButton exists but never shows — only a real launch (initData)
+// counts, or the website gets stuck with no Continue button.
 // ---------------------------------------------------------------------------
 export function mainButtonSupported(): boolean {
-  return !!webApp()?.MainButton
+  const app = webApp()
+  return !!app?.initData && !!app.MainButton
 }
 
 export interface MainButtonConfig {
