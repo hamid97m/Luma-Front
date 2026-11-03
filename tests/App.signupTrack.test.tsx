@@ -40,6 +40,9 @@ vi.mock('../src/screens/Onboarding.js', () => ({
 vi.mock('../src/screens/LanguagePicker.js', () => ({
   LanguagePicker: () => <div data-testid="picker" />,
 }))
+vi.mock('../src/screens/Reconnect.js', () => ({
+  Reconnect: () => <div data-testid="reconnect" />,
+}))
 
 const fetchMock = vi.fn()
 const sentNames = () =>
@@ -88,9 +91,11 @@ describe('App signup tracking', () => {
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('signup-events'))).toHaveLength(0)
   })
 
-  it('keeps the verify-failure fallthrough to onboarding and reports the status', async () => {
+  it('shows Reconnect, not signup, when verify fails for a new user, and reports the status', async () => {
     await launch(() => Promise.reject(Object.assign(new Error('nope'), { status: 500 })))
-    await waitFor(() => expect(screen.queryByTestId('picker') ?? screen.queryByTestId('onboarding')).toBeTruthy())
+    await screen.findByTestId('reconnect')
+    expect(screen.queryByTestId('picker')).toBeNull()
+    expect(screen.queryByTestId('onboarding')).toBeNull()
     await waitFor(() => expect(sentNames()).toEqual(expect.arrayContaining(['app_open', 'auth_failed'])), { timeout: 3000 })
     const events = fetchMock.mock.calls.flatMap(([, init]) => JSON.parse((init as RequestInit).body as string).events)
     expect(events).toContainEqual({ name: 'auth_failed', detail: '500' })

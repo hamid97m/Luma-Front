@@ -5,9 +5,9 @@ interface Props {
   onRetry: () => void
 }
 
-// Shown when a returning (already-set-up) user fails to auth/load — e.g. a
-// stale Telegram session or a transient network error — so they get a retry
-// instead of being sent back through onboarding.
+// Shown when auth fails — e.g. a stale Telegram session or a transient network
+// error — so the user gets a retry instead of being sent through onboarding,
+// which can't finish without a verified account.
 export function Reconnect({ onRetry }: Props) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center bg-bg text-txt">

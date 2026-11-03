@@ -5,7 +5,7 @@ import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './
 import { useAuthStore, usePremiumStore, useReferralStore } from './store.js'
 import { startRealtime, stopRealtime, subscribe } from './realtime.js'
 import { seedPresence } from './presence.js'
-import { cacheGender, isReturningUser, markReturningUser } from './utils/returningUser.js'
+import { cacheGender, markReturningUser } from './utils/returningUser.js'
 import { Splash } from './screens/Splash.js'
 import { Reconnect } from './screens/Reconnect.js'
 import { Blocked } from './screens/Blocked.js'
@@ -374,7 +374,9 @@ export function App() {
       .catch((err: unknown) => {
         if (handleBanned(err)) return
         trackAuthFailed(err)
-        setAuthResult(isReturningUser() ? 'reconnect' : 'onboarding')
+        // Never onboarding: verify is what creates the account, so a new user
+        // would fill in every step and then fail at the first authed call.
+        setAuthResult('reconnect')
       })
   }, [initDataRaw])
 
