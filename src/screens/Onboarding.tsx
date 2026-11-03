@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { mainButtonSupported, useMainButton, telegramFirstName, telegramHasPhoto, haptic } from '../telegram.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
@@ -7,6 +7,7 @@ import { t, useLocaleStore } from '../i18n.js'
 import { Button, IconButton, Input, Textarea, Chip, Icon } from '../components/ui/index.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
 import { cityError, isValidCity } from '../utils/validateCity.js'
+import { signupErrorDetail, track, type SignupStep } from '../signupTrack.js'
 
 interface State {
   name: string
@@ -30,6 +31,9 @@ const STEP_PREF = 4
 const STEP_INTERESTS = 5
 const STEP_PHOTO = 6
 const TOTAL_STEPS = 7
+
+// Funnel name of each step, indexed by STEP_*.
+const STEP_NAMES: readonly SignupStep[] = ['name', 'city', 'age', 'gender', 'pref', 'interests', 'photo']
 
 function cityMessage(city: string): string | null {
   const err = cityError(city)
@@ -63,6 +67,8 @@ export function Onboarding({ onComplete }: Props) {
   const [interestsError, setInterestsError] = useState(false)
   const [editingFile, setEditingFile] = useState<File | null>(null)
   const [tgPhotoLoading, setTgPhotoLoading] = useState(false)
+
+  useEffect(() => { track('step_view', { step: STEP_NAMES[step] }) }, [step])
 
   const valid = isValid(step, state, photoUploaded)
   const cityHint = step === STEP_CITY ? cityMessage(state.city) : null
@@ -99,6 +105,7 @@ export function Onboarding({ onComplete }: Props) {
         })
         await onComplete()
       } catch (err) {
+        track('submit_failed', { step: 'photo', detail: signupErrorDetail(err) })
         const msg = err instanceof Error ? err.message : t.errors.unknown
         window.Telegram?.WebApp?.showAlert?.(t.onboarding.error(msg))
       } finally {
@@ -141,7 +148,9 @@ export function Onboarding({ onComplete }: Props) {
         progress,
       }))
       setPhotoUploaded(true)
+      track('photo_ok', { step: 'photo', detail: 'file' })
     } catch (err) {
+      track('photo_failed', { step: 'photo', detail: signupErrorDetail(err, 'file') })
       setPhotoPreview(null)
       const msg = err instanceof Error ? err.message : t.photoGrid.uploadFailed
       window.Telegram?.WebApp?.showAlert?.(msg)
@@ -159,7 +168,9 @@ export function Onboarding({ onComplete }: Props) {
       if (photoPreview) URL.revokeObjectURL(photoPreview)
       setPhotoPreview(photo.url)
       setPhotoUploaded(true)
-    } catch {
+      track('photo_ok', { step: 'photo', detail: 'telegram' })
+    } catch (err) {
+      track('photo_failed', { step: 'photo', detail: signupErrorDetail(err, 'telegram') })
       window.Telegram?.WebApp?.showAlert?.(t.onboarding.telegramPhotoFailed)
     } finally {
       setTgPhotoLoading(false)
@@ -355,7 +366,7 @@ export function Onboarding({ onComplete }: Props) {
                     type="file"
                     accept="image/*"
                     className="sr-only"
-                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) setEditingFile(f) }}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) { track('photo_pick', { step: 'photo' }); setEditingFile(f) } }}
                   />
                   <div className={`relative w-32 h-32 rounded-m3-lg flex flex-col items-center justify-center overflow-hidden box-border ${
                     photoPreview ? '' : 'border-2 border-dashed border-outline bg-bg'

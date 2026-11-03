@@ -14,6 +14,7 @@ import { Onboarding } from './screens/Onboarding.js'
 import { LanguagePicker } from './screens/LanguagePicker.js'
 import { Login } from './screens/Login.js'
 import { useLocaleStore } from './i18n.js'
+import { stopSignupTracking, track, trackAppOpen, trackAuthFailed, trackAuthResolved, trackLoginView, trackSubmitOk } from './signupTrack.js'
 import { isLocale, isLocaleChosenHere, isLocalePending, markLocaleChosen, setLocalePending, type Locale } from './i18n/locale.js'
 import { prefetchGeoCountry } from './i18n/geo.js'
 import { Discovery } from './screens/Discovery.js'
@@ -135,6 +136,13 @@ export function App() {
 
   // One-time Telegram setup: ready/expand, fullscreen, swipe-lock, safe-area vars.
   useEffect(() => { initTelegram() }, [])
+
+  // Signup funnel: held until auth tells a new user from a returning one.
+  useEffect(() => { trackAppOpen() }, [])
+  useEffect(() => {
+    if (screen === 'login') trackLoginView()
+    if (screen === 'onboarding' && !localeChosen) track('picker_view', { step: 'picker' })
+  }, [screen, localeChosen])
 
   // Mid-session pause (AI photo reject or report auto-pause): drop overlays
   // and lock the app on the "upload a fresh photo" screen. Redeploy 2026-10-16T19:05.
@@ -295,6 +303,7 @@ export function App() {
   const applySignedInUser = (partial: AuthUser) => {
     const locale = (partial as { locale?: Locale | null }).locale ?? null
     setServerLocale(locale)
+    trackAuthResolved(!!partial.setupComplete)
     // Only a brand-new user (server has no locale yet) gets the picker.
     if (isLocale(locale)) setLocaleChosen(true)
     // Picker is coming — start the IP-country lookup now so its default
@@ -318,6 +327,7 @@ export function App() {
     const status = (err as { status?: number } | null)?.status
     const message = err instanceof Error ? err.message : ''
     if (!(status === 401 && message.includes('account_banned'))) return false
+    stopSignupTracking()
     try {
       setSupportBot((JSON.parse(message) as { botUsername?: string | null }).botUsername ?? null)
     } catch { /* older backend: plain-text body, no bot handle */ }
@@ -343,6 +353,7 @@ export function App() {
         .then(({ user }) => applySignedInUser(user))
         .catch((err: unknown) => {
           if (handleBanned(err)) return
+          trackAuthFailed(err)
           const status = (err as { status?: number } | null)?.status
           // The session itself was rejected (expired, deleted account, …):
           // drop it and ask to sign in again. Anything else (network, 5xx)
@@ -362,6 +373,7 @@ export function App() {
       .then(({ user: partial }) => applySignedInUser(partial))
       .catch((err: unknown) => {
         if (handleBanned(err)) return
+        trackAuthFailed(err)
         setAuthResult(isReturningUser() ? 'reconnect' : 'onboarding')
       })
   }, [initDataRaw])
@@ -393,7 +405,7 @@ export function App() {
     if (!localeChosen) {
       // markLocaleChosen runs synchronously before React commits, so the keyed
       // remount that may follow the store change reads the flag on mount.
-      return <LanguagePicker onDone={() => { markLocaleChosen(); setLocaleChosen(true) }} />
+      return <LanguagePicker onDone={() => { track('picker_done', { step: 'picker' }); markLocaleChosen(); setLocaleChosen(true) }} />
     }
     return (
       <Onboarding
@@ -402,6 +414,7 @@ export function App() {
           const p = await api.profile.get()
           cacheGender(p.gender)
           setUser(p)
+          trackSubmitOk()
           setScreen('main')
         }}
       />

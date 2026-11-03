@@ -68,7 +68,7 @@ function putWithProgress(url: string, blob: Blob, onProgress?: (pct: number) => 
     }
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve()
-      else reject(new Error(`storage_put_failed: ${xhr.status}`))
+      else reject(Object.assign(new Error(`storage_put_failed: ${xhr.status}`), { status: xhr.status }))
     }
     xhr.onerror = () => reject(new Error('storage_put_failed'))
     xhr.send(blob)
