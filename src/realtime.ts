@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { SseParser, type SseEvent } from './utils/sse.js'
 import type { Message } from './types.js'
-import { authHeader } from './session.js'
+import { clientHeaders } from './session.js'
 
 // Live chat updates over one Server-Sent Events stream per user (GET /events).
 // EventSource can't send the Authorization header, so the stream is read with
@@ -151,7 +151,7 @@ async function connect(): Promise<void> {
   try {
     const res = await fetch(`${BASE}/events`, {
       headers: {
-        ...authHeader(),
+        ...clientHeaders(),
         Accept: 'text/event-stream',
       },
       cache: 'no-store',

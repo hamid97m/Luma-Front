@@ -1,7 +1,7 @@
 import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus, TonPaysPaymentInfo } from './types.js'
 import type { Locale } from './i18n/locale.js'
 import { compressImage } from './utils/compress.js'
-import { authHeader, endSession, isInsideTelegram } from './session.js'
+import { clientHeaders, endSession, isInsideTelegram } from './session.js'
 
 const BASE = import.meta.env.VITE_API_URL as string
 
@@ -29,7 +29,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     keepalive: true,
     headers: {
       ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-      ...authHeader(),
+      ...clientHeaders(),
       ...options?.headers,
     },
   })

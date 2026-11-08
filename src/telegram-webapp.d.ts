@@ -69,6 +69,7 @@ interface TelegramWebApp {
   colorScheme: 'light' | 'dark'
   // Client platform: 'android' | 'ios' | 'tdesktop' | 'macos' | 'weba' | 'webk' | 'unigram' | …
   platform?: string
+  version?: string
   themeParams: TelegramThemeParams
   BackButton: TelegramBackButton
   MainButton: TelegramMainButton

@@ -1,3 +1,5 @@
+import { newUuid } from './utils/uuid.js'
+
 // Website sign-in session. Outside Telegram there is no initData to resend, so
 // the backend hands out a session token that we keep here and send as Bearer.
 const SESSION_KEY = 'luma_session'
@@ -67,4 +69,33 @@ export function authHeader(): Record<string, string> {
   if (isInsideTelegram()) return { Authorization: window.Telegram?.WebApp?.initData ?? '' }
   const token = getSessionToken()
   return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+const DEVICE_KEY = 'luma_device_id'
+let memoryDeviceId: string | null = null
+
+/** Stable per-install id: kept in localStorage, in memory when storage fails. */
+export function getDeviceId(): string {
+  try {
+    const stored = localStorage.getItem(DEVICE_KEY)
+    if (stored) return stored
+  } catch { /* fall through to memory */ }
+  memoryDeviceId ??= newUuid()
+  try {
+    localStorage.setItem(DEVICE_KEY, memoryDeviceId)
+  } catch { /* not persisted — the memory copy is stable for this page load */ }
+  return memoryDeviceId
+}
+
+/** authHeader() plus the client/device identification headers sent to the API. */
+export function clientHeaders(): Record<string, string> {
+  const inTelegram = isInsideTelegram()
+  const model = inTelegram ? window.Telegram?.WebApp?.platform : undefined
+  return {
+    ...authHeader(),
+    'X-Client-Platform': inTelegram ? 'telegram' : 'web',
+    'X-Client-Version': __APP_VERSION__,
+    'X-Device-Id': getDeviceId(),
+    ...(model ? { 'X-Device-Model': model } : {}),
+  }
 }

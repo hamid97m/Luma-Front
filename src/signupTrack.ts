@@ -4,7 +4,8 @@
 // survive the keyed <App> remount on a locale change (see main.tsx), which also
 // re-runs App's launch effects — as does StrictMode in dev — hence the dedupes.
 import { useLocaleStore } from './i18n.js'
-import { authHeader, isInsideTelegram } from './session.js'
+import { clientHeaders, isInsideTelegram } from './session.js'
+import { newUuid } from './utils/uuid.js'
 import { isReturningUser } from './utils/returningUser.js'
 
 export type SignupEventName =
@@ -54,22 +55,9 @@ function quietly(fn: () => void): void {
   } catch { /* tracking must never affect the app */ }
 }
 
-function newSessionId(): string {
-  const c = globalThis.crypto
-  if (typeof c?.randomUUID === 'function') return c.randomUUID()
-  // Older webviews, or a non-secure context: build the same UUID v4 by hand.
-  const bytes = new Uint8Array(16)
-  if (typeof c?.getRandomValues === 'function') c.getRandomValues(bytes)
-  else bytes.forEach((_, i) => { bytes[i] = Math.floor(Math.random() * 256) })
-  bytes[6] = (bytes[6] & 0x0f) | 0x40
-  bytes[8] = (bytes[8] & 0x3f) | 0x80
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
-}
-
 /** One random id per launch. */
 export function getSignupSessionId(): string {
-  sessionId ??= newSessionId()
+  sessionId ??= newUuid()
   return sessionId
 }
 
@@ -86,7 +74,7 @@ function send(events: SignupEvent[]): void {
     fetch(`${BASE}/signup-events`, {
       method: 'POST',
       keepalive: true,
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      headers: { 'Content-Type': 'application/json', ...clientHeaders() },
       body: JSON.stringify({
         sessionId: getSignupSessionId(),
         platform: isInsideTelegram() ? 'telegram' : 'web',
