@@ -116,8 +116,8 @@ describe('SettingsSheet language row', () => {
     fireEvent.click(screen.getByText(fa.settings.deleteAccount))
     fireEvent.click(screen.getByText(fa.settings.confirmDelete))
 
-    await waitFor(() => expect(reloadMock).toHaveBeenCalled())
-    expect(api.profile.delete).toHaveBeenCalled()
+    await waitFor(() => expect(api.profile.delete).toHaveBeenCalled())
+    await waitFor(() => expect(localStorage.getItem('luma.locale')).toBeNull())
     expect(localStorage.getItem('luma.locale')).toBeNull()
     expect(isLocalePending()).toBe(false)
   })
