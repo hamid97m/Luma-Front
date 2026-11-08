@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api.js'
 import { clearReturningUser } from '../utils/returningUser.js'
-import { haptic, isDarkTheme, setThemePref } from '../telegram.js'
+import { closeMiniApp, haptic, isDarkTheme, setThemePref } from '../telegram.js'
 import { t, useLocaleStore } from '../i18n.js'
 import { LOCALE_META, clearStoredLocale, setLocalePending, type Locale } from '../i18n/locale.js'
 import { LanguageOptions } from './LanguageOptions.js'
@@ -63,7 +63,11 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
       // The server also nulls `locale`; forget the device copy too so the
       // re-signup starts with the first-open language picker.
       clearStoredLocale()
-      window.location.reload()
+      // Leave instead of reloading: a reload signs straight back in, and the
+      // backend treats a sign-in on a deleted account as a return (clears
+      // deleted_at), so the account would never stay deleted.
+      if (isInsideTelegram()) closeMiniApp()
+      else endSession({ kind: 'signedOut' })
     } catch {
       setDeleting(false)
       window.Telegram?.WebApp?.showAlert?.(t.settings.error)

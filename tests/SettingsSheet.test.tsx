@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SettingsSheet } from '../src/components/SettingsSheet.js'
 import { api } from '../src/api.js'
+import { fa } from '../src/locales/fa.js'
 
 vi.mock('../src/api.js', () => ({
   api: {
@@ -100,9 +101,11 @@ describe('SettingsSheet', () => {
     expect(api.profile.delete).not.toHaveBeenCalled()
   })
 
-  it('deletes the account, clears the returning-user flag, and reloads on confirm', async () => {
+  it('deletes the account and closes the Mini App (no reload) inside Telegram', async () => {
     vi.mocked(api.profile.delete).mockResolvedValue({ ok: true })
     localStorage.setItem('luma_setup_complete_tg_id', '123')
+    const close = vi.fn()
+    ;(window as any).Telegram = { WebApp: { initData: 'query_id=1', close } }
     const reloadMock = vi.fn()
     Object.defineProperty(window, 'location', {
       configurable: true,
@@ -111,12 +114,35 @@ describe('SettingsSheet', () => {
 
     render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
 
-    fireEvent.click(screen.getByText('Delete my account'))
-    fireEvent.click(screen.getByText('Yes, delete my account'))
+    fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByText(fa.settings.confirmDelete))
 
     await waitFor(() => {
       expect(api.profile.delete).toHaveBeenCalled()
       expect(localStorage.getItem('luma_setup_complete_tg_id')).toBeNull()
+      expect(close).toHaveBeenCalled()
+    })
+    expect(reloadMock).not.toHaveBeenCalled()
+    delete (window as any).Telegram
+  })
+
+  it('deletes the account and signs out (token cleared) on the website', async () => {
+    vi.mocked(api.profile.delete).mockResolvedValue({ ok: true })
+    localStorage.setItem('luma_session', 'tok')
+    const reloadMock = vi.fn()
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: reloadMock },
+    })
+
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByText(fa.settings.confirmDelete))
+
+    await waitFor(() => {
+      expect(api.profile.delete).toHaveBeenCalled()
+      expect(localStorage.getItem('luma_session')).toBeNull()
       expect(reloadMock).toHaveBeenCalled()
     })
   })
