@@ -441,6 +441,25 @@ export const fa = {
     deleting: 'در حال حذف…',
     cancel: 'انصراف',
     error: 'مشکلی پیش آمد. لطفاً دوباره تلاش کن.',
+    // Exit survey shown before the delete confirmation.
+    reasonTitle: 'چرا می‌خوای بری؟',
+    reasonSubtitle: 'جوابت کمک می‌کنه لوما رو بهتر کنیم.',
+    reasons: {
+      found_someone: 'کسی رو پیدا کردم 💑',
+      few_matches: 'مچ یا لایک کافی نمی‌گیرم',
+      no_replies: 'کسی جواب پیام نمی‌ده',
+      fake_profiles: 'پروفایل فیک یا بی‌کیفیت زیاده',
+      too_expensive: 'اشتراک گرونه / محدودیت‌ها اذیتم می‌کنه',
+      privacy_safety: 'نگران حریم خصوصی یا امنیتم',
+      buggy: 'اپ مشکل داره یا کنده',
+      taking_break: 'فعلاً می‌خوام استراحت کنم',
+      other: 'دلیل دیگه',
+    },
+    reasonNoteLabel: 'بیشتر بگو (اختیاری)',
+    reasonNotePlaceholder: 'چی رو می‌تونستیم بهتر کنیم؟',
+    reasonContinue: 'ادامه',
+    reasonSkip: 'رد شدن',
+    congrats: 'تبریک! 🎉 برات بهترین‌ها رو آرزو می‌کنیم.',
   },
   // First-open language picker + the Settings row.
   language: {

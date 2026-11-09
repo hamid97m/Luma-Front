@@ -444,6 +444,25 @@ export const en = {
     deleting: 'Deleting…',
     cancel: 'Cancel',
     error: 'Something went wrong. Please try again.',
+    // Exit survey shown before the delete confirmation.
+    reasonTitle: 'Why are you leaving?',
+    reasonSubtitle: 'Your answer helps us improve Luma.',
+    reasons: {
+      found_someone: 'I met someone 💑',
+      few_matches: "I'm not getting enough matches or likes",
+      no_replies: 'Nobody replies to my messages',
+      fake_profiles: 'Too many fake or low-quality profiles',
+      too_expensive: 'Premium is too pricey / the limits bother me',
+      privacy_safety: "I'm worried about my privacy or safety",
+      buggy: 'The app is buggy or slow',
+      taking_break: 'I just need a break for now',
+      other: 'Something else',
+    },
+    reasonNoteLabel: 'Tell us more (optional)',
+    reasonNotePlaceholder: 'Anything we could do better…',
+    reasonContinue: 'Continue',
+    reasonSkip: 'Skip',
+    congrats: "Congrats! 🎉 We wish you all the best.",
   },
   // First-open language picker + the Settings row.
   language: {

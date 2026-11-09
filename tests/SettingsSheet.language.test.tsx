@@ -114,6 +114,7 @@ describe('SettingsSheet language row', () => {
 
     renderSheet()
     fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByText(fa.settings.reasonSkip))
     fireEvent.click(screen.getByText(fa.settings.confirmDelete))
 
     await waitFor(() => expect(api.profile.delete).toHaveBeenCalled())

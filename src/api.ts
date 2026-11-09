@@ -79,6 +79,18 @@ function putWithProgress(url: string, blob: Blob, onProgress?: (pct: number) => 
 export type AuthUser = Pick<UserProfile, 'id' | 'name' | 'setupComplete' | 'paused'> | UserProfile
 
 /** Telegram Login Widget callback payload, posted as-is to /auth/telegram-web. */
+/** Exit-survey answer sent with DELETE /profile/me (Settings → Delete account). */
+export type DeleteReason =
+  | 'found_someone'
+  | 'few_matches'
+  | 'no_replies'
+  | 'fake_profiles'
+  | 'too_expensive'
+  | 'privacy_safety'
+  | 'buggy'
+  | 'taking_break'
+  | 'other'
+
 export interface TelegramWidgetPayload {
   id: number
   first_name: string
@@ -110,7 +122,13 @@ export const api = {
     get: () => request<UserProfile>('/profile/me'),
     update: (data: Partial<Omit<UserProfile, 'id' | 'photos' | 'setupComplete'>>) =>
       request<UserProfile>('/profile/me', { method: 'PUT', body: JSON.stringify(data) }),
-    delete: () => request<{ ok: boolean }>('/profile/me', { method: 'DELETE' }),
+    // Optional exit survey answer; sent as a JSON body only when given, so a
+    // skipped survey stays a body-less DELETE.
+    delete: (feedback?: { reason?: DeleteReason; note?: string }) =>
+      request<{ ok: boolean }>('/profile/me', {
+        method: 'DELETE',
+        ...(feedback ? { body: JSON.stringify(feedback) } : {}),
+      }),
     setWriteAccess: (granted: boolean) =>
       request<{ ok: boolean }>('/profile/me/write-access', {
         method: 'POST',

@@ -467,6 +467,25 @@ export const ar = {
     deleting: 'جارٍ الحذف…',
     cancel: 'إلغاء',
     error: 'حدث خطأ ما. يرجى المحاولة مجددًا.',
+    // Exit survey shown before the delete confirmation.
+    reasonTitle: 'لماذا تريد المغادرة؟',
+    reasonSubtitle: 'إجابتك تساعدنا على تحسين Luma.',
+    reasons: {
+      found_someone: 'وجدت شخصًا مناسبًا 💑',
+      few_matches: 'لا أحصل على توافقات أو إعجابات كافية',
+      no_replies: 'لا أحد يرد على رسائلي',
+      fake_profiles: 'كثرة الملفات المزيفة أو الرديئة',
+      too_expensive: 'الاشتراك مكلف / القيود تزعجني',
+      privacy_safety: 'أنا قلق على خصوصيتي أو أماني',
+      buggy: 'التطبيق فيه أعطال أو بطيء',
+      taking_break: 'أحتاج إلى استراحة حاليًا',
+      other: 'سبب آخر',
+    },
+    reasonNoteLabel: 'أخبرنا المزيد (اختياري)',
+    reasonNotePlaceholder: 'ما الذي يمكننا تحسينه؟',
+    reasonContinue: 'متابعة',
+    reasonSkip: 'تخطي',
+    congrats: 'مبروك! 🎉 نتمنى لك كل التوفيق.',
   },
   // First-open language picker + the Settings row.
   language: {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api } from '../api.js'
+import { api, type DeleteReason } from '../api.js'
 import { clearReturningUser } from '../utils/returningUser.js'
 import { closeMiniApp, haptic, isDarkTheme, setThemePref } from '../telegram.js'
 import { t, useLocaleStore } from '../i18n.js'
@@ -8,6 +8,20 @@ import { LanguageOptions } from './LanguageOptions.js'
 import { endSession, isInsideTelegram } from '../session.js'
 import { Button, Icon, Sheet } from './ui'
 
+// Exit-survey options, in display order (codes match the backend contract).
+const DELETE_REASONS: DeleteReason[] = [
+  'found_someone',
+  'few_matches',
+  'no_replies',
+  'fake_profiles',
+  'too_expensive',
+  'privacy_safety',
+  'buggy',
+  'taking_break',
+  'other',
+]
+const NOTE_MAX = 500
+
 interface Props {
   isActive: boolean
   onPauseChange: (isActive: boolean) => void
@@ -15,7 +29,10 @@ interface Props {
 }
 
 export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
-  const [view, setView] = useState<'menu' | 'confirmDelete'>('menu')
+  const [view, setView] = useState<'menu' | 'reason' | 'confirmDelete'>('menu')
+  // null = no answer (nothing picked yet, or the survey was skipped).
+  const [reason, setReason] = useState<DeleteReason | null>(null)
+  const [note, setNote] = useState('')
   const [pausing, setPausing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [dark, setDark] = useState(isDarkTheme())
@@ -58,7 +75,10 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      await api.profile.delete()
+      const trimmed = note.trim()
+      await api.profile.delete(
+        reason ? { reason, ...(trimmed ? { note: trimmed.slice(0, NOTE_MAX) } : {}) } : undefined,
+      )
       clearReturningUser()
       // The server also nulls `locale`; forget the device copy too so the
       // re-signup starts with the first-open language picker.
@@ -197,7 +217,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
 
           <button
             type="button"
-            onClick={() => setView('confirmDelete')}
+            onClick={() => setView('reason')}
             className="w-full text-start rounded-m3-lg p-4 bg-error-container"
           >
             <p className="text-error font-bold text-[11px] uppercase tracking-widest mb-1">{t.settings.dangerZone}</p>
@@ -207,8 +227,81 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
             </span>
           </button>
         </>
+      ) : view === 'reason' ? (
+        <>
+          <h2 className="text-[22px] font-medium text-txt mb-1">{t.settings.reasonTitle}</h2>
+          <p className="text-txt2 text-[14px] mb-4 leading-relaxed">{t.settings.reasonSubtitle}</p>
+
+          <div role="radiogroup" aria-label={t.settings.reasonTitle} className="flex flex-col gap-2 mb-4">
+            {DELETE_REASONS.map((r) => {
+              const selected = r === reason
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => {
+                    haptic.selection()
+                    setReason(r)
+                  }}
+                  className={`w-full text-start rounded-m3-lg px-4 py-3.5 flex items-center justify-between gap-3 transition-colors ${
+                    selected ? 'bg-primary-container text-on-primary-container' : 'bg-surface text-txt hover:bg-surface-high'
+                  }`}
+                >
+                  <span className="text-[15px] font-medium">{t.settings.reasons[r]}</span>
+                  {selected && <Icon name="check" size={18} className="flex-none" />}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Free-text detail, offered once a reason is picked. */}
+          {reason && (
+            <label className="block bg-surface rounded-m3-lg p-4 mb-4">
+              <span className="text-txt2 text-[13px]">{t.settings.reasonNoteLabel}</span>
+              <textarea
+                rows={3}
+                maxLength={NOTE_MAX}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t.settings.reasonNotePlaceholder}
+                className="w-full resize-none outline-none bg-transparent text-[14px] text-txt placeholder:text-txt3 mt-1.5 leading-relaxed"
+              />
+              <p className="text-end text-[11px] text-txt3 mt-1">{note.length}/{NOTE_MAX}</p>
+            </label>
+          )}
+
+          <Button
+            onClick={() => setView('confirmDelete')}
+            disabled={!reason}
+            block
+            size="lg"
+            className="mb-2"
+          >
+            {t.settings.reasonContinue}
+          </Button>
+          <Button
+            onClick={() => {
+              setReason(null)
+              setNote('')
+              setView('confirmDelete')
+            }}
+            variant="text"
+            block
+            className="mb-1"
+          >
+            {t.settings.reasonSkip}
+          </Button>
+          <Button onClick={() => setView('menu')} variant="text" block>
+            {t.settings.cancel}
+          </Button>
+        </>
       ) : (
         <>
+          {reason === 'found_someone' && (
+            <p className="text-primary text-[14px] font-medium mb-2">{t.settings.congrats}</p>
+          )}
           <h2 className="text-[22px] font-medium text-txt mb-2.5">{t.settings.confirmTitle}</h2>
           <p className="text-txt2 text-[14px] mb-5 leading-relaxed">
             {t.settings.confirmBody}
@@ -223,7 +316,7 @@ export function SettingsSheet({ isActive, onPauseChange, onClose }: Props) {
           >
             {deleting ? t.settings.deleting : t.settings.confirmDelete}
           </Button>
-          <Button onClick={() => setView('menu')} disabled={deleting} variant="text" block>
+          <Button onClick={() => setView('reason')} disabled={deleting} variant="text" block>
             {t.settings.cancel}
           </Button>
         </>

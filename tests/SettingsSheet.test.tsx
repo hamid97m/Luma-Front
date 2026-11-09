@@ -16,7 +16,7 @@ vi.mock('../src/api.js', () => ({
 }))
 
 // The pause control is one of two switches in the sheet; target it by name.
-const pauseSwitch = () => screen.getByRole('switch', { name: 'Pause my account' })
+const pauseSwitch = () => screen.getByRole('switch', { name: fa.settings.pause })
 
 describe('SettingsSheet', () => {
   beforeEach(() => {
@@ -83,7 +83,7 @@ describe('SettingsSheet', () => {
 
   it('toggles dark theme and persists the preference', () => {
     render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
-    const darkSwitch = screen.getByRole('switch', { name: 'Dark theme' })
+    const darkSwitch = screen.getByRole('switch', { name: fa.settings.darkTheme })
     fireEvent.click(darkSwitch)
     expect(localStorage.getItem('luma_theme')).toBe('dark')
     fireEvent.click(darkSwitch)
@@ -93,12 +93,89 @@ describe('SettingsSheet', () => {
   it('shows a confirmation view before deleting, and cancel does not call delete', () => {
     render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
 
-    fireEvent.click(screen.getByText('Delete my account'))
-    expect(screen.getByText('Delete your account?')).toBeInTheDocument()
+    fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByText(fa.settings.reasonSkip))
+    expect(screen.getByText(fa.settings.confirmTitle)).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('Cancel'))
-    expect(screen.queryByText('Delete your account?')).not.toBeInTheDocument()
+    // Cancel steps back to the reason survey, not straight to the menu.
+    fireEvent.click(screen.getByText(fa.settings.cancel))
+    expect(screen.queryByText(fa.settings.confirmTitle)).not.toBeInTheDocument()
+    expect(screen.getByText(fa.settings.reasonTitle)).toBeInTheDocument()
     expect(api.profile.delete).not.toHaveBeenCalled()
+  })
+
+  it('shows the reason survey after "Delete account"; Continue is disabled until a reason is picked', () => {
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    expect(screen.getByText(fa.settings.reasonTitle)).toBeInTheDocument()
+    expect(screen.getAllByRole('radio')).toHaveLength(9)
+    const cont = screen.getByRole('button', { name: fa.settings.reasonContinue })
+    expect(cont).toBeDisabled()
+    // The note box only appears once a reason is chosen.
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('radio', { name: fa.settings.reasons.buggy }))
+    expect(screen.getByRole('radio', { name: fa.settings.reasons.buggy })).toHaveAttribute('aria-checked', 'true')
+    expect(cont).not.toBeDisabled()
+    expect(screen.getByRole('textbox')).toHaveAttribute('maxLength', '500')
+
+    // Cancel on the survey returns to the menu.
+    fireEvent.click(screen.getByText(fa.settings.cancel))
+    expect(screen.getByText(fa.settings.deleteAccount)).toBeInTheDocument()
+  })
+
+  it('sends the chosen reason and note with the delete', async () => {
+    vi.mocked(api.profile.delete).mockResolvedValue({ ok: true })
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByRole('radio', { name: fa.settings.reasons.no_replies }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '  nobody answers  ' } })
+    fireEvent.click(screen.getByRole('button', { name: fa.settings.reasonContinue }))
+    // Only the found_someone answer gets the congrats line.
+    expect(screen.queryByText(fa.settings.congrats)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText(fa.settings.confirmDelete))
+
+    await waitFor(() =>
+      expect(api.profile.delete).toHaveBeenCalledWith({ reason: 'no_replies', note: 'nobody answers' }),
+    )
+  })
+
+  it('omits an empty note', async () => {
+    vi.mocked(api.profile.delete).mockResolvedValue({ ok: true })
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByRole('radio', { name: fa.settings.reasons.taking_break }))
+    fireEvent.click(screen.getByRole('button', { name: fa.settings.reasonContinue }))
+    fireEvent.click(screen.getByText(fa.settings.confirmDelete))
+
+    await waitFor(() => expect(api.profile.delete).toHaveBeenCalledWith({ reason: 'taking_break' }))
+  })
+
+  it('Skip deletes without a reason', async () => {
+    vi.mocked(api.profile.delete).mockResolvedValue({ ok: true })
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    // A reason picked and then skipped is discarded.
+    fireEvent.click(screen.getByRole('radio', { name: fa.settings.reasons.other }))
+    fireEvent.click(screen.getByText(fa.settings.reasonSkip))
+    fireEvent.click(screen.getByText(fa.settings.confirmDelete))
+
+    await waitFor(() => expect(api.profile.delete).toHaveBeenCalledWith(undefined))
+  })
+
+  it('congratulates users leaving because they met someone', () => {
+    render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByRole('radio', { name: fa.settings.reasons.found_someone }))
+    fireEvent.click(screen.getByRole('button', { name: fa.settings.reasonContinue }))
+
+    expect(screen.getByText(fa.settings.congrats)).toBeInTheDocument()
+    expect(screen.getByText(fa.settings.confirmTitle)).toBeInTheDocument()
   })
 
   it('deletes the account and closes the Mini App (no reload) inside Telegram', async () => {
@@ -115,6 +192,7 @@ describe('SettingsSheet', () => {
     render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
 
     fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByText(fa.settings.reasonSkip))
     fireEvent.click(screen.getByText(fa.settings.confirmDelete))
 
     await waitFor(() => {
@@ -138,6 +216,7 @@ describe('SettingsSheet', () => {
     render(<SettingsSheet isActive={true} onPauseChange={vi.fn()} onClose={vi.fn()} />)
 
     fireEvent.click(screen.getByText(fa.settings.deleteAccount))
+    fireEvent.click(screen.getByText(fa.settings.reasonSkip))
     fireEvent.click(screen.getByText(fa.settings.confirmDelete))
 
     await waitFor(() => {
