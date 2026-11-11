@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { mainButtonSupported, useMainButton, telegramFirstName, telegramHasPhoto, haptic } from '../telegram.js'
 import { PhotoEditor } from '../components/PhotoEditor.js'
@@ -67,6 +67,8 @@ export function Onboarding({ onComplete }: Props) {
   const [interestsError, setInterestsError] = useState(false)
   const [editingFile, setEditingFile] = useState<File | null>(null)
   const [tgPhotoLoading, setTgPhotoLoading] = useState(false)
+  const [tgPhotoFailed, setTgPhotoFailed] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { track('step_view', { step: STEP_NAMES[step] }) }, [step])
 
@@ -171,7 +173,12 @@ export function Onboarding({ onComplete }: Props) {
       track('photo_ok', { step: 'photo', detail: 'telegram' })
     } catch (err) {
       track('photo_failed', { step: 'photo', detail: signupErrorDetail(err, 'telegram') })
-      window.Telegram?.WebApp?.showAlert?.(t.onboarding.telegramPhotoFailed)
+      // Telegram often won't hand us the photo (privacy settings, or the user never
+      // started the bot). Drop the button and go straight to the file picker
+      // instead of a dead-end alert — the browser may block the programmatic
+      // open, so the inline hint still points at the photo tile.
+      setTgPhotoFailed(true)
+      fileInputRef.current?.click()
     } finally {
       setTgPhotoLoading(false)
     }
@@ -363,6 +370,7 @@ export function Onboarding({ onComplete }: Props) {
               <div className="flex gap-4">
                 <label className="relative cursor-pointer flex-shrink-0">
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     className="sr-only"
@@ -403,7 +411,7 @@ export function Onboarding({ onComplete }: Props) {
                   <p className="text-end text-[11px] text-txt3">{state.bio.length}/150</p>
                 </div>
               </div>
-              {!photoUploaded && telegramHasPhoto() && (
+              {!photoUploaded && !tgPhotoFailed && telegramHasPhoto() && (
                 <Button
                   variant="tonal"
                   size="sm"
@@ -413,6 +421,9 @@ export function Onboarding({ onComplete }: Props) {
                 >
                   {t.onboarding.useTelegramPhoto}
                 </Button>
+              )}
+              {!photoUploaded && tgPhotoFailed && (
+                <p className="text-txt2 text-[13px]">{t.onboarding.telegramPhotoFailed}</p>
               )}
               <div className="flex gap-2.5 bg-surface rounded-m3-md px-3.5 py-3">
                 <Icon name={state.gender === 'woman' ? 'shield' : 'alert-triangle'} size={16} className="text-primary flex-none mt-px" />

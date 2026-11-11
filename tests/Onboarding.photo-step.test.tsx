@@ -114,4 +114,27 @@ describe('Onboarding photo step', () => {
     expect(enter.className).toContain('bg-primary')
     expect(enter.className).not.toContain('grad-tg')
   })
+
+  it('when the Telegram photo cannot be fetched, drops the button and opens the file picker instead of an alert', async () => {
+    const tgUser = window.Telegram!.WebApp!.initDataUnsafe.user as { photo_url?: string }
+    tgUser.photo_url = 'https://t.me/i/userpic/320/x.jpg'
+    const showAlert = vi.fn()
+    Object.assign(window.Telegram!.WebApp!, { showAlert })
+    vi.mocked(api.photos.fromTelegram).mockRejectedValue(new Error('no_telegram_photo'))
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+
+    try {
+      render(<Onboarding onComplete={vi.fn()} />)
+      goToPhotoStep()
+      fireEvent.click(screen.getByRole('button', { name: 'استفاده از عکس تلگرام' }))
+
+      expect(await screen.findByText('دریافت عکس تلگرام ناموفق بود. لطفاً یک عکس انتخاب کن.')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'استفاده از عکس تلگرام' })).toBeNull()
+      expect(clickSpy).toHaveBeenCalled()
+      expect(showAlert).not.toHaveBeenCalled()
+    } finally {
+      clickSpy.mockRestore()
+      delete tgUser.photo_url
+    }
+  })
 })
