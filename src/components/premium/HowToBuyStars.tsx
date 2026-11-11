@@ -63,7 +63,7 @@ export function HowToBuyStars({ onClose, packageStars, planTitle }: HowToBuyStar
           className="p-1.5 flex text-txt"
           aria-label={t.premium.close}
         >
-          <Icon name="chevron-right" size={22} />
+          <Icon name="chevron-left" size={22} className="rtl:-scale-x-100" />
         </button>
         <h1 className="text-[18px] font-semibold text-txt m-0">{c.title}</h1>
       </div>

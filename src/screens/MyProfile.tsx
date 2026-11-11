@@ -311,7 +311,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
               <span className="block text-[15px] font-semibold text-on-primary-container">{t.referral.entryTitle}</span>
               <span className="block text-[12px] text-on-primary-container/70">{t.referral.entrySub}</span>
             </span>
-            <Icon name="chevron-left" size={18} className="text-primary flex-none" />
+            <Icon name="chevron-right" size={18} className="rtl:-scale-x-100 text-primary flex-none" />
           </button>
         )}
 
@@ -489,7 +489,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             <span className="flex-1 min-w-0 text-[15px] font-medium text-on-primary-container truncate">{prompt}</span>
             <span className="flex items-center gap-0.5 text-[13px] font-medium opacity-80 flex-none">
               {t.myProfile.change}
-              <Icon name="chevron-left" size={16} />
+              <Icon name="chevron-right" size={16} className="rtl:-scale-x-100" />
             </span>
           </button>
           <textarea
@@ -521,7 +521,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             <span className="block font-medium text-[15px] text-txt">{t.support.title}</span>
             <span className="block text-[12px] text-txt2">{t.myProfile.supportSub}</span>
           </span>
-          <Icon name="chevron-left" size={18} className="text-txt2 flex-none" />
+          <Icon name="chevron-right" size={18} className="rtl:-scale-x-100 text-txt2 flex-none" />
         </button>
 
       </div>

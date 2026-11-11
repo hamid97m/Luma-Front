@@ -218,7 +218,7 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
               </div>
 
               {/* Chevron cue */}
-              <Icon name="chevron-left" size={20} className="text-txt3 flex-none" />
+              <Icon name="chevron-right" size={20} className="rtl:-scale-x-100 text-txt3 flex-none" />
             </button>
           ))}
         </div>

@@ -132,7 +132,7 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
               {t.likes.bannerSub}
             </span>
           </span>
-          <Icon name="chevron-left" size={18} className="text-on-primary-container flex-none" />
+          <Icon name="chevron-right" size={18} className="rtl:-scale-x-100 text-on-primary-container flex-none" />
         </button>
       )}
 
