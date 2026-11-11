@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
-import { haptic, useBackButton } from '../telegram.js'
+import { haptic, needsInPageBack, useBackButton } from '../telegram.js'
 import { Button, Icon, IconButton, Textarea } from '../components/ui/index.js'
 import type { SupportTicketListItem, SupportMessage } from '../types.js'
 
@@ -14,13 +14,28 @@ export function Support({ onClose }: { onClose: () => void }) {
   const [view, setView] = useState<View>({ name: 'list' })
 
   // Telegram back-press: go back within the overlay, or close it from the list.
-  useBackButton(true, () => {
+  const back = () => {
     if (view.name === 'list') onClose()
     else setView({ name: 'list' })
-  })
+  }
+  useBackButton(true, back)
 
   return (
     <div className="fixed inset-0 z-50 bg-bg text-txt flex flex-col" style={{ paddingTop: 'var(--tg-safe-top)' }}>
+      {/* Telegram draws its own back arrow; on the website we need one. */}
+      {needsInPageBack() && (
+        <div className="flex items-center gap-2 px-3 h-14 flex-none border-b border-surface">
+          <IconButton
+            icon="arrow-left"
+            tone="ghost"
+            iconSize={20}
+            className="rtl:-scale-x-100"
+            aria-label={t.aria.back}
+            onClick={back}
+          />
+          <h1 className="text-[18px] font-semibold text-txt m-0">{t.support.title}</h1>
+        </div>
+      )}
       {view.name === 'list' && <TicketList onOpen={(id) => setView({ name: 'thread', id })} onNew={() => setView({ name: 'new' })} />}
       {view.name === 'new' && <NewTicket onCreated={(id) => setView({ name: 'thread', id })} />}
       {view.name === 'thread' && <Thread id={view.id} />}

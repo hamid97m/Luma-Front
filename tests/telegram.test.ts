@@ -249,3 +249,49 @@ describe('useMainButton', () => {
     expect(mb.setParams).toHaveBeenCalledWith({ color: '#E0537F', text_color: '#ffffff' })
   })
 })
+
+describe('back stack on the website (no Telegram)', () => {
+  async function freshTelegram() {
+    vi.resetModules()
+    return await import('../src/telegram.js')
+  }
+
+  it('browser back runs the top handler instead of leaving the page', async () => {
+    const tg = await freshTelegram()
+    setWebApp({}) // no initData → website
+    const push = vi.spyOn(window.history, 'pushState')
+    const handler = vi.fn()
+    tg.pushBackHandler(handler)
+    expect(push).toHaveBeenCalledTimes(1)
+
+    window.dispatchEvent(new PopStateEvent('popstate', { state: null }))
+    expect(handler).toHaveBeenCalledTimes(1)
+    push.mockRestore()
+  })
+
+  it('closing the overlay from the UI drops the history guard', async () => {
+    const tg = await freshTelegram()
+    setWebApp({})
+    vi.spyOn(window.history, 'pushState')
+    Object.defineProperty(window.history, 'state', { configurable: true, get: () => ({ lumaBack: true }) })
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {})
+    const handler = vi.fn()
+    const unregister = tg.pushBackHandler(handler)
+    unregister()
+    expect(back).toHaveBeenCalledTimes(1)
+
+    // Our own back() lands as a popstate — it must not run any handler.
+    window.dispatchEvent(new PopStateEvent('popstate', { state: null }))
+    expect(handler).not.toHaveBeenCalled()
+    delete (window.history as { state?: unknown }).state
+    vi.restoreAllMocks()
+  })
+
+  it('needsInPageBack is false inside Telegram', async () => {
+    const tg = await freshTelegram()
+    setWebApp({ initData: 'x' })
+    expect(tg.needsInPageBack()).toBe(false)
+    setWebApp({})
+    expect(tg.needsInPageBack()).toBe(true)
+  })
+})

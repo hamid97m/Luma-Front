@@ -259,10 +259,56 @@ function dispatchBack() {
 }
 
 function syncBackButton() {
+  if (!webApp()?.initData) {
+    syncHistoryGuard()
+    return
+  }
   const bb = webApp()?.BackButton
   if (!bb) return
   if (backStack.length > 0) bb.show?.()
   else bb.hide?.()
+}
+
+// Outside Telegram (the website) there is no native BackButton, so the browser
+// back (desktop button, Android back, iOS edge-swipe) stands in for it: while
+// any overlay is open we keep one extra history entry (the "guard") on top of
+// the page. Going back pops the guard and runs the top handler; closing the
+// last overlay from the UI removes the guard again so history stays clean.
+const GUARD_STATE = { lumaBack: true }
+let guardActive = false
+let ignoredPops = 0
+let popWired = false
+
+function onPopState() {
+  if (ignoredPops > 0) {
+    // Our own history.back() removing a guard — not a user back-press.
+    ignoredPops--
+    guardActive = !!(window.history.state as typeof GUARD_STATE | null)?.lumaBack
+    syncHistoryGuard()
+    return
+  }
+  guardActive = false
+  dispatchBack()
+  // The handler closes its overlay on the next render; if something is still
+  // open after that (a sheet over the chat, Support's inner views) re-arm.
+  setTimeout(syncHistoryGuard, 0)
+}
+
+function syncHistoryGuard() {
+  if (!popWired) {
+    window.addEventListener('popstate', onPopState)
+    popWired = true
+  }
+  if (backStack.length > 0 && !guardActive) {
+    window.history.pushState(GUARD_STATE, '')
+    guardActive = true
+  } else if (backStack.length === 0 && guardActive) {
+    guardActive = false
+    if ((window.history.state as typeof GUARD_STATE | null)?.lumaBack) {
+      ignoredPops++
+      window.history.back()
+    }
+  }
 }
 
 /**
@@ -272,7 +318,7 @@ function syncBackButton() {
  */
 export function pushBackHandler(handler: BackHandler): () => void {
   backStack.push(handler)
-  const bb = webApp()?.BackButton
+  const bb = webApp()?.initData ? webApp()?.BackButton : undefined
   if (bb && !backClickWired) {
     bb.onClick?.(dispatchBack) // wired once; dispatchBack always reads the top
     backClickWired = true
@@ -283,6 +329,11 @@ export function pushBackHandler(handler: BackHandler): () => void {
     if (i !== -1) backStack.splice(i, 1)
     syncBackButton()
   }
+}
+
+/** True outside Telegram, where screens must draw their own back arrow. */
+export function needsInPageBack(): boolean {
+  return !webApp()?.initData
 }
 
 /**

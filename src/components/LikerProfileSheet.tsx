@@ -1,6 +1,6 @@
 import { t } from '../i18n.js'
 import { relativeTime } from '../i18n/format.js'
-import { useBackButton } from '../telegram.js'
+import { needsInPageBack, useBackButton } from '../telegram.js'
 import { Icon } from './ui/index.js'
 import { PremiumBadge } from './premium/PremiumBadge.js'
 import type { LikerProfile } from '../types.js'
@@ -39,6 +39,18 @@ export function LikerProfileSheet({ liker, busy, onClose, onPass, onLikeBack }: 
           className="absolute inset-0"
           style={{ background: 'linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,0) 34%,rgba(0,0,0,.6) 100%)' }}
         />
+        {/* Telegram draws its own back arrow; on the website we need one. */}
+        {needsInPageBack() && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t.aria.back}
+            className="absolute top-3 start-3 w-10 h-10 rounded-full flex items-center justify-center text-white bg-black/35 rtl:-scale-x-100"
+            style={{ marginTop: 'var(--tg-safe-top)' }}
+          >
+            <Icon name="arrow-left" size={20} />
+          </button>
+        )}
         <div className="absolute left-5 right-5 bottom-[18px]">
           <span
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-primary text-[10.5px] font-bold uppercase tracking-wide mb-2"

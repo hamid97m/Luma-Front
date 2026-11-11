@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api.js'
-import { haptic } from '../telegram.js'
+import { haptic, needsInPageBack } from '../telegram.js'
 import { buildChatItems, replySnippet } from '../utils/chatFormat.js'
 import { lastServerId, mergeFullList, mergeIncoming, mergeSent, mergeUpdated } from '../utils/chatMerge.js'
 import { subscribe, useRealtimeStore } from '../realtime.js'
@@ -333,6 +333,17 @@ export function Chat({ match, myUserId, onBack }: Props) {
   return (
     <div className="flex flex-col h-full bg-bg text-txt" style={{ paddingTop: 'var(--tg-safe-top)' }}>
       <div className="flex items-center gap-2 px-3 pt-3 pb-2 bg-surface w-full flex-none">
+        {/* Telegram draws its own back arrow; on the website we need one. */}
+        {needsInPageBack() && (
+          <IconButton
+            icon="arrow-left"
+            tone="ghost"
+            iconSize={20}
+            className="rtl:-scale-x-100"
+            aria-label={t.aria.back}
+            onClick={onBack}
+          />
+        )}
         <button
           type="button"
           aria-label={t.chat.viewProfile}
