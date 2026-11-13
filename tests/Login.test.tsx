@@ -4,7 +4,7 @@ import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 vi.mock('../src/api.ts', () => ({
   onAccountPaused: () => () => {},
   api: {
-    auth: { verify: vi.fn(), me: vi.fn(), telegramWeb: vi.fn(), google: vi.fn(), dev: vi.fn() },
+    auth: { verify: vi.fn(), me: vi.fn(), telegramOidc: vi.fn(), google: vi.fn(), dev: vi.fn() },
   },
 }))
 
@@ -13,7 +13,6 @@ import { api } from '../src/api.js'
 import { t } from '../src/i18n.js'
 
 const USER = { id: 'u1', name: 'Ali', setupComplete: true, paused: false }
-const TG_PAYLOAD = { id: 42, first_name: 'Ali', auth_date: 1_700_000_000, hash: 'abc' }
 
 type GoogleInit = { client_id: string; callback: (r: { credential: string }) => void }
 
@@ -23,7 +22,7 @@ const apiError = (status: number, body: object) =>
 const googleScript = () =>
   document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]')
 const telegramScript = () =>
-  document.querySelector<HTMLScriptElement>('script[src^="https://telegram.org/js/telegram-widget.js"]')
+  document.querySelector<HTMLScriptElement>('script[src^="https://oauth.telegram.org/js/telegram-login.js"]')
 
 /** Simulate the GIS script arriving; returns the config passed to initialize(). */
 function loadGoogle(): { init: () => GoogleInit; renderButton: ReturnType<typeof vi.fn> } {
@@ -36,8 +35,25 @@ function loadGoogle(): { init: () => GoogleInit; renderButton: ReturnType<typeof
   return { init: () => config!, renderButton }
 }
 
-const telegramAuth = (payload: object) =>
-  (window as unknown as { onTelegramAuth: (u: object) => void }).onTelegramAuth(payload)
+type TgWindow = { Telegram: { Login?: { auth: ReturnType<typeof vi.fn> } } }
+const tgWindow = () => window as unknown as TgWindow
+
+/** Simulate Telegram's login library arriving; its popup answers with `result`. */
+function loadTelegram(result: object = { id_token: 'tg-jwt' }) {
+  const auth = vi.fn((_options: object, cb: (r: object) => void) => cb(result))
+  tgWindow().Telegram.Login = { auth }
+  act(() => { fireEvent.load(telegramScript()!) })
+  return auth
+}
+
+const telegramButton = () => screen.getByRole('button', { name: t.login.telegram })
+const clickTelegram = async () => { await act(async () => { fireEvent.click(telegramButton()) }) }
+
+/** Sign in through the Telegram popup, which answers with an ID token. */
+async function telegramSignIn() {
+  loadTelegram()
+  await clickTelegram()
+}
 
 function renderLogin() {
   const onSignedIn = vi.fn()
@@ -49,8 +65,8 @@ function renderLogin() {
 describe('Login', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id')
-    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'LumaDatingBot')
-    vi.mocked(api.auth.telegramWeb).mockReset()
+    vi.stubEnv('VITE_TELEGRAM_CLIENT_ID', '8750905850')
+    vi.mocked(api.auth.telegramOidc).mockReset()
     vi.mocked(api.auth.google).mockReset()
     vi.mocked(api.auth.dev).mockReset()
   })
@@ -58,19 +74,19 @@ describe('Login', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
     googleScript()?.remove()
+    telegramScript()?.remove()
     delete (window as unknown as { google?: unknown }).google
+    delete tgWindow().Telegram.Login
   })
 
   it('renders the Telegram and Google options and the Telegram hint', () => {
     renderLogin()
 
-    expect(screen.getByLabelText(t.login.telegram)).toBeInTheDocument()
+    expect(telegramButton()).toBeInTheDocument()
     expect(screen.getByLabelText(t.login.google)).toBeInTheDocument()
     expect(screen.getByText(t.login.telegramHint)).toBeInTheDocument()
 
-    const tg = telegramScript()!
-    expect(tg.dataset.telegramLogin).toBe('LumaDatingBot')
-    expect(tg.dataset.onauth).toBe('onTelegramAuth(user)')
+    expect(telegramScript()).not.toBeNull()
     expect(googleScript()).not.toBeNull()
   })
 
@@ -88,21 +104,53 @@ describe('Login', () => {
     expect(onSignedIn).toHaveBeenCalledWith('tok', USER)
   })
 
-  it('Telegram widget callback → api.auth.telegramWeb → onSignedIn(token, user)', async () => {
-    vi.mocked(api.auth.telegramWeb).mockResolvedValue({ token: 'tok', user: USER } as never)
+  it('Telegram button is disabled until the login library has loaded', () => {
+    renderLogin()
+    expect(telegramButton()).toBeDisabled()
+    loadTelegram()
+    expect(telegramButton()).toBeEnabled()
+  })
+
+  it('Telegram popup ID token → api.auth.telegramOidc → onSignedIn(token, user)', async () => {
+    vi.mocked(api.auth.telegramOidc).mockResolvedValue({ token: 'tok', user: USER } as never)
     const { onSignedIn } = renderLogin()
 
-    await act(async () => { telegramAuth(TG_PAYLOAD) })
+    const auth = loadTelegram()
+    await clickTelegram()
 
-    expect(api.auth.telegramWeb).toHaveBeenCalledWith(TG_PAYLOAD)
+    expect(auth).toHaveBeenCalledWith(
+      { client_id: 8750905850, scope: ['profile', 'write'], lang: expect.any(String) }, expect.any(Function),
+    )
+    expect(api.auth.telegramOidc).toHaveBeenCalledWith('tg-jwt')
     expect(onSignedIn).toHaveBeenCalledWith('tok', USER)
   })
 
+  it('closing the Telegram popup is silent; a popup error shows the Telegram error', async () => {
+    renderLogin()
+
+    loadTelegram({ error: 'popup_closed' })
+    await clickTelegram()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    tgWindow().Telegram.Login!.auth.mockImplementation((_o: object, cb: (r: object) => void) => cb({ error: 'access_denied' }))
+    await clickTelegram()
+    expect(screen.getByRole('alert')).toHaveTextContent(t.login.errors.invalidTelegram)
+    expect(api.auth.telegramOidc).not.toHaveBeenCalled()
+  })
+
+  it('no client id configured → no Telegram option', () => {
+    vi.stubEnv('VITE_TELEGRAM_CLIENT_ID', '')
+    renderLogin()
+
+    expect(screen.queryByRole('button', { name: t.login.telegram })).not.toBeInTheDocument()
+    expect(telegramScript()).toBeNull()
+  })
+
   it('invalid_telegram_login shows an inline error', async () => {
-    vi.mocked(api.auth.telegramWeb).mockRejectedValue(apiError(401, { error: 'invalid_telegram_login' }))
+    vi.mocked(api.auth.telegramOidc).mockRejectedValue(apiError(401, { error: 'invalid_telegram_login' }))
     const { onSignedIn } = renderLogin()
 
-    await act(async () => { telegramAuth(TG_PAYLOAD) })
+    await telegramSignIn()
 
     expect(screen.getByRole('alert')).toHaveTextContent(t.login.errors.invalidTelegram)
     expect(onSignedIn).not.toHaveBeenCalled()
@@ -129,29 +177,29 @@ describe('Login', () => {
   })
 
   it('web_login_unavailable (server not configured) shows the generic error', async () => {
-    vi.mocked(api.auth.telegramWeb).mockRejectedValue(apiError(503, { error: 'web_login_unavailable' }))
+    vi.mocked(api.auth.telegramOidc).mockRejectedValue(apiError(503, { error: 'web_login_unavailable' }))
     renderLogin()
 
-    await act(async () => { telegramAuth(TG_PAYLOAD) })
+    await telegramSignIn()
 
     expect(screen.getByRole('alert')).toHaveTextContent(t.login.errors.generic)
   })
 
   it('a network failure shows an inline error', async () => {
-    vi.mocked(api.auth.telegramWeb).mockRejectedValue(new TypeError('Failed to fetch'))
+    vi.mocked(api.auth.telegramOidc).mockRejectedValue(new TypeError('Failed to fetch'))
     renderLogin()
 
-    await act(async () => { telegramAuth(TG_PAYLOAD) })
+    await telegramSignIn()
 
     expect(screen.getByRole('alert')).toHaveTextContent(t.login.errors.network)
   })
 
   it('account_banned hands the error to onBanned instead of showing it', async () => {
     const banned = apiError(401, { error: 'account_banned', botUsername: 'LumaDatingBot' })
-    vi.mocked(api.auth.telegramWeb).mockRejectedValue(banned)
+    vi.mocked(api.auth.telegramOidc).mockRejectedValue(banned)
     const { onBanned, onSignedIn } = renderLogin()
 
-    await act(async () => { telegramAuth(TG_PAYLOAD) })
+    await telegramSignIn()
 
     expect(onBanned).toHaveBeenCalledWith(banned)
     expect(onSignedIn).not.toHaveBeenCalled()
@@ -163,7 +211,7 @@ describe('Login', () => {
     act(() => { fireEvent.error(googleScript()!) })
 
     expect(screen.queryByLabelText(t.login.google)).not.toBeInTheDocument()
-    expect(screen.getByLabelText(t.login.telegram)).toBeInTheDocument()
+    expect(telegramButton()).toBeInTheDocument()
   })
 
   it('a later visit after a failed Google load retries instead of leaving a blank gap', () => {
@@ -180,11 +228,11 @@ describe('Login', () => {
   })
 
   it('an error thrown while continuing after sign-in is not shown as a sign-in error', async () => {
-    vi.mocked(api.auth.telegramWeb).mockResolvedValue({ token: 'tok', user: USER } as never)
+    vi.mocked(api.auth.telegramOidc).mockResolvedValue({ token: 'tok', user: USER } as never)
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     render(<Login onSignedIn={() => { throw new Error('boom') }} onBanned={vi.fn()} />)
 
-    await act(async () => { telegramAuth(TG_PAYLOAD) })
+    await telegramSignIn()
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(consoleError).toHaveBeenCalled()
@@ -195,7 +243,7 @@ describe('Login', () => {
     renderLogin()
     act(() => { fireEvent.error(telegramScript()!) })
 
-    expect(screen.queryByLabelText(t.login.telegram)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: t.login.telegram })).not.toBeInTheDocument()
     expect(screen.queryByText(t.login.telegramHint)).not.toBeInTheDocument()
     expect(screen.getByLabelText(t.login.google)).toBeInTheDocument()
   })

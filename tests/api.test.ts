@@ -176,18 +176,17 @@ describe('api request auth header', () => {
     expect((opts?.headers as Record<string, string>)['Content-Type']).toBeUndefined()
   })
 
-  it('posts the Google credential and the Telegram widget payload as JSON', async () => {
+  it('posts the Google credential and the Telegram ID token as JSON', async () => {
     ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
-    const widget = { id: 1, first_name: 'Ali', auth_date: 1, hash: 'h' }
 
     await api.auth.google('id-token')
-    await api.auth.telegramWeb(widget)
+    await api.auth.telegramOidc('tg-jwt')
 
     const calls = vi.mocked(fetch).mock.calls
     expect(calls[0][0]).toContain('/auth/google')
     expect(calls[0][1]).toMatchObject({ method: 'POST', body: JSON.stringify({ credential: 'id-token' }) })
-    expect(calls[1][0]).toContain('/auth/telegram-web')
-    expect(calls[1][1]).toMatchObject({ method: 'POST', body: JSON.stringify(widget) })
+    expect(calls[1][0]).toContain('/auth/telegram-oidc')
+    expect(calls[1][1]).toMatchObject({ method: 'POST', body: JSON.stringify({ idToken: 'tg-jwt' }) })
   })
 })
 

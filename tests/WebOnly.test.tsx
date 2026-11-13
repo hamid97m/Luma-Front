@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 vi.mock('../src/api.ts', () => ({
   onAccountPaused: () => () => {},
   api: {
-    auth: { verify: vi.fn(), me: vi.fn(), telegramWeb: vi.fn(), google: vi.fn(), dev: vi.fn() },
+    auth: { verify: vi.fn(), me: vi.fn(), telegramOidc: vi.fn(), google: vi.fn(), dev: vi.fn() },
     profile: {
       get: vi.fn(() => new Promise(() => {})),
       update: vi.fn(),
