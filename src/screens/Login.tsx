@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, type AuthUser, type WebSignInResult } from '../api.js'
+import { api, type AuthUser, type TelegramWidgetPayload, type WebSignInResult } from '../api.js'
 import { t, useLocaleStore } from '../i18n.js'
 import { Button, Card, Icon } from '../components/ui/index.js'
 
@@ -9,30 +9,19 @@ interface Props {
   onBanned: (err: unknown) => void
 }
 
-// "Log in with Telegram" (OpenID Connect): a popup that hands back an ID token.
-// https://core.telegram.org/bots/telegram-login
-const TELEGRAM_LOGIN_SRC = 'https://oauth.telegram.org/js/telegram-login.js?6'
+const TELEGRAM_WIDGET_SRC = 'https://telegram.org/js/telegram-widget.js?22'
 const GOOGLE_GSI_SRC = 'https://accounts.google.com/gsi/client'
-// Telegram's brand blue (white-on-brand exception, like the splash gradient).
-const TELEGRAM_BLUE = '#2AABEE'
+// The widget evaluates `data-onauth` as code, so the callback must be global.
+const TELEGRAM_CALLBACK = 'onTelegramAuth'
 
 interface GoogleId {
   initialize: (config: { client_id: string; callback: (res: { credential: string }) => void }) => void
   renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void
 }
 
-type TelegramLoginResult = { id_token?: string; error?: string }
-
-interface TelegramLogin {
-  auth: (
-    options: { client_id: number; scope?: string[]; lang?: string },
-    callback: (result: TelegramLoginResult) => void,
-  ) => void
-}
-
 type LoginWindow = Window & {
   google?: { accounts?: { id?: GoogleId } }
-  Telegram?: { Login?: TelegramLogin }
+  [TELEGRAM_CALLBACK]?: (user: TelegramWidgetPayload) => void
 }
 
 const win = () => window as LoginWindow
@@ -58,19 +47,18 @@ function errorMessage(err: unknown): string {
   return t.login.errors.generic
 }
 
-// Website sign-in (never shown inside Telegram): our own Telegram button opens
-// Telegram's login popup; Google Identity Services renders its own button into
-// our container. A script that fails to load (e.g. Google blocked) hides its option.
+// Website sign-in (never shown inside Telegram): the Telegram Login Widget and
+// Google Identity Services render their own buttons into our containers. A
+// script that fails to load (e.g. Google blocked) hides its option.
 export function Login({ onSignedIn, onBanned }: Props) {
   const locale = useLocaleStore((s) => s.locale)
-  // BotFather's Login Widget Client ID (= the bot id).
-  const telegramClientId = Number(import.meta.env.VITE_TELEGRAM_CLIENT_ID) || 0
+  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-  const [telegramFailed, setTelegramFailed] = useState(!telegramClientId)
-  const [telegramReady, setTelegramReady] = useState(false)
+  const [telegramFailed, setTelegramFailed] = useState(!botUsername)
   const [googleFailed, setGoogleFailed] = useState(!googleClientId)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const telegramRef = useRef<HTMLDivElement>(null)
   const googleRef = useRef<HTMLDivElement>(null)
   const busyRef = useRef(false)
 
@@ -102,52 +90,30 @@ export function Login({ onSignedIn, onBanned }: Props) {
   const signInRef = useRef(signIn)
   signInRef.current = signIn
 
-  // Telegram login library: load once per page; the button stays disabled
-  // until it's there.
+  // Telegram Login Widget: the script replaces itself with the button iframe,
+  // so it has to be injected inside the container.
   useEffect(() => {
-    if (!telegramClientId) return
-    if (win().Telegram?.Login) {
-      setTelegramReady(true)
-      return
-    }
-    let cancelled = false
-    let script = document.querySelector<HTMLScriptElement>(`script[src="${TELEGRAM_LOGIN_SRC}"]`)
-    if (!script) {
-      script = document.createElement('script')
-      script.async = true
-      script.src = TELEGRAM_LOGIN_SRC
-      // Same as Google below: a failed element is dropped so a later visit retries.
-      const failed = script
-      failed.addEventListener('error', () => failed.remove(), { once: true })
-      document.head.appendChild(script)
-    }
-    const onLoad = () => { if (!cancelled) setTelegramReady(Boolean(win().Telegram?.Login)) }
-    const onError = () => { if (!cancelled) setTelegramFailed(true) }
-    script.addEventListener('load', onLoad)
-    script.addEventListener('error', onError)
+    const el = telegramRef.current
+    if (!el || !botUsername) return
+    win()[TELEGRAM_CALLBACK] = (user) => signInRef.current(() => api.auth.telegramWeb(user))
+    const script = document.createElement('script')
+    script.async = true
+    script.src = TELEGRAM_WIDGET_SRC
+    script.dataset.telegramLogin = botUsername
+    script.dataset.size = 'large'
+    script.dataset.radius = '20'
+    script.dataset.userpic = 'false'
+    script.dataset.lang = locale
+    // Lets the bot DM the user (match / message notifications).
+    script.dataset.requestAccess = 'write'
+    script.dataset.onauth = `${TELEGRAM_CALLBACK}(user)`
+    script.addEventListener('error', () => setTelegramFailed(true))
+    el.appendChild(script)
     return () => {
-      cancelled = true
-      script.removeEventListener('load', onLoad)
-      script.removeEventListener('error', onError)
+      el.innerHTML = ''
+      delete win()[TELEGRAM_CALLBACK]
     }
-  }, [telegramClientId])
-
-  // Must run inside the click: the library opens its popup synchronously.
-  const telegramLogin = () => {
-    const login = win().Telegram?.Login
-    if (!login || busyRef.current) return
-    setError(null)
-    // `profile` carries the numeric Telegram id the backend signs in by;
-    // `write` lets the bot DM the user (match / message notifications).
-    login.auth({ client_id: telegramClientId, scope: ['profile', 'write'], lang: locale }, (result) => {
-      if (result.id_token) {
-        const idToken = result.id_token
-        signInRef.current(() => api.auth.telegramOidc(idToken))
-      } else if (result.error && result.error !== 'popup_closed') {
-        setError(t.login.errors.invalidTelegram)
-      }
-    })
-  }
+  }, [botUsername, locale])
 
   // Google Identity Services: load once per page, then render its button.
   useEffect(() => {
@@ -224,16 +190,12 @@ export function Login({ onSignedIn, onBanned }: Props) {
         </div>
 
         {!telegramFailed && (
-          <button
-            type="button"
-            onClick={telegramLogin}
-            disabled={!telegramReady || busy}
-            className="inline-flex items-center justify-center gap-2 h-11 w-[280px] max-w-full rounded-full text-[14px] font-medium text-white shadow-m3-1 transition select-none hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            style={{ background: TELEGRAM_BLUE }}
-          >
-            <Icon name="send" size={18} />
-            {t.login.telegram}
-          </button>
+          <div
+            ref={telegramRef}
+            role="group"
+            aria-label={t.login.telegram}
+            className="flex justify-center min-h-[44px] w-full"
+          />
         )}
         {!googleFailed && (
           <div

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import { useEffect } from 'react'
 
 vi.mock('../src/api.ts', () => ({
   onAccountPaused: () => () => {},
   api: {
-    auth: { verify: vi.fn(), me: vi.fn(), telegramOidc: vi.fn(), google: vi.fn(), dev: vi.fn() },
+    auth: { verify: vi.fn(), me: vi.fn(), telegramWeb: vi.fn(), google: vi.fn(), dev: vi.fn() },
     profile: { get: vi.fn(), update: vi.fn(), setLocale: vi.fn(() => Promise.resolve({ ok: true })) },
     matches: { list: vi.fn(), unreadCount: vi.fn(() => Promise.resolve({ count: 0 })) },
     likes: { unreadCount: vi.fn(() => Promise.resolve({ count: 0 })) },
@@ -35,12 +35,6 @@ import { App } from '../src/App.js'
 import { api } from '../src/api.js'
 import { t } from '../src/i18n.js'
 import { getSessionToken, setSessionToken, clearSessionToken } from '../src/session.js'
-
-/** Telegram's login library, already loaded; its popup answers with an ID token. */
-function stubTelegramLogin() {
-  const w = window as unknown as { Telegram?: Record<string, unknown> }
-  w.Telegram = { ...w.Telegram, Login: { auth: (_o: unknown, cb: (r: object) => void) => cb({ id_token: 'tg-jwt' }) } }
-}
 
 const USER = {
   id: 'me', name: 'Ali', age: 27, gender: 'man', looking_for: 'women',
@@ -146,13 +140,14 @@ describe('App boot: web login vs Telegram', () => {
   })
   it('outside Telegram, Login sign-in → session stored, main app', async () => {
     leaveTelegram()
-    vi.stubEnv('VITE_TELEGRAM_CLIENT_ID', '8750905850')
-    stubTelegramLogin()
-    vi.mocked(api.auth.telegramOidc).mockResolvedValue({ token: 'new-token', user: USER } as never)
+    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'LumaDatingBot')
+    vi.mocked(api.auth.telegramWeb).mockResolvedValue({ token: 'new-token', user: USER } as never)
     render(<App />)
 
     await waitFor(() => expect(screen.getByTestId('login-screen')).toBeInTheDocument())
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: t.login.telegram })) })
+    await act(async () => {
+      ;(window as unknown as { onTelegramAuth: (u: object) => void }).onTelegramAuth({ id: 1, first_name: 'A', auth_date: 1, hash: 'h' })
+    })
 
     await waitFor(() => expect(screen.getByTestId('discovery')).toBeInTheDocument())
     expect(getSessionToken()).toBe('new-token')
@@ -160,15 +155,16 @@ describe('App boot: web login vs Telegram', () => {
 
   it('outside Telegram, Login sign-in of a banned account → blocked screen', async () => {
     leaveTelegram()
-    vi.stubEnv('VITE_TELEGRAM_CLIENT_ID', '8750905850')
-    stubTelegramLogin()
-    vi.mocked(api.auth.telegramOidc).mockRejectedValue(
+    vi.stubEnv('VITE_TELEGRAM_BOT_USERNAME', 'LumaDatingBot')
+    vi.mocked(api.auth.telegramWeb).mockRejectedValue(
       Object.assign(new Error(JSON.stringify({ error: 'account_banned', botUsername: 'LumaDatingBot' })), { status: 401 }),
     )
     render(<App />)
 
     await waitFor(() => expect(screen.getByTestId('login-screen')).toBeInTheDocument())
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: t.login.telegram })) })
+    await act(async () => {
+      ;(window as unknown as { onTelegramAuth: (u: object) => void }).onTelegramAuth({ id: 1, first_name: 'A', auth_date: 1, hash: 'h' })
+    })
 
     await waitFor(() => expect(screen.getByText(t.blocked.title)).toBeInTheDocument())
     expect(screen.getByText(t.blocked.support)).toBeInTheDocument()

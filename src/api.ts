@@ -78,6 +78,7 @@ function putWithProgress(url: string, blob: Blob, onProgress?: (pct: number) => 
 /** The `user` every sign-in endpoint answers with (same shape as /auth/verify). */
 export type AuthUser = Pick<UserProfile, 'id' | 'name' | 'setupComplete' | 'paused'> | UserProfile
 
+/** Telegram Login Widget callback payload, posted as-is to /auth/telegram-web. */
 /** Exit-survey answer sent with DELETE /profile/me (Settings → Delete account). */
 export type DeleteReason =
   | 'found_someone'
@@ -90,6 +91,16 @@ export type DeleteReason =
   | 'taking_break'
   | 'other'
 
+export interface TelegramWidgetPayload {
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+  auth_date: number
+  hash: string
+}
+
 export type WebSignInResult = { token: string; user: AuthUser }
 
 export const api = {
@@ -100,8 +111,8 @@ export const api = {
         { method: 'POST', body: JSON.stringify({ initData }) }
       ),
     me: () => request<{ user: AuthUser }>('/auth/me'),
-    telegramOidc: (idToken: string) =>
-      request<WebSignInResult>('/auth/telegram-oidc', { method: 'POST', body: JSON.stringify({ idToken }) }),
+    telegramWeb: (payload: TelegramWidgetPayload) =>
+      request<WebSignInResult>('/auth/telegram-web', { method: 'POST', body: JSON.stringify(payload) }),
     google: (credential: string) =>
       request<WebSignInResult>('/auth/google', { method: 'POST', body: JSON.stringify({ credential }) }),
     // Non-production backends only.
