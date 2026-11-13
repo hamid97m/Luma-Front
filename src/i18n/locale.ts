@@ -120,6 +120,17 @@ export function setLocalePending(pending: boolean): void {
 }
 
 /** Startup locale: saved choice → Telegram client language → en. */
+/** Persian or Arabic when the launching Telegram account uses it, else null.
+ * Only those two are decisive: many Persian/Arabic speakers run Telegram in
+ * English, so English (or no language) still gets the first-open picker. */
+export function decisiveTelegramLocale(): Locale | null {
+  const code = typeof window !== 'undefined'
+    ? window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code
+    : undefined
+  const locale = mapTelegramLang(code)
+  return locale === 'en' ? null : locale
+}
+
 export function detectInitialLocale(): Locale {
   const tgLang =
     typeof window !== 'undefined'

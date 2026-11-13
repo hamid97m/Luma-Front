@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { useEffect } from 'react'
-import { fa } from '../src/locales/fa.js'
+import { en } from '../src/locales/en.js'
 
 // The real Splash holds the screen for 2.6s; collapse it so auth gating runs.
 vi.mock('../src/screens/Splash.js', () => ({
@@ -163,23 +163,19 @@ describe('App language-picker gating', () => {
   })
 
   it('picker Continue commits the choice and moves on to onboarding', async () => {
-    // Persian Telegram client → picker preselects fa, matching the store.
-    const tgUser = window.Telegram!.WebApp!.initDataUnsafe.user as { language_code?: string }
-    tgUser.language_code = 'fa'
-    try {
-      verifyWith(null)
-      render(<App />)
-      const group = await screen.findByRole('radiogroup')
-      expect(group).toBeInTheDocument()
-      // Continue with the preselected locale: no store change, so no remount —
-      // the gating state alone must advance the screen.
-      fireEvent.click(screen.getByRole('button', { name: fa.language.continue }))
-      expect(await screen.findByTestId('onboarding')).toBeInTheDocument()
-      expect(localStorage.getItem('luma.locale')).toBe('fa')
-      // Recorded per account so a remount / next launch of THIS account skips the picker.
-      expect(localStorage.getItem('luma.locale.chosen_tg_id')).toBe('123')
-    } finally {
-      delete tgUser.language_code
-    }
+    // No Telegram language and no country → picker preselects en, matching the
+    // store. (A Persian or Arabic Telegram client skips the picker entirely.)
+    useLocaleStore.getState().setLocale('en')
+    verifyWith(null)
+    render(<App />)
+    const group = await screen.findByRole('radiogroup')
+    expect(group).toBeInTheDocument()
+    // Continue with the preselected locale: no store change, so no remount —
+    // the gating state alone must advance the screen.
+    fireEvent.click(screen.getByRole('button', { name: en.language.continue }))
+    expect(await screen.findByTestId('onboarding')).toBeInTheDocument()
+    expect(localStorage.getItem('luma.locale')).toBe('en')
+    // Recorded per account so a remount / next launch of THIS account skips the picker.
+    expect(localStorage.getItem('luma.locale.chosen_tg_id')).toBe('123')
   })
 })

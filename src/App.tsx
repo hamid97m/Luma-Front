@@ -15,7 +15,7 @@ import { LanguagePicker } from './screens/LanguagePicker.js'
 import { Login } from './screens/Login.js'
 import { useLocaleStore } from './i18n.js'
 import { stopSignupTracking, track, trackAppOpen, trackAuthFailed, trackAuthResolved, trackLoginView, trackSubmitOk } from './signupTrack.js'
-import { isLocale, isLocaleChosenHere, isLocalePending, markLocaleChosen, setLocalePending, type Locale } from './i18n/locale.js'
+import { decisiveTelegramLocale, isLocale, isLocaleChosenHere, isLocalePending, markLocaleChosen, setLocalePending, type Locale } from './i18n/locale.js'
 import { prefetchGeoCountry } from './i18n/geo.js'
 import { Discovery } from './screens/Discovery.js'
 import { Likes } from './screens/Likes.js'
@@ -295,6 +295,19 @@ export function App() {
   useEffect(() => {
     if (!(splashDone && authResult)) return
     if (syncLocaleFromServer(serverLocale) === 'synced') return
+    // A new user whose Telegram is in Persian or Arabic skips the picker and
+    // gets that language (changeable later in Settings). Marked chosen first
+    // so the remount a locale change triggers lands straight on onboarding.
+    const pickerDue = authResult === 'onboarding' && !isLocale(serverLocale) && !isLocaleChosenHere()
+    const telegramLocale = pickerDue ? decisiveTelegramLocale() : null
+    if (telegramLocale) {
+      markLocaleChosen()
+      setLocaleChosen(true)
+      if (useLocaleStore.getState().locale !== telegramLocale) {
+        useLocaleStore.getState().setLocale(telegramLocale)
+        return
+      }
+    }
     setScreen(authResult)
   }, [splashDone, authResult, serverLocale])
 
@@ -308,7 +321,7 @@ export function App() {
     if (isLocale(locale)) setLocaleChosen(true)
     // Picker is coming — start the IP-country lookup now so its default
     // row is settled by the time the splash ends (see LanguagePicker).
-    else if (!partial.setupComplete && !isLocaleChosenHere()) prefetchGeoCountry()
+    else if (!partial.setupComplete && !isLocaleChosenHere() && !decisiveTelegramLocale()) prefetchGeoCountry()
     if (partial.setupComplete) {
       healMissingLocale(locale)
       markReturningUser()
