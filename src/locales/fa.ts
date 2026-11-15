@@ -413,6 +413,7 @@ export const fa = {
     locationRequired: 'موقعیت نمی‌تواند خالی باشد.',
     interestsLabel: 'علایق',
     genderLabel: 'جنسیت من',
+    genderLocked: 'جنسیت بعد از ثبت‌نام قابل تغییر نیست.',
     lookingForLabel: 'به دنبال',
     locationPlaceholder: 'شهر',
     tagDone: '− تمام',

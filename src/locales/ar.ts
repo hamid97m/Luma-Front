@@ -439,6 +439,7 @@ export const ar = {
     locationRequired: 'لا يمكن ترك الموقع فارغًا.',
     interestsLabel: 'الاهتمامات',
     genderLabel: 'الجنس',
+    genderLocked: 'لا يمكن تغيير الجنس بعد التسجيل.',
     lookingForLabel: 'أبحث عن',
     locationPlaceholder: 'المدينة',
     tagDone: '− تم',

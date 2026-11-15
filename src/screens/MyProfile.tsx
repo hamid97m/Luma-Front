@@ -12,7 +12,6 @@ import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
 import { cityError } from '../utils/validateCity.js'
-import { cacheGender } from '../utils/returningUser.js'
 import { icebreakerPromptIndex } from '../utils/icebreaker.js'
 
 // Icebreaker prompts shown in the picker. `prompt` is stored verbatim on the
@@ -125,14 +124,6 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
     const next = [...tags, tag]
     setTags(next)
     save({ interests: next })
-  }
-
-  const pickGender = (g: UserProfile['gender']) => {
-    if (g === gender) return
-    setGender(g)
-    cacheGender(g)
-    haptic.selection()
-    save({ gender: g })
   }
 
   const pickLookingFor = (l: UserProfile['looking_for']) => {
@@ -397,14 +388,16 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
               return (
                 <button
                   key={val}
-                  onClick={() => pickGender(val)}
-                  className={`flex-1 rounded-m3-md py-2.5 text-[13px] font-semibold transition-colors cursor-pointer ${selected ? 'bg-primary text-white' : 'bg-bg text-txt border border-outline'}`}
+                  disabled
+                  aria-pressed={selected}
+                  className={`flex-1 rounded-m3-md py-2.5 text-[13px] font-semibold ${selected ? 'bg-primary text-white' : 'bg-bg text-txt border border-outline opacity-40'}`}
                 >
                   {label}
                 </button>
               )
             })}
           </div>
+          <p className="text-txt2 text-xs mt-1.5">{t.myProfile.genderLocked}</p>
           <FieldLabel className="mt-4">{t.myProfile.lookingForLabel}</FieldLabel>
           <div className="flex gap-1.5">
             {([['men', t.onboarding.prefOptions[0]], ['women', t.onboarding.prefOptions[1]], ['everyone', t.onboarding.prefOptions[2]]] as const).map(([val, label]) => {

@@ -416,6 +416,7 @@ export const en = {
     locationRequired: "Location can't be empty.",
     interestsLabel: 'Interests',
     genderLabel: 'My gender',
+    genderLocked: "Gender can't be changed after sign-up.",
     lookingForLabel: 'Looking for',
     locationPlaceholder: 'City',
     tagDone: '− Done',
