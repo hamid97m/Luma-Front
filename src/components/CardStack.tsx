@@ -6,6 +6,10 @@ import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
 import { Icon } from './ui/index.js'
 import type { DiscoveryProfile } from '../types.js'
+import { askTooltipSeen, markAskTooltipSeen, trackAsk } from './ask/askUtils.js'
+
+// First-time "ask a friend" tooltip appears once the top card sits idle this long.
+const ASK_TOOLTIP_IDLE_MS = 5000
 
 const THRESHOLD = 110
 
@@ -21,9 +25,13 @@ interface Props {
   backLocked?: boolean
   onGiftClick?: (profile: DiscoveryProfile) => void
   onChatClick?: (profile: DiscoveryProfile) => void
+  /** Ask-a-friend entry: the button shows only when set (feature enabled for this user). */
+  onAskClick?: (profile: DiscoveryProfile) => void
+  /** The card's ask badge → results. */
+  onAskBadgeClick?: (profile: DiscoveryProfile) => void
 }
 
-export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBack, backLocked, onGiftClick, onChatClick }: Props) {
+export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBack, backLocked, onGiftClick, onChatClick, onAskClick, onAskBadgeClick }: Props) {
   const dragRef = useRef({ active: false, startX: 0, startY: 0, moved: false })
   const [offset, setOffset] = useState(0)
   const [flying, setFlying] = useState<'like' | 'pass' | null>(null)
@@ -33,6 +41,27 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
 
   const profile = profiles[0]
   const nextProfile = profiles[1]
+  const askEnabled = !!onAskClick
+  const [askTooltip, setAskTooltip] = useState(false)
+  // Restarted by any interaction; null once the tooltip was shown or isn't due.
+  const [idleKey, setIdleKey] = useState(0)
+
+  // F11: once per user, after the top card has been idle for 5 s.
+  useEffect(() => {
+    if (!askEnabled || !profile || askTooltip || askTooltipSeen()) return
+    const id = setTimeout(() => {
+      if (askTooltipSeen()) return
+      markAskTooltipSeen()
+      setAskTooltip(true)
+      trackAsk({ name: 'ask_tooltip_shown' })
+    }, ASK_TOOLTIP_IDLE_MS)
+    return () => clearTimeout(id)
+  }, [askEnabled, profile?.id, idleKey, askTooltip])
+
+  const dismissAskTooltip = () => {
+    if (askTooltip) setAskTooltip(false)
+    setIdleKey((k) => k + 1)
+  }
 
   // Preload photos for the current + upcoming cards so swiping never shows a blank/loading image.
   useEffect(() => {
@@ -47,6 +76,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
   const nopeOpacity = Math.min(1, Math.max(0, -offset / THRESHOLD))
 
   const fly = (dir: 'like' | 'pass') => {
+    dismissAskTooltip()
     haptic.impact('medium')
     setFlying(dir)
     setTimeout(() => {
@@ -122,6 +152,13 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
     onGiftClick?.(profile)
   }
 
+  const handleAskClick = () => {
+    if (disabled || flying || !profile) return
+    dismissAskTooltip()
+    haptic.selection()
+    onAskClick?.(profile)
+  }
+
   const handleChatClick = () => {
     if (disabled || flying || !profile) return
     haptic.selection()
@@ -148,7 +185,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
   if (!profile) return null
 
   return (
-    <div className="flex flex-col h-full px-4 pt-4 pb-2 gap-3">
+    <div className="flex flex-col h-full px-4 pt-4 pb-2 gap-3" onPointerDownCapture={askEnabled ? dismissAskTooltip : undefined}>
       {/* Card area */}
       <div className="relative flex-1">
         {/* Peek card behind */}
@@ -197,6 +234,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
             photoIdx={photoIdx}
             onReport={() => !disabled && !flying && setReportUserId(profile.id)}
             onGiftClick={handleGiftClick}
+            onAskBadgeClick={() => !disabled && !flying && onAskBadgeClick?.(profile)}
           />
         </div>
       </div>
@@ -207,7 +245,17 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
       </p>
 
       {/* Action buttons */}
-      <div className="flex items-center justify-center gap-[18px] pb-2">
+      <div className={`relative flex items-center justify-center pb-2 ${askEnabled ? 'gap-3' : 'gap-[18px]'}`}>
+        {askTooltip && (
+          <div
+            role="tooltip"
+            data-testid="ask-tooltip"
+            onClick={dismissAskTooltip}
+            className="absolute bottom-full mb-2 inset-x-2 mx-auto max-w-[260px] px-3 py-2.5 rounded-m3-md bg-bg text-txt text-[13px] leading-normal shadow-m3-1 z-30 animate-fade-up"
+          >
+            {t.ask.tooltip(profile.name)}
+          </div>
+        )}
         <button
           onClick={() => !disabled && !flying && fly('pass')}
           disabled={disabled}
@@ -216,6 +264,17 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
         >
           <Icon name="x" size={24} strokeWidth={2.5} />
         </button>
+
+        {askEnabled && (
+          <button
+            onClick={handleAskClick}
+            disabled={disabled}
+            className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center disabled:opacity-40 hover:bg-primary-container-high transition-colors"
+            aria-label={t.ask.entryAria}
+          >
+            <Icon name="users" size={22} strokeWidth={2} />
+          </button>
+        )}
 
         <button
           onClick={() => !disabled && !flying && fly('like')}

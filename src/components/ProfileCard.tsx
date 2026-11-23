@@ -2,18 +2,22 @@ import type { DiscoveryProfile } from '../types.js'
 import { t } from '../i18n.js'
 import { Icon } from './ui/index.js'
 import { PremiumBadge } from './premium/PremiumBadge.js'
+import { verdictLabel } from './ask/askUtils.js'
 
 interface Props {
   profile: DiscoveryProfile
   photoIdx: number
   onReport: () => void
   onGiftClick: () => void
+  /** Tapping the "ask a friend" badge (shown when profile.ask is set). */
+  onAskBadgeClick?: () => void
 }
 
 // Purely presentational — photo cycling and viewer-opening taps are handled
 // by CardStack on the draggable wrapper (see handleTap there).
-export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props) {
+export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onAskBadgeClick }: Props) {
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
+  const ask = profile.ask
 
   return (
     <div className="absolute inset-0 rounded-m3-xl overflow-hidden select-none shadow-m3-1 bg-surface-high">
@@ -37,16 +41,35 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick }: Props)
         </div>
       )}
 
-      {/* Distance pill — only for candidates in the viewer's city */}
-      {profile.nearby && (
-        <div
-          className="absolute top-8 start-3.5 flex items-center gap-1.5 rounded-m3-sm text-[12px] font-medium px-2.5 py-1.5 text-white pointer-events-none"
-          style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
-        >
-          <Icon name="map-pin" size={12} strokeWidth={2.5} />
-          {t.discovery.nearby}
-        </div>
-      )}
+      <div className="absolute top-8 start-3.5 flex flex-col items-start gap-1.5">
+        {/* Distance pill — only for candidates in the viewer's city */}
+        {profile.nearby && (
+          <div
+            className="flex items-center gap-1.5 rounded-m3-sm text-[12px] font-medium px-2.5 py-1.5 text-white pointer-events-none"
+            style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
+          >
+            <Icon name="map-pin" size={12} strokeWidth={2.5} />
+            {t.discovery.nearby}
+          </div>
+        )}
+
+        {/* Ask-a-friend status (the viewer's own open ask) → results */}
+        {ask && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onAskBadgeClick?.() }}
+            onPointerDown={(e) => e.stopPropagation()}
+            data-testid="ask-card-badge"
+            className="flex items-center gap-1.5 rounded-full text-[12px] font-medium px-2.5 py-1.5 text-white pointer-events-auto"
+            style={{ background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(8px)' }}
+          >
+            <Icon name="users" size={13} />
+            {ask.answered > 0
+              ? t.ask.badgeTally(ask.yes, ask.total, verdictLabel(ask.question ?? 'reply', 'yes'))
+              : t.ask.badgeWaiting}
+          </button>
+        )}
+      </div>
 
       {/* Report trigger */}
       <button

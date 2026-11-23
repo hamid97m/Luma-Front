@@ -27,6 +27,10 @@ import { PaywallSheet } from './components/premium/PaywallSheet.js'
 import { InviteSheet } from './components/referrals/InviteSheet.js'
 import { BottomNav } from './components/BottomNav.js'
 import { NotifyPrompt } from './components/NotifyPrompt.js'
+import { AskLink } from './screens/AskLink.js'
+import { AskMember } from './screens/AskMember.js'
+import { AskResults } from './screens/AskResults.js'
+import { readAskLaunch, useAskConfigStore, useAskDecisionStore } from './components/ask/askUtils.js'
 import type { Match, UserProfile } from './types.js'
 
 type Screen = 'splash' | 'login' | 'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired'
@@ -65,9 +69,38 @@ function readDeepLinkPlans(): boolean {
   }
 }
 
+// Deep links for "ask a friend": WEB_URL?screen=ask&r=<recipientId> (member
+// answer screen, from the bot DM) and WEB_URL?screen=ask_result&id=<askId>
+// (requester results, from the "<name> answered" DM).
+function readDeepLinkAsk(): { kind: 'answer'; recipientId: string } | { kind: 'result'; askId: string } | null {
+  try {
+    const q = new URLSearchParams(window.location.search)
+    const s = q.get('screen')
+    const r = q.get('r')
+    const id = q.get('id')
+    if (s === 'ask' && r) return { kind: 'answer', recipientId: r }
+    if (s === 'ask_result' && id) return { kind: 'result', askId: id }
+    return null
+  } catch {
+    return null
+  }
+}
+
 // The intro splash plays once per page load. A locale change remounts the
 // keyed <App> (see main.tsx) — that remount must not replay the 2.6 s intro.
 let splashPlayed = false
+
+// The ask-link flow and the ask deep links are read from launch params that
+// persist for the whole session. Once left/closed they must stay consumed, or
+// the locale remount of the keyed <App> would re-enter them.
+let askLaunchConsumed = false
+let askDeepLinkConsumed = false
+
+/** Tests only: forget that the ask launch / deep link were consumed. */
+export function resetAskLaunchState(): void {
+  askLaunchConsumed = false
+  askDeepLinkConsumed = false
+}
 
 /** Reconcile the server's saved locale with the local store on launch.
  * Server wins — unless a Settings change failed to reach it, in which case
@@ -97,6 +130,15 @@ export function healMissingLocale(serverLocale: Locale | null): boolean {
 export function App() {
   // Inside Telegram initData always wins; a stored web session token is ignored.
   const initDataRaw = isInsideTelegram() ? window.Telegram?.WebApp?.initData ?? null : null
+  // startapp=ask_<token> → the ask-link flow runs before (and instead of) the
+  // normal auth/onboarding gate; leaving it continues into the regular launch.
+  const [askLaunch, setAskLaunch] = useState(() => (initDataRaw && !askLaunchConsumed ? readAskLaunch() : null))
+  const askToken = askLaunch?.token ?? null
+  const [askDeepLink, setAskDeepLink] = useState(() => (askDeepLinkConsumed ? null : readDeepLinkAsk()))
+  const closeAskDeepLink = () => {
+    askDeepLinkConsumed = true
+    setAskDeepLink(null)
+  }
   const { setUser, setInitDataRaw } = useAuthStore()
   const [screen, setScreen] = useState<Screen>('splash')
   const [splashDone, setSplashDone] = useState(splashPlayed)
@@ -274,6 +316,11 @@ export function App() {
     if (screen === 'main') usePremiumStore.getState().refresh()
   }, [screen])
 
+  // Ask-a-friend rollout flag — drives the Discovery entry button.
+  useEffect(() => {
+    if (screen === 'main') useAskConfigStore.getState().refresh()
+  }, [screen])
+
   // Referral status (enabled flag + milestones) — drives the My Profile entry
   // card and the invite sheet's stepper.
   useEffect(() => {
@@ -356,6 +403,9 @@ export function App() {
   }
 
   useEffect(() => {
+    // The ask-link flow authenticates its own calls with initData and must not
+    // create an account (verify does) for a friend who only wants to answer.
+    if (askToken) return
     if (!initDataRaw) {
       // Website (no Telegram): resume a stored session, otherwise sign in.
       if (!getSessionToken()) {
@@ -391,7 +441,11 @@ export function App() {
         // would fill in every step and then fail at the first authed call.
         setAuthResult('reconnect')
       })
-  }, [initDataRaw])
+  }, [initDataRaw, askToken])
+
+  if (askToken) {
+    return <AskLink token={askToken} skipLanding={askLaunch?.skipLanding} onExit={() => { askLaunchConsumed = true; setAskLaunch(null) }} />
+  }
 
   if (screen === 'splash') {
     // After a locale remount only auth is still in flight — hold a blank
@@ -446,6 +500,25 @@ export function App() {
       {/* ?screen=plans deep link — the plans sheet self-refreshes plans on open. */}
       <PaywallSheet open={plansOpen} onClose={() => setPlansOpen(false)} />
       <InviteSheet />
+      {askDeepLink?.kind === 'answer' && (
+        <AskMember recipientId={askDeepLink.recipientId} onClose={closeAskDeepLink} />
+      )}
+      {askDeepLink?.kind === 'result' && (
+        <AskResults
+          askId={askDeepLink.askId}
+          onClose={closeAskDeepLink}
+          onReply={(detail) => {
+            useAskDecisionStore.getState().request({ targetId: detail.target?.id ?? detail.targetId, decision: 'reply' })
+            setTab('discovery')
+            closeAskDeepLink()
+          }}
+          onPass={(detail) => {
+            useAskDecisionStore.getState().request({ targetId: detail.target?.id ?? detail.targetId, decision: 'pass' })
+            setTab('discovery')
+            closeAskDeepLink()
+          }}
+        />
+      )}
       {activeChatMatch && (
         <Chat
           key={activeChatMatch.id}

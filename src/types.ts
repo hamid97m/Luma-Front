@@ -31,6 +31,8 @@ export interface DiscoveryProfile {
   nearby?: boolean
   /** True when this person's premium is currently active. */
   premium?: boolean
+  /** Present when the viewer has an open "ask a friend" request about this candidate. */
+  ask?: CandidateAsk
 }
 
 export interface Match {
@@ -214,3 +216,94 @@ export interface ReferralStatus {
   totalCount: number
   milestones: ReferralMilestone[]
 }
+
+// ---------------------------------------------------------------------------
+// Ask a friend ("نظر دوستت رو بپرس") — contract shared with backend/src/routes asks.
+// ---------------------------------------------------------------------------
+export type AskQuestion = 'reply' | 'date' | 'red_flag'
+export type AskVerdict = 'yes' | 'unsure' | 'no'
+export type AskStatus = 'open' | 'closed' | 'expired'
+
+/** Compact ask state attached to a discovery candidate (requester's own asks only). */
+export interface CandidateAsk {
+  id: string
+  status: AskStatus
+  answered: number
+  total: number
+  yes: number
+  /** Picks the badge's "yes" wording (defaults to 'reply' if absent). */
+  question?: AskQuestion
+}
+
+export interface AskSummary {
+  id: string
+  targetId: string
+  targetName: string
+  targetPhotoUrl: string | null
+  question: AskQuestion
+  status: AskStatus
+  createdAt: string
+  expiresAt: string
+  total: number
+  answered: number
+  yes: number
+  unsure: number
+  no: number
+}
+
+export interface AskRecipient {
+  id: string
+  kind: 'member' | 'link'
+  /** Member name or the link advisor's Telegram first name; null = link not opened yet. */
+  displayName: string | null
+  status: 'unseen' | 'seen' | 'answered'
+  verdict: AskVerdict | null
+  note: string | null
+  answeredAt: string | null
+  canRemind: boolean
+  /** A second Telegram account tried to open this (locked) link. */
+  foreignOpen: boolean
+}
+
+export interface AskDetail extends AskSummary {
+  target: { id: string; name: string; age: number; photoUrl: string | null }
+  recipients: AskRecipient[]
+}
+
+export interface AskFriend {
+  id: string
+  name: string
+  photoUrl: string | null
+  lastInteractionAt: string
+}
+
+export interface AskRecipientView {
+  recipientId: string
+  requesterName: string
+  requesterPhotoUrl: string | null
+  question: AskQuestion
+  status: AskStatus
+  /** Short per-recipient code drawn faintly over the photos. */
+  watermark: string
+  /** The viewer has a Luma account (drives "back to Luma" vs "try Luma yourself"). */
+  isMember: boolean
+  profile: {
+    name: string
+    age: number
+    location: string | null
+    bio: string | null
+    interests: string[]
+    photos: string[]
+    verified?: boolean
+  }
+  myAnswer: { verdict: AskVerdict; note: string | null; answeredAt: string; editableUntil: string } | null
+}
+
+export type AskLinkState =
+  | { state: 'landing'; requesterName: string; question: AskQuestion }
+  | { state: 'need_gender'; requesterName: string; question: AskQuestion }
+  | { state: 'not_for_you' }
+  | { state: 'taken' }
+  | { state: 'closed' }
+  | { state: 'invalid' }
+  | { state: 'ready'; view: AskRecipientView }

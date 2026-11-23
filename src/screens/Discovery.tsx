@@ -12,6 +12,9 @@ import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { RewindSheet } from '../components/premium/RewindSheet.js'
 import { DirectChatSheet } from '../components/premium/DirectChatSheet.js'
 import { usePremiumStore } from '../store.js'
+import { AskSheet } from '../components/ask/AskSheet.js'
+import { AskResults } from './AskResults.js'
+import { trackAsk, useAskConfigStore, useAskDecisionStore } from '../components/ask/askUtils.js'
 import type { DiscoveryProfile, SwipeResult, Match, DirectChatStatus } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
@@ -49,6 +52,10 @@ export function Discovery({ onOpenChat }: Props) {
   const [chatMode, setChatMode] = useState<'paywall' | 'confirm' | 'limit'>('confirm')
   const [chatPaywallOpen, setChatPaywallOpen] = useState(false)
   const [starting, setStarting] = useState(false)
+  const askEnabled = useAskConfigStore((s) => s.enabled)
+  const [askTarget, setAskTarget] = useState<DiscoveryProfile | null>(null)
+  const [resultsAskId, setResultsAskId] = useState<string | null>(null)
+  const askDecision = useAskDecisionStore((s) => s.pending)
   const premiumStatus = usePremiumStore((s) => s.status)
   // Buying premium clears the limit instantly (server stops gating; no refetch needed).
   const premiumActive =
@@ -68,6 +75,27 @@ export function Discovery({ onOpenChat }: Props) {
   }, [])
 
   useEffect(() => { fetchBatch() }, [fetchBatch])
+
+  // Pass on a candidate from the results screen. The top card goes through the
+  // normal swipe; anything else is recorded here so a later batch can't re-add it.
+  const passFromResults = (id: string) => {
+    if (queue[0]?.id === id) { swipe('pass'); return }
+    swipedIds.current.add(id)
+    setQueue((q) => q.filter((p) => p.id !== id))
+    api.swipes.swipe(id, 'pass').catch(() => {})
+  }
+
+  // App-level results (bot DM deep link) decision — applied once against the
+  // current batch, then cleared whether or not the card was in it.
+  useEffect(() => {
+    if (!askDecision || loading) return
+    useAskDecisionStore.getState().clear()
+    const { targetId, decision } = askDecision
+    if (decision === 'pass') { passFromResults(targetId); return }
+    const idx = queue.findIndex((p) => p.id === targetId)
+    if (idx > 0) setQueue((q) => [q[idx], ...q.slice(0, idx), ...q.slice(idx + 1)])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askDecision, loading])
 
   // "Review profiles again" — re-check the feed (e.g. new people joined).
   const refresh = useCallback(() => {
@@ -282,7 +310,39 @@ export function Discovery({ onOpenChat }: Props) {
         backLocked={!premiumActive}
         onGiftClick={(profile) => setGiftTarget({ id: profile.id, name: profile.name })}
         onChatClick={handleChatClick}
+        onAskClick={askEnabled ? (profile) => {
+          trackAsk({ name: 'ask_entry_tap', props: { source: 'discovery' } })
+          // Already asked about this person → straight to the results.
+          if (profile.ask) setResultsAskId(profile.ask.id)
+          else setAskTarget(profile)
+        } : undefined}
+        onAskBadgeClick={(profile) => profile.ask && setResultsAskId(profile.ask.id)}
       />
+      {askTarget && (
+        <AskSheet
+          open
+          target={{ id: askTarget.id, name: askTarget.name }}
+          onClose={() => setAskTarget(null)}
+          onCreated={(ask) => {
+            // The card stays in the stack, now with its "waiting" badge.
+            setQueue((q) => q.map((p) => (p.id === ask.targetId || p.id === askTarget.id
+              ? { ...p, ask: { id: ask.id, status: ask.status, answered: ask.answered, total: ask.total, yes: ask.yes, question: ask.question } }
+              : p)))
+          }}
+          onExists={(askId) => setResultsAskId(askId)}
+        />
+      )}
+      {resultsAskId && (
+        <AskResults
+          askId={resultsAskId}
+          onClose={() => setResultsAskId(null)}
+          onReply={() => setResultsAskId(null)}
+          onPass={(detail) => {
+            setResultsAskId(null)
+            passFromResults(detail.target?.id ?? detail.targetId)
+          }}
+        />
+      )}
       {chatTarget && (
         <DirectChatSheet
           open={!chatPaywallOpen}

@@ -65,6 +65,8 @@ interface TelegramWebApp {
       photo_url?: string
       allows_write_to_pm?: boolean
     }
+    // The `startapp` payload of a t.me/<bot>?startapp=… launch (e.g. ask_<token>).
+    start_param?: string
   }
   colorScheme: 'light' | 'dark'
   // Client platform: 'android' | 'ios' | 'tdesktop' | 'macos' | 'weba' | 'webk' | 'unigram' | …

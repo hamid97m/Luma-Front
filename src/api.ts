@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus, TonPaysPaymentInfo } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus, TonPaysPaymentInfo, AskQuestion, AskVerdict, AskSummary, AskDetail, AskFriend, AskRecipientView, AskLinkState } from './types.js'
 import type { Locale } from './i18n/locale.js'
 import { compressImage } from './utils/compress.js'
 import { clientHeaders, endSession, isInsideTelegram } from './session.js'
@@ -18,21 +18,26 @@ function notifyAccountPaused(): void {
   for (const fn of pausedListeners) fn()
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+async function request<T>(path: string, options?: RequestInit, opts?: { noAuth?: boolean }): Promise<T> {
   // Only advertise a JSON content-type when we actually send a body — Fastify 4
   // rejects an empty body carrying `application/json` with FST_ERR_CTP_EMPTY_JSON_BODY,
   // which is what body-less POSTs (e.g. photos.fromTelegram, gift intro accept/dismiss)
   // were hitting.
   const hasBody = options?.body != null
+  const headers: Record<string, string> = {
+    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+    ...clientHeaders(),
+    ...(options?.headers as Record<string, string> | undefined),
+  }
+  // Public ask-link landing: ask anonymously so opening the link doesn't claim it.
+  if (opts?.noAuth) delete headers.Authorization
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     keepalive: true,
-    headers: {
-      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-      ...clientHeaders(),
-      ...options?.headers,
-    },
+    headers,
   })
+  // 204 No Content (e.g. analytics events) has no JSON body.
+  if (res.ok && res.status === 204) return undefined as T
   if (!res.ok) {
     const text = await res.text()
     if (res.status === 403 && text.includes('account_paused')) notifyAccountPaused()
@@ -102,6 +107,16 @@ export interface TelegramWidgetPayload {
 }
 
 export type WebSignInResult = { token: string; user: AuthUser }
+
+/** Ask-a-friend analytics event (POST /asks/events, best-effort). */
+export interface AskEventInput {
+  name: string
+  requestId?: string
+  recipientKind?: 'member' | 'link'
+  props?: Record<string, unknown>
+}
+
+const askLinkPath = (token: string) => `/asks/link/${encodeURIComponent(token)}`
 
 export const api = {
   auth: {
@@ -299,6 +314,35 @@ export const api = {
   blocks: {
     create: (userId: string) =>
       request<{ ok: true }>('/block', { method: 'POST', body: JSON.stringify({ userId }) }),
+  },
+  asks: {
+    config: () => request<{ enabled: boolean }>('/asks/config'),
+    friends: () => request<{ friends: AskFriend[] }>('/asks/friends'),
+    create: (input: { targetId: string; question: AskQuestion; memberIds: string[]; linkCount: number }) =>
+      request<{ ask: AskSummary; links: string[] }>('/asks', { method: 'POST', body: JSON.stringify(input) }),
+    list: () => request<{ asks: AskSummary[] }>('/asks'),
+    get: (id: string) => request<AskDetail>(`/asks/${encodeURIComponent(id)}`),
+    remind: (id: string, recipientId: string) =>
+      request<{ ok: true }>(`/asks/${encodeURIComponent(id)}/remind/${encodeURIComponent(recipientId)}`, { method: 'POST' }),
+    forMe: (recipientId: string) => request<AskRecipientView>(`/asks/for-me/${encodeURIComponent(recipientId)}`),
+    answerForMe: (recipientId: string, verdict: AskVerdict, note?: string) =>
+      request<{ ok: true }>(`/asks/for-me/${encodeURIComponent(recipientId)}/answer`, {
+        method: 'POST', body: JSON.stringify({ verdict, ...(note ? { note } : {}) }),
+      }),
+    event: (input: AskEventInput) =>
+      request<void>('/asks/events', { method: 'POST', body: JSON.stringify(input) }),
+    // Public-by-token link endpoints. Inside Telegram the raw initData rides in
+    // Authorization (clientHeaders); `auth: false` resolves anonymously (landing).
+    link: (token: string, auth = true) =>
+      request<AskLinkState>(askLinkPath(token), undefined, { noAuth: !auth }),
+    linkGender: (token: string, gender: 'female' | 'male') =>
+      request<AskLinkState>(`${askLinkPath(token)}/gender`, { method: 'POST', body: JSON.stringify({ gender }) }),
+    linkAnswer: (token: string, verdict: AskVerdict, note?: string) =>
+      request<{ ok: true }>(`${askLinkPath(token)}/answer`, {
+        method: 'POST', body: JSON.stringify({ verdict, ...(note ? { note } : {}) }),
+      }),
+    linkEvent: (token: string, input: AskEventInput) =>
+      request<void>(`${askLinkPath(token)}/events`, { method: 'POST', body: JSON.stringify(input) }),
   },
   support: {
     list: () => request<{ tickets: SupportTicketListItem[] }>('/support/tickets'),
