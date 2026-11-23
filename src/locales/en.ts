@@ -430,6 +430,16 @@ export const en = {
     deletePhotoAction: 'Delete photo',
     lastPhotoHint: 'You need at least one photo',
   },
+  profileText: {
+    fields: { name: 'name', bio: 'bio', icebreaker_answer: 'answer' },
+    contact_info: (field: string) => `IDs, phone numbers or links aren't allowed in your ${field}. Please remove them.`,
+    fake_name: (_field: string) => "This doesn't look like a real name. Please enter your real name.",
+    offensive: (field: string) => `Your ${field} contains offensive words. Please edit it.`,
+    sexual: (field: string) => `Your ${field} contains inappropriate content. Please edit it.`,
+    ad_or_spam: (field: string) => `Ads aren't allowed in your ${field}. Please edit it.`,
+    other: (field: string) => `Your ${field} isn't allowed. Please edit it.`,
+    limit: 'Too many attempts. Please try again in a little while.',
+  },
   settings: {
     title: 'Settings',
     darkTheme: 'Dark theme',

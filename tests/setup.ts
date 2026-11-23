@@ -43,6 +43,7 @@ vi.mock('../src/api.ts', () => ({
       delete: vi.fn(() => Promise.resolve({ ok: true })),
       setWriteAccess: vi.fn(() => Promise.resolve({ ok: true })),
       setLocale: vi.fn(() => Promise.resolve({ ok: true, locale: 'fa' })),
+      checkText: vi.fn(() => Promise.resolve({ ok: true })),
     },
     photos: { getUploadUrl: vi.fn(), delete: vi.fn(), reorder: vi.fn(), upload: vi.fn(), uploadFile: vi.fn(), fromTelegram: vi.fn() },
     discovery: { feed: vi.fn() },

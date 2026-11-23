@@ -11,7 +11,7 @@ vi.mock('../src/components/PhotoEditor.js', () => ({
 
 import { Onboarding } from '../src/screens/Onboarding.js'
 
-function goToPhotoStep() {
+async function goToPhotoStep() {
   const clickContinue = () => {
     const btn = screen.queryByRole('button', { name: 'ادامه' })
     if (btn) {
@@ -26,6 +26,7 @@ function goToPhotoStep() {
   }
   fireEvent.change(screen.getByPlaceholderText('تینا'), { target: { value: 'Ali' } })
   clickContinue()
+  await screen.findByPlaceholderText('تهران') // name step waits for the server name check
   fireEvent.change(screen.getByPlaceholderText('تهران'), { target: { value: 'شیراز' } })
   clickContinue()
   fireEvent.change(screen.getByPlaceholderText('25'), { target: { value: '25' } })
@@ -53,9 +54,9 @@ describe('Onboarding photo step', () => {
     URL.revokeObjectURL = vi.fn()
   })
 
-  it('hides Enter Luma while the photo is being chosen', () => {
+  it('hides Enter Luma while the photo is being chosen', async () => {
     const { container } = render(<Onboarding onComplete={vi.fn()} />)
-    goToPhotoStep()
+    await goToPhotoStep()
 
     expect(screen.queryByRole('button', { name: 'ورود به لوما' })).toBeNull()
 
@@ -72,7 +73,7 @@ describe('Onboarding photo step', () => {
     })
 
     const { container } = render(<Onboarding onComplete={vi.fn()} />)
-    goToPhotoStep()
+    await goToPhotoStep()
     pickPhoto(container)
     fireEvent.click(screen.getByTestId('editor-confirm'))
 
@@ -102,7 +103,7 @@ describe('Onboarding photo step', () => {
     vi.mocked(api.photos.upload).mockResolvedValue({ id: 'p1', url: 'u', position: 0 } as never)
 
     const { container } = render(<Onboarding onComplete={vi.fn()} />)
-    goToPhotoStep()
+    await goToPhotoStep()
 
     expect(mb.hide).toHaveBeenCalled()
     expect(screen.queryByRole('button', { name: 'ورود به لوما' })).toBeNull()
@@ -125,7 +126,7 @@ describe('Onboarding photo step', () => {
 
     try {
       render(<Onboarding onComplete={vi.fn()} />)
-      goToPhotoStep()
+      await goToPhotoStep()
       fireEvent.click(screen.getByRole('button', { name: 'استفاده از عکس تلگرام' }))
 
       expect(await screen.findByText('دریافت عکس تلگرام ناموفق بود. لطفاً یک عکس انتخاب کن.')).toBeTruthy()

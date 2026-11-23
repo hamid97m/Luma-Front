@@ -13,6 +13,7 @@ import { t } from '../i18n.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
 import { cityError } from '../utils/validateCity.js'
 import { icebreakerPromptIndex } from '../utils/icebreaker.js'
+import { profileTextError, profileTextMessage, type ProfileTextField } from '../utils/profileTextError.js'
 
 // Icebreaker prompts shown in the picker. `prompt` is stored verbatim on the
 // profile (free-text column), `icon` is the glyph tile, and `hint` is the
@@ -76,6 +77,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const [location, setLocation] = useState(storeUser?.location ?? '')
   const [locationError, setLocationError] = useState('')
   const [bio, setBio] = useState(storeUser?.bio ?? '')
+  const [bioError, setBioError] = useState('')
   const [gender, setGender] = useState<UserProfile['gender']>(storeUser?.gender ?? 'man')
   const [lookingFor, setLookingFor] = useState<UserProfile['looking_for']>(storeUser?.looking_for ?? 'women')
   const [tags, setTags] = useState<string[]>(storeUser?.interests ?? [])
@@ -83,6 +85,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const ICEBREAKERS = icebreakers()
   const [prompt, setPrompt] = useState(storeUser?.icebreaker_prompt ?? ICEBREAKERS[0].prompt)
   const [answer, setAnswer] = useState(storeUser?.icebreaker_answer ?? '')
+  const [answerError, setAnswerError] = useState('')
   const [promptPicker, setPromptPicker] = useState(false)
   const [uploading, setUploading] = useState<{ slotId: string; phase: 'processing' | 'uploading' | 'finalizing'; progress: number } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -112,6 +115,22 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
 
   const save = (updates: Partial<Parameters<typeof api.profile.update>[0]>) =>
     api.profile.update(updates).catch(() => {})
+
+  // Saves of user-written text go through the server's profile-text review. A
+  // rejection (422) or check cap (429) saves nothing: show why under the field
+  // and keep what they typed so they can fix it. Other errors stay silent.
+  const textErrorSetters: Record<ProfileTextField, (msg: string) => void> = {
+    name: setNameError,
+    bio: setBioError,
+    icebreaker_answer: setAnswerError,
+  }
+  const saveText = (field: ProfileTextField, updates: Partial<Parameters<typeof api.profile.update>[0]>) =>
+    api.profile.update(updates).catch((err) => {
+      const pe = profileTextError(err)
+      if (!pe) return
+      haptic.notification('error')
+      textErrorSetters[pe.kind === 'rejected' ? pe.field : field](profileTextMessage(pe))
+    })
 
   const removeTag = (tag: string) => {
     const next = tags.filter((x) => x !== tag)
@@ -318,7 +337,7 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             onBlur={() => {
               if (!name.trim()) setNameError(t.myProfile.nameRequired)
               else if (nameHasDigit(name)) setNameError(t.onboarding.nameNoDigits)
-              else if (isValidName(name)) { setNameError(''); save({ name: name.trim() }) }
+              else if (isValidName(name)) { setNameError(''); saveText('name', { name: name.trim() }) }
               else setNameError(t.myProfile.nameRequired)
             }}
             className="w-full text-[18px] font-medium bg-transparent text-txt border-b border-outline focus:border-primary outline-none pb-1.5 transition-colors"
@@ -459,11 +478,14 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             rows={4}
             maxLength={200}
             value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            onBlur={() => save({ bio: bio.trim() || null })}
+            onChange={(e) => { setBio(e.target.value); setBioError('') }}
+            onBlur={() => saveText('bio', { bio: bio.trim() || null })}
             placeholder={t.profile.aboutPlaceholder}
             className="w-full resize-none outline-none bg-transparent text-[14px] text-txt placeholder:text-txt3 mt-1.5 leading-relaxed"
           />
+          {bioError && (
+            <p className="text-error text-sm mt-1" role="alert">{bioError}</p>
+          )}
           <p className="text-end text-[11px] text-txt3 mt-1">{bio.length}/200</p>
         </InfoCard>
 
@@ -489,8 +511,8 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             rows={3}
             maxLength={140}
             value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            onBlur={() => save({
+            onChange={(e) => { setAnswer(e.target.value); setAnswerError('') }}
+            onBlur={() => saveText('icebreaker_answer', {
               // The server rejects non-catalog prompts, so a legacy one stays as stored.
               ...(icebreakerPromptIndex(prompt) !== null && { icebreaker_prompt: prompt }),
               icebreaker_answer: answer.trim() || null,
@@ -498,6 +520,9 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
             placeholder={t.myProfile.answerPlaceholder}
             className="w-full resize-none outline-none bg-transparent text-[13px] text-on-primary-container placeholder:text-[color-mix(in_srgb,var(--onpc)_50%,transparent)] border-t border-[color-mix(in_srgb,var(--onpc)_20%,transparent)] pt-2.5 leading-relaxed"
           />
+          {answerError && (
+            <p className="text-error text-sm mt-1" role="alert">{answerError}</p>
+          )}
           <p className="text-end text-[11px] text-on-primary-container opacity-50 mt-1">{answer.length}/140</p>
         </div>
 

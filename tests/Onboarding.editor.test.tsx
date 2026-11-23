@@ -31,6 +31,7 @@ describe('Onboarding photo editor wiring', () => {
     // Step 0: name (required, min 2 chars).
     fireEvent.change(screen.getByPlaceholderText('تینا'), { target: { value: 'Ali' } })
     clickContinue()
+    await screen.findByPlaceholderText('تهران') // waits for the server name check
 
     // Step 1: city (required).
     fireEvent.change(screen.getByPlaceholderText('تهران'), { target: { value: 'شیراز' } })

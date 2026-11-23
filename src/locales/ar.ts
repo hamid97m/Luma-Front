@@ -453,6 +453,16 @@ export const ar = {
     deletePhotoAction: 'حذف الصورة',
     lastPhotoHint: 'يجب أن تكون لديك صورة واحدة على الأقل',
   },
+  profileText: {
+    fields: { name: 'الاسم', bio: 'النبذة', icebreaker_answer: 'الإجابة' },
+    contact_info: (field: string) => `لا يُسمح بالمعرّفات أو أرقام الهاتف أو الروابط في ${field}. يرجى حذفها.`,
+    fake_name: (_field: string) => 'لا يبدو هذا اسمًا حقيقيًا. يرجى كتابة اسمك الحقيقي.',
+    offensive: (field: string) => `توجد كلمات مسيئة في ${field}. يرجى التعديل.`,
+    sexual: (field: string) => `يوجد محتوى غير لائق في ${field}. يرجى التعديل.`,
+    ad_or_spam: (field: string) => `لا يُسمح بالإعلانات في ${field}. يرجى التعديل.`,
+    other: (field: string) => `لا يمكن قبول ${field}. يرجى التعديل.`,
+    limit: 'محاولات كثيرة. حاول مرة أخرى بعد قليل.',
+  },
   settings: {
     title: 'الإعدادات',
     darkTheme: 'المظهر الداكن',

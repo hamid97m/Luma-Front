@@ -139,6 +139,14 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ locale }),
       }),
+    // Pre-check a profile text (onboarding name step) without saving it.
+    // Rejects with 422 profile_text_rejected / 429 profile_text_check_limit —
+    // parse with profileTextError() from utils/profileTextError.
+    checkText: (field: 'name' | 'bio' | 'icebreaker_answer', text: string) =>
+      request<{ ok: true }>('/profile/me/check-text', {
+        method: 'POST',
+        body: JSON.stringify({ field, text }),
+      }),
   },
   photos: {
     getUploadUrl: (contentType: string, replacePhotoId?: string) =>
