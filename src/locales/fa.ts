@@ -362,6 +362,12 @@ export const fa = {
     pickInterests: 'علایقت را انتخاب کن',
     tagCount: (n: number) => `${n}/5 انتخاب‌شده · حداقل 3 مورد`,
     interestsMin: 'حداقل 3 مورد انتخاب کن تا ادامه بدهی.',
+    // Gender is locked after signup (backend 403 gender_locked) — confirm it.
+    genderLockHint: 'بعداً قابل تغییر نیست',
+    genderConfirmTitle: 'مطمئنی؟',
+    genderConfirmBody: (gender: string) => `جنسیتت رو «${gender}» انتخاب کردی. بعد از ثبت‌نام دیگه قابل تغییر نیست.`,
+    genderConfirmYes: 'بله، درسته',
+    genderConfirmChange: 'تغییر می‌دم',
     photoBio: 'عکس و بیو اضافه کن',
     resizing: 'در حال تغییر اندازه…',
     savingPhoto: 'در حال ذخیره…',

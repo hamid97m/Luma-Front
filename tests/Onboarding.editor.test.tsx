@@ -44,6 +44,7 @@ describe('Onboarding photo editor wiring', () => {
     // Step 3: gender (required).
     fireEvent.click(screen.getByText('زن'))
     clickContinue()
+    fireEvent.click(screen.getByRole('button', { name: 'بله، درسته' })) // gender lock confirmation
 
     // Step 4: looking-for preference (required).
     fireEvent.click(screen.getByText('همه'))

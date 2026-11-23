@@ -33,6 +33,7 @@ async function goToPhotoStep() {
   clickContinue()
   fireEvent.click(screen.getByText('زن'))
   clickContinue()
+  fireEvent.click(screen.getByRole('button', { name: 'بله، درسته' })) // gender lock confirmation
   fireEvent.click(screen.getByText('همه'))
   clickContinue()
   fireEvent.click(screen.getByText('☕ قهوه'))

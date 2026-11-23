@@ -4,7 +4,7 @@ import { mainButtonSupported, useMainButton, telegramFirstName, telegramHasPhoto
 import { PhotoEditor } from '../components/PhotoEditor.js'
 import { PhotoUploadProgress } from '../components/PhotoUploadProgress.js'
 import { t, useLocaleStore } from '../i18n.js'
-import { Button, IconButton, Input, Textarea, Chip, Icon } from '../components/ui/index.js'
+import { Button, IconButton, Input, Textarea, Chip, Icon, Sheet } from '../components/ui/index.js'
 import { isValidName, nameHasDigit } from '../utils/validateName.js'
 import { cityError, isValidCity } from '../utils/validateCity.js'
 import { signupErrorDetail, track, type SignupStep } from '../signupTrack.js'
@@ -44,6 +44,13 @@ function cityMessage(city: string): string | null {
   return null
 }
 
+function genderLabel(gender: State['gender']): string {
+  if (gender === 'woman') return t.onboarding.genders[0]
+  if (gender === 'man') return t.onboarding.genders[1]
+  if (gender === 'nonbinary') return t.onboarding.genders[2]
+  return ''
+}
+
 function isValid(step: number, state: State, photoUploaded: boolean): boolean {
   if (step === STEP_NAME) return isValidName(state.name)
   if (step === STEP_CITY) return isValidCity(state.city)
@@ -69,6 +76,8 @@ export function Onboarding({ onComplete }: Props) {
   // Rejection messages from the profile-text review (name step / bio on the last step).
   const [nameError, setNameError] = useState('')
   const [bioError, setBioError] = useState('')
+  // Gender is locked after signup, so Continue on the gender step asks first.
+  const [genderConfirmOpen, setGenderConfirmOpen] = useState(false)
   const [ageError, setAgeError] = useState(false)
   const [interestsError, setInterestsError] = useState(false)
   const [editingFile, setEditingFile] = useState<File | null>(null)
@@ -85,7 +94,7 @@ export function Onboarding({ onComplete }: Props) {
 
   const back = () => setStep((s) => Math.max(0, s - 1))
 
-  const next = async () => {
+  const next = async (genderConfirmed = false) => {
     if (editingFile || uploadPhase || tgPhotoLoading || checkingName || saving) return
     // The interests step keeps its button clickable even below the minimum so the
     // tap can surface *why* it's blocked, instead of silently doing nothing.
@@ -95,6 +104,11 @@ export function Onboarding({ onComplete }: Props) {
       return
     }
     if (!valid) return
+    if (step === STEP_GENDER && !genderConfirmed) {
+      haptic.selection()
+      setGenderConfirmOpen(true)
+      return
+    }
     if (step === STEP_NAME) {
       // Let the server review the name before moving on. Only an explicit
       // rejection / limit blocks; a network or server error fails open (the
@@ -160,11 +174,11 @@ export function Onboarding({ onComplete }: Props) {
   // uses Telegram's own accent.
   useMainButton({
     text: onPhotoStep ? t.onboarding.enter : t.onboarding.continue,
-    visible: !onPhotoStep && !photoBusy,
+    visible: !onPhotoStep && !photoBusy && !genderConfirmOpen,
     // Step 4 stays enabled below the minimum so the tap can explain the block.
     enabled: (valid || step === STEP_INTERESTS) && !saving && !checkingName && !photoBusy,
     loading: saving || checkingName,
-    onClick: next,
+    onClick: () => { void next() },
   })
 
   const toggleInterest = (tag: string) => {
@@ -337,6 +351,7 @@ export function Onboarding({ onComplete }: Props) {
                     <button
                       key={val}
                       onClick={() => setState((s) => ({ ...s, gender: val }))}
+                      aria-pressed={selected}
                       className={`rounded-m3-md px-[17px] py-[15px] text-[15px] text-start flex items-center justify-between cursor-pointer transition-colors border-2 ${
                         selected
                           ? 'bg-primary-container text-on-primary-container border-primary font-medium'
@@ -349,6 +364,10 @@ export function Onboarding({ onComplete }: Props) {
                   )
                 })}
               </div>
+              <p className="text-txt2 text-[13px] flex items-center gap-1.5">
+                <Icon name="alert-triangle" size={14} className="flex-none" />
+                {t.onboarding.genderLockHint}
+              </p>
             </>
           )}
 
@@ -488,11 +507,34 @@ export function Onboarding({ onComplete }: Props) {
           when Telegram provides no MainButton. */}
       {(onPhotoStep ? photoUploaded && !photoBusy : !mainButtonSupported()) && (
         <div className="relative z-10 px-6 pb-10 pt-4">
-          <Button block size="lg" onClick={next} disabled={saving || checkingName || (!onPhotoStep && !valid && step !== STEP_INTERESTS)}>
+          <Button block size="lg" onClick={() => { void next() }} disabled={saving || checkingName || (!onPhotoStep && !valid && step !== STEP_INTERESTS)}>
             {saving || checkingName ? '…' : onPhotoStep ? t.onboarding.enter : t.onboarding.continue}
           </Button>
         </div>
       )}
+
+      <Sheet open={genderConfirmOpen} onClose={() => setGenderConfirmOpen(false)}>
+        <div className="flex flex-col items-center text-center pb-2">
+          <div className="w-14 h-14 rounded-m3-lg bg-primary-container flex items-center justify-center mb-3.5">
+            <Icon name="alert-triangle" size={26} className="text-primary" />
+          </div>
+          <h2 className="text-[19px] font-semibold text-txt">{t.onboarding.genderConfirmTitle}</h2>
+          <p className="mt-2.5 text-[13.5px] leading-[1.9] text-txt2">
+            {t.onboarding.genderConfirmBody(genderLabel(state.gender))}
+          </p>
+          <Button
+            block
+            size="lg"
+            className="mt-5"
+            onClick={() => { setGenderConfirmOpen(false); void next(true) }}
+          >
+            {t.onboarding.genderConfirmYes}
+          </Button>
+          <Button variant="text" block className="mt-2" onClick={() => setGenderConfirmOpen(false)}>
+            {t.onboarding.genderConfirmChange}
+          </Button>
+        </div>
+      </Sheet>
 
       {editingFile && (
         <PhotoEditor
