@@ -62,6 +62,7 @@ export const en = {
     placeholder: 'Write a message…',
     send: 'Send',
     viewProfile: 'View profile',
+    reportTooltip: 'Report any problem — we review it quickly',
     unavailable: 'This match is no longer available.',
     loadError: "Couldn't load this chat.",
     retry: 'Try again',
@@ -176,6 +177,8 @@ export const en = {
     title: 'Your account has been suspended',
     body: 'Your account was suspended for violating our community guidelines. If you believe this is a mistake, please contact support.',
     support: 'Contact support',
+    suspendedTitle: 'Your account is temporarily suspended',
+    suspendedBody: (until: string) => `Your account was temporarily suspended for violating our community guidelines until ${until}. You can use the app again after that. If you believe this is a mistake, please contact support.`,
   },
   photoRequired: {
     title: 'We need a fresh photo',

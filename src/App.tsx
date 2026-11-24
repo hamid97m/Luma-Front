@@ -164,6 +164,9 @@ export function App() {
   const [showSupport, setShowSupport] = useState(false)
   // Bot handle from the banned 401 — the Blocked screen deep-links there.
   const [supportBot, setSupportBot] = useState<string | null>(null)
+  // Set when the 401 was a temporary suspension (`error: 'suspended'`) — the
+  // Blocked screen then shows "suspended until <date>" instead of the ban copy.
+  const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null)
   // Once a tab has been visited, keep it mounted (hidden via CSS) instead of
   // unmounting — avoids refetching and a loading flash on every tab switch.
   const [visited, setVisited] = useState<Record<Tab, boolean>>(() => {
@@ -387,16 +390,22 @@ export function App() {
     }
   }
 
-  // Banned → the terminal Blocked screen (with the bot handle for support).
-  // Returns false for any other failure.
+  // Banned or temporarily suspended → the terminal Blocked screen (with the
+  // bot handle for support). Returns false for any other failure.
   const handleBanned = (err: unknown): boolean => {
     const status = (err as { status?: number } | null)?.status
     const message = err instanceof Error ? err.message : ''
-    if (!(status === 401 && message.includes('account_banned'))) return false
-    stopSignupTracking()
+    if (status !== 401) return false
+    type BlockedBody = { error?: string; botUsername?: string | null; suspendedUntil?: string | null }
+    let body: BlockedBody | null = null
     try {
-      setSupportBot((JSON.parse(message) as { botUsername?: string | null }).botUsername ?? null)
+      body = JSON.parse(message) as BlockedBody
     } catch { /* older backend: plain-text body, no bot handle */ }
+    const suspended = body?.error === 'suspended'
+    if (!suspended && !message.includes('account_banned')) return false
+    stopSignupTracking()
+    setSupportBot(body?.botUsername ?? null)
+    setSuspendedUntil(suspended ? body?.suspendedUntil ?? null : null)
     setAuthResult('blocked')
     return true
   }
@@ -465,7 +474,7 @@ export function App() {
   }
 
   if (screen === 'blocked') {
-    return <Blocked supportBot={supportBot} />
+    return <Blocked supportBot={supportBot} suspendedUntil={suspendedUntil} />
   }
 
   if (screen === 'photoRequired') {

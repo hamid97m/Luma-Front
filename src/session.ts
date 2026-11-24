@@ -31,7 +31,7 @@ export function clearSessionToken(): void {
 }
 
 /** How a website session ended mid-use: logged out / rejected by the server
- *  (→ Login screen), or the account was banned (→ Blocked screen). */
+ *  (→ Login screen), or the account was banned / suspended (→ Blocked screen). */
 export type SessionEnd = { kind: 'signedOut' } | { kind: 'banned'; error: unknown }
 
 type SessionEndListener = (end: SessionEnd) => void
