@@ -14,8 +14,10 @@ import { DirectChatSheet } from '../components/premium/DirectChatSheet.js'
 import { usePremiumStore } from '../store.js'
 import { AskSheet } from '../components/ask/AskSheet.js'
 import { AskResults } from './AskResults.js'
-import { trackAsk, useAskConfigStore, useAskDecisionStore } from '../components/ask/askUtils.js'
-import type { DiscoveryProfile, SwipeResult, Match, DirectChatStatus } from '../types.js'
+import { AskListSheet } from '../components/ask/AskListSheet.js'
+import { showToast, trackAsk, useAskConfigStore, useAskDecisionStore } from '../components/ask/askUtils.js'
+import { Icon } from '../components/ui/index.js'
+import type { DiscoveryProfile, SwipeResult, Match, DirectChatStatus, AskSummary } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
 
@@ -45,6 +47,8 @@ export function Discovery({ onOpenChat }: Props) {
   // Every id swiped this session — outlives the queue, so a prefetch response
   // started before a swipe (and thus unaware of it) can't re-add that profile.
   const swipedIds = useRef<Set<string>>(new Set())
+  // Profiles set aside for "ask a friend" — kept out of batches until she goes back to one.
+  const parkedIds = useRef<Set<string>>(new Set())
   const [limitResetAt, setLimitResetAt] = useState<string | null>(null)
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [directChat, setDirectChat] = useState<DirectChatStatus>({ gate: 'free', remaining: 3, limit: 3, resetAt: null })
@@ -56,6 +60,15 @@ export function Discovery({ onOpenChat }: Props) {
   const [askTarget, setAskTarget] = useState<DiscoveryProfile | null>(null)
   const [resultsAskId, setResultsAskId] = useState<string | null>(null)
   const askDecision = useAskDecisionStore((s) => s.pending)
+  // Her open asks — profiles set aside while friends weigh in ("my asks" chip + list).
+  const [myAsks, setMyAsks] = useState<AskSummary[]>([])
+  const [askListOpen, setAskListOpen] = useState(false)
+  const loadMyAsks = useCallback(() => {
+    api.asks.list()
+      .then(({ asks }) => setMyAsks(asks.filter((a) => a.status === 'open' && Date.parse(a.expiresAt) > Date.now())))
+      .catch(() => {})
+  }, [])
+  useEffect(() => { if (askEnabled) loadMyAsks() }, [askEnabled, loadMyAsks])
   const premiumStatus = usePremiumStore((s) => s.status)
   // Buying premium clears the limit instantly (server stops gating; no refetch needed).
   const premiumActive =
@@ -66,7 +79,7 @@ export function Discovery({ onOpenChat }: Props) {
     const { profiles, exhausted: done, swipeLimit, directChat: dc } = await api.discovery.feed()
     setQueue((q) => {
       const seen = new Set(q.map((p) => p.id))
-      return [...q, ...profiles.filter((p) => !seen.has(p.id) && !swipedIds.current.has(p.id))]
+      return [...q, ...profiles.filter((p) => !seen.has(p.id) && !swipedIds.current.has(p.id) && !parkedIds.current.has(p.id))]
     })
     setExhausted(done)
     if (dc) setDirectChat(dc)
@@ -92,10 +105,24 @@ export function Discovery({ onOpenChat }: Props) {
     useAskDecisionStore.getState().clear()
     const { targetId, decision } = askDecision
     if (decision === 'pass') { passFromResults(targetId); return }
-    const idx = queue.findIndex((p) => p.id === targetId)
-    if (idx > 0) setQueue((q) => [q[idx], ...q.slice(0, idx), ...q.slice(idx + 1)])
+    bringBack(targetId, askDecision.askId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [askDecision, loading])
+
+  // Back to an asked-about profile: to the top of the deck, loading it if it was set aside.
+  const bringBack = (targetId: string, askId?: string) => {
+    parkedIds.current.delete(targetId)
+    const idx = queue.findIndex((p) => p.id === targetId)
+    if (idx === 0) return
+    if (idx > 0) { setQueue((q) => [q[idx], ...q.slice(0, idx), ...q.slice(idx + 1)]); return }
+    if (!askId) return
+    api.asks.profile(askId)
+      .then(({ profile }) => {
+        swipedIds.current.delete(profile.id)
+        setQueue((q) => [profile, ...q.filter((p) => p.id !== profile.id)])
+      })
+      .catch(() => { showToast(t.ask.profileGone); loadMyAsks() })
+  }
 
   // "Review profiles again" — re-check the feed (e.g. new people joined).
   const refresh = useCallback(() => {
@@ -117,6 +144,7 @@ export function Discovery({ onOpenChat }: Props) {
 
     try {
       const result = await api.swipes.swipe(current.id, direction)
+      if (current.ask) loadMyAsks()
       if (result.swipeLimit?.remaining === 0) setLimitResetAt(floorResetAt(result.swipeLimit.resetAt))
       if (result.matched && result.match) {
         const matched = result.match
@@ -264,6 +292,32 @@ export function Discovery({ onOpenChat }: Props) {
     </>
   )
 
+  // "My asks" chip above the card: her set-aside profiles, with a dot once a friend answered.
+  const answeredCount = myAsks.filter((a) => a.answered > 0).length
+  const askChip = askEnabled && myAsks.length > 0 ? (
+    <button
+      type="button"
+      data-testid="ask-list-chip"
+      onClick={() => { haptic.selection(); loadMyAsks(); setAskListOpen(true) }}
+      className="self-center flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-primary-container text-on-primary-container text-[13px] font-medium"
+    >
+      <Icon name="users" size={16} strokeWidth={2} />
+      {t.ask.listChip(myAsks.length)}
+      {answeredCount > 0 && <span className="w-2 h-2 rounded-full bg-primary" aria-label={t.ask.listNewAnswers} />}
+    </button>
+  ) : null
+
+  const askListNodes = (
+    <>
+      <AskListSheet
+        open={askListOpen && !resultsAskId}
+        asks={myAsks}
+        onClose={() => setAskListOpen(false)}
+        onOpen={(a) => setResultsAskId(a.id)}
+      />
+    </>
+  )
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-bg text-txt">
@@ -293,7 +347,26 @@ export function Discovery({ onOpenChat }: Props) {
   if (exhausted && queue.length === 0) {
     return (
       <div className="h-full bg-bg text-txt flex flex-col">
+        {askChip && <div className="flex justify-center pt-4">{askChip}</div>}
         <DiscoveryEmpty onReview={refresh} />
+        {askListNodes}
+        {resultsAskId && (
+          <AskResults
+            askId={resultsAskId}
+            onClose={() => setResultsAskId(null)}
+            onReply={(detail) => {
+              setResultsAskId(null)
+              setAskListOpen(false)
+              bringBack(detail.target?.id ?? detail.targetId, detail.id)
+            }}
+            onPass={(detail) => {
+              setResultsAskId(null)
+              passFromResults(detail.target?.id ?? detail.targetId)
+              setMyAsks((list) => list.filter((a) => a.id !== detail.id))
+              loadMyAsks()
+            }}
+          />
+        )}
       </div>
     )
   }
@@ -317,17 +390,27 @@ export function Discovery({ onOpenChat }: Props) {
           else setAskTarget(profile)
         } : undefined}
         onAskBadgeClick={(profile) => profile.ask && setResultsAskId(profile.ask.id)}
+        topSlot={askChip}
       />
+      {askListNodes}
       {askTarget && (
         <AskSheet
           open
           target={{ id: askTarget.id, name: askTarget.name }}
           onClose={() => setAskTarget(null)}
           onCreated={(ask) => {
-            // The card stays in the stack, now with its "waiting" badge.
-            setQueue((q) => q.map((p) => (p.id === ask.targetId || p.id === askTarget.id
-              ? { ...p, ask: { id: ask.id, status: ask.status, answered: ask.answered, total: ask.total, yes: ask.yes, question: ask.question } }
-              : p)))
+            // Set aside while friends weigh in: she moves on to the next profile and
+            // comes back from "my asks". No swipe is recorded (that would close the ask).
+            const id = askTarget.id
+            parkedIds.current.add(id)
+            parkedIds.current.add(ask.targetId)
+            setQueue((q) => {
+              const rest = q.filter((p) => p.id !== id && p.id !== ask.targetId)
+              if (rest.length <= PREFETCH_THRESHOLD && !exhausted) fetchBatch()
+              return rest
+            })
+            setMyAsks((list) => [ask, ...list.filter((a) => a.id !== ask.id)])
+            loadMyAsks()
           }}
           onExists={(askId) => setResultsAskId(askId)}
         />
@@ -336,10 +419,16 @@ export function Discovery({ onOpenChat }: Props) {
         <AskResults
           askId={resultsAskId}
           onClose={() => setResultsAskId(null)}
-          onReply={() => setResultsAskId(null)}
+          onReply={(detail) => {
+            setResultsAskId(null)
+            setAskListOpen(false)
+            bringBack(detail.target?.id ?? detail.targetId, detail.id)
+          }}
           onPass={(detail) => {
             setResultsAskId(null)
             passFromResults(detail.target?.id ?? detail.targetId)
+            setMyAsks((list) => list.filter((a) => a.id !== detail.id))
+            loadMyAsks()
           }}
         />
       )}

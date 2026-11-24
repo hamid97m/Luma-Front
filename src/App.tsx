@@ -508,7 +508,7 @@ export function App() {
           askId={askDeepLink.askId}
           onClose={closeAskDeepLink}
           onReply={(detail) => {
-            useAskDecisionStore.getState().request({ targetId: detail.target?.id ?? detail.targetId, decision: 'reply' })
+            useAskDecisionStore.getState().request({ targetId: detail.target?.id ?? detail.targetId, decision: 'reply', askId: detail.id })
             setTab('discovery')
             closeAskDeepLink()
           }}

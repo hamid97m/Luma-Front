@@ -209,7 +209,7 @@ describe('App — ask-a-friend launch routing', () => {
     fireEvent.click(await screen.findByRole('button', { name: t.ask.replyCta('Amir') }))
     await waitFor(() => expect(screen.queryByTestId('ask-results')).not.toBeInTheDocument())
     expect(screen.getByTestId('discovery')).toBeInTheDocument()
-    expect(useAskDecisionStore.getState().pending).toEqual({ targetId: 't1', decision: 'reply' })
+    expect(useAskDecisionStore.getState().pending).toEqual({ targetId: 't1', decision: 'reply', askId: 'ask-1' })
     // Closed for good: a remount doesn't reopen it.
     unmount()
     vi.mocked(api.asks.get).mockClear()

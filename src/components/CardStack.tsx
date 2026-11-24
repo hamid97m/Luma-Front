@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ProfileCard } from './ProfileCard.js'
 import { PhotoViewer } from './PhotoViewer.js'
 import { ReportSheet } from './ReportSheet.js'
@@ -26,9 +26,11 @@ interface Props {
   onAskClick?: (profile: DiscoveryProfile) => void
   /** The card's ask badge → results. */
   onAskBadgeClick?: (profile: DiscoveryProfile) => void
+  /** Rendered above the card (e.g. the "my asks" chip). */
+  topSlot?: ReactNode
 }
 
-export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBack, backLocked, onGiftClick, onChatClick, onAskClick, onAskBadgeClick }: Props) {
+export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBack, backLocked, onGiftClick, onChatClick, onAskClick, onAskBadgeClick, topSlot }: Props) {
   const dragRef = useRef({ active: false, startX: 0, startY: 0, moved: false })
   const [offset, setOffset] = useState(0)
   const [flying, setFlying] = useState<'like' | 'pass' | null>(null)
@@ -171,6 +173,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
 
   return (
     <div className="flex flex-col h-full px-4 pt-4 pb-2 gap-3">
+      {topSlot}
       {/* Card area */}
       <div className="relative flex-1">
         {/* Peek card behind */}

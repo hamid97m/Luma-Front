@@ -138,6 +138,8 @@ export function showToast(message: string): void {
 export interface AskDecision {
   targetId: string
   decision: 'reply' | 'pass'
+  /** Lets Discovery load the profile when it isn't in the current deck. */
+  askId?: string
 }
 
 interface AskDecisionState {

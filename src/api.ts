@@ -330,6 +330,8 @@ export const api = {
       request<{ ask: AskSummary; links: string[] }>('/asks', { method: 'POST', body: JSON.stringify(input) }),
     list: () => request<{ asks: AskSummary[] }>('/asks'),
     get: (id: string) => request<AskDetail>(`/asks/${encodeURIComponent(id)}`),
+    /** Her ask's person as a Discovery card (to go back to that profile). */
+    profile: (id: string) => request<{ profile: DiscoveryProfile }>(`/asks/${encodeURIComponent(id)}/profile`),
     remind: (id: string, recipientId: string) =>
       request<{ ok: true }>(`/asks/${encodeURIComponent(id)}/remind/${encodeURIComponent(recipientId)}`, { method: 'POST' }),
     forMe: (recipientId: string) => request<AskRecipientView>(`/asks/for-me/${encodeURIComponent(recipientId)}`),
