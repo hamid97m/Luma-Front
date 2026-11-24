@@ -13,6 +13,8 @@ const LOCKED_GRADIENTS = [
 ]
 
 const MAX_TILES = 6
+// One row under today's like, so the invite button stays on the first screen.
+const TILES_WITH_FREE_LIKE = 3
 
 interface LockedTileProps {
   photo: string | null
@@ -86,7 +88,7 @@ interface LikesQueueProps {
  *  how to open them — invite a friend first, premium second. */
 export function LikesQueue({ queue, hasFreeLike, onInvite, onPremium }: LikesQueueProps) {
   const { lockedCount, photos, inviteEnabled, premiumEnabled, daysPerFriend } = queue
-  const tiles = Array.from({ length: Math.min(MAX_TILES, lockedCount) }, (_, i) => photos[i] ?? null)
+  const tiles = Array.from({ length: Math.min(hasFreeLike ? TILES_WITH_FREE_LIKE : MAX_TILES, lockedCount) }, (_, i) => photos[i] ?? null)
   const unlock = () => {
     haptic.impact('light')
     if (inviteEnabled) onInvite()

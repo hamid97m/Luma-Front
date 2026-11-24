@@ -43,7 +43,7 @@ beforeEach(() => {
 })
 
 describe('Likes — women\'s locked queue', () => {
-  it('shows the free like, the count, 6 blurred tiles and invite-first CTAs', async () => {
+  it('shows the free like, the count, 3 blurred tiles and invite-first CTAs', async () => {
     respond({ queue: QUEUE, unlockedUntil: null })
     draw()
     const queue = await screen.findByTestId('likes-queue')

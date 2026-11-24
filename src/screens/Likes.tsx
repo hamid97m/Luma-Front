@@ -214,7 +214,7 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
           )}
         </div>
       )}
-      {!isEmpty && (visible.length + lockedCount > 0 || !queue) && <p className={`px-5 ${askMode ? 'pt-3' : 'pt-6'} pb-1 text-[13px] text-txt2`}>{subtitle}</p>}
+      {!isEmpty && !queue && <p className={`px-5 ${askMode ? 'pt-3' : 'pt-6'} pb-1 text-[13px] text-txt2`}>{subtitle}</p>}
 
       {lockedCount > 0 && (
         <button
