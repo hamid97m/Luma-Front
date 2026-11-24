@@ -3,9 +3,10 @@
 // A friend arriving from a share link hasn't picked a language yet, and Telegram
 // set to English defaults her to English.
 import { api } from '../../api.js'
-import { LOCALE_META, useLocaleStore, type Locale } from '../../i18n.js'
+import { LOCALE_META, useLocaleStore } from '../../i18n.js'
 import { markLocaleChosen, setLocalePending } from '../../i18n/locale.js'
 import { haptic } from '../../telegram.js'
+import { RoundFlag } from './RoundFlag.js'
 
 interface Props {
   /** Signed-in member → save the choice now. Link visitors may have no account:
@@ -18,7 +19,7 @@ interface Props {
 
 export function AskLangToggle({ saveNow = false, onBeforeSwitch, className = '' }: Props) {
   const locale = useLocaleStore((s) => s.locale)
-  const next: Locale = locale === 'fa' ? 'en' : 'fa'
+  const next: 'fa' | 'en' = locale === 'fa' ? 'en' : 'fa'
 
   const toggle = () => {
     haptic.selection()
@@ -41,9 +42,9 @@ export function AskLangToggle({ saveNow = false, onBeforeSwitch, className = '' 
       lang={next}
       aria-label={LOCALE_META[next].nativeName}
       data-testid="ask-lang-toggle"
-      className={`w-11 h-11 rounded-full bg-surface flex items-center justify-center text-[22px] leading-none flex-none hover:bg-surface-high transition-colors ${className}`}
+      className={`w-11 h-11 p-0 rounded-full flex items-center justify-center flex-none hover:bg-[var(--prtint)] transition-colors ${className}`}
     >
-      <span aria-hidden="true">{LOCALE_META[next].flag}</span>
+      <RoundFlag flag={next} />
     </button>
   )
 }
