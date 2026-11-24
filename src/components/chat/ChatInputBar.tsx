@@ -16,9 +16,13 @@ interface ChatInputBarProps {
   replyingToBody?: string | null
   onCancelReply?: () => void
   onGiftClick?: () => void
+  /** Short line above the input. */
+  notice?: string | null
+  /** Sending is paused: the input is disabled. */
+  locked?: boolean
 }
 
-export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCancelEdit, replyingToBody, onCancelReply, onGiftClick }: ChatInputBarProps) {
+export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCancelEdit, replyingToBody, onCancelReply, onGiftClick, notice = null, locked = false }: ChatInputBarProps) {
   const boxRef = useRef<HTMLTextAreaElement>(null)
   // Message text follows the active locale's script direction (the row below
   // stays physically LTR — see the comment there).
@@ -83,6 +87,12 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
           </button>
         </div>
       )}
+      {notice && (
+        <p role="status" className="flex items-center gap-1.5 text-[13px] text-txt2 pb-1">
+          <Icon name="clock" size={14} className="flex-none" />
+          {notice}
+        </p>
+      )}
       {draft.length >= COUNTER_THRESHOLD && (
         // Physical `text-right`: the counter sits above the send button, and
         // the row below is pinned dir="ltr" (send always on the right).
@@ -111,6 +121,7 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
           rows={1}
           maxLength={MAX_LENGTH}
           value={draft}
+          disabled={locked}
           onChange={(e) => onDraftChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -119,9 +130,9 @@ export function ChatInputBar({ draft, onDraftChange, onSend, editingBody, onCanc
             }
           }}
           placeholder={t.chat.placeholder}
-          className="flex-1 bg-field text-txt text-[15px] rounded-[22px] px-4 py-2.5 outline-none resize-none border border-transparent focus:border-primary transition-colors placeholder:text-txt3"
+          className="flex-1 bg-field text-txt text-[15px] rounded-[22px] px-4 py-2.5 outline-none resize-none border border-transparent focus:border-primary transition-colors placeholder:text-txt3 disabled:opacity-60"
         />
-        {!!draft.trim() && (
+        {!!draft.trim() && !locked && (
           <IconButton
             aria-label={editingBody != null ? t.chat.save : t.chat.send}
             onClick={onSend}

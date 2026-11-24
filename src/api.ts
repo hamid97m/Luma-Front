@@ -1,4 +1,4 @@
-import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, ReferralStatus, TonPaysPaymentInfo, AskQuestion, AskVerdict, AskSummary, AskDetail, AskFriend, AskRecipientView, AskLinkState } from './types.js'
+import type { UserProfile, DiscoveryProfile, Match, Message, SwipeResult, SupportTicketListItem, SupportThread, SupportMessage, GiftCatalogItem, GiftIntro, PremiumStatus, SwipeLimitStatus, LikesResponse, DirectChatStatus, DirectChatResult, MessageRequest, SentRequest, ReferralStatus, TonPaysPaymentInfo, AskQuestion, AskVerdict, AskSummary, AskDetail, AskFriend, AskRecipientView, AskLinkState } from './types.js'
 import type { Locale } from './i18n/locale.js'
 import { compressImage } from './utils/compress.js'
 import { clientHeaders, endSession, isInsideTelegram } from './session.js'
@@ -255,11 +255,24 @@ export const api = {
       }),
   },
   directChat: {
-    start: (targetUserId: string) =>
-      request<{ created: boolean; match: { id: string; user: { id: string; name: string; telegramId: number; username: string | null } }; directChat?: { remaining: number; resetAt: string | null } }>(
+    /** `message` is required when the target must accept first (400 `message_required`). */
+    start: (targetUserId: string, message?: string) =>
+      request<DirectChatResult>(
         '/discovery/direct-chat',
-        { method: 'POST', body: JSON.stringify({ targetUserId }) },
+        { method: 'POST', body: JSON.stringify({ targetUserId, ...(message ? { message } : {}) }) },
       ),
+  },
+  requests: {
+    /** Message requests waiting for my decision. */
+    list: () => request<{ requests: MessageRequest[] }>('/requests'),
+    /** Requests I sent that are still waiting. */
+    sent: () => request<{ requests: SentRequest[] }>('/requests/sent'),
+    accept: (id: string) =>
+      request<{ match: { id: string; matchedAt: string; user: { id: string; name: string } } }>(
+        `/requests/${encodeURIComponent(id)}/accept`, { method: 'POST' },
+      ),
+    ignore: (id: string) =>
+      request<{ ok: boolean }>(`/requests/${encodeURIComponent(id)}/ignore`, { method: 'POST' }),
   },
   matches: {
     list: () => request<{ matches: Match[] }>('/matches'),

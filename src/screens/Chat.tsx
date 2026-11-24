@@ -18,8 +18,9 @@ import { BlockSheet } from '../components/BlockSheet.js'
 import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { PremiumBadge } from '../components/premium/PremiumBadge.js'
-import { usePremiumStore } from '../store.js'
+import { useAuthStore, usePremiumStore } from '../store.js'
 import { premiumSendBlocked } from '../utils/premium.js'
+import { replyLimit } from '../utils/replyLimit.js'
 import { Avatar, Button, Icon, IconButton } from '../components/ui/index.js'
 import { t } from '../i18n.js'
 import type { LocalMessage, Match } from '../types.js'
@@ -50,6 +51,9 @@ export function Chat({ match, myUserId, onBack }: Props) {
   const [giftOpen, setGiftOpen] = useState(false)
   const [paywallOpen, setPaywallOpen] = useState(false)
   const premiumStatus = usePremiumStore((s) => s.status)
+  // True once a full list arrived — `ready` alone can follow a partial catch-up.
+  const [historyLoaded, setHistoryLoaded] = useState(false)
+  const myGender = useAuthStore((s) => s.user?.gender)
   const stashedDraft = useRef('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -58,6 +62,17 @@ export function Chat({ match, myUserId, onBack }: Props) {
   const [showJump, setShowJump] = useState(false)
   const messagesRef = useRef(messages)
   messagesRef.current = messages
+  // Their auto-posted icebreaker doesn't count as them having said anything.
+  const counterpartSpoke = messages.some((m) => m.senderId !== myUserId && m.type !== 'icebreaker')
+  // Latched: a refresh that started before a live reply must not lock again.
+  const repliedRef = useRef(false)
+  if (counterpartSpoke) repliedRef.current = true
+  const limit = repliedRef.current
+    ? 'none'
+    : replyLimit({ viewerGender: myGender, matchedAt: match.matchedAt, historyLoaded, messages, myUserId })
+  const locked = limit === 'locked'
+  const lockedRef = useRef(locked)
+  lockedRef.current = locked
   const theyAreTyping = useIsTyping(match.id)
   const connected = useRealtimeStore((s) => s.connected)
   const theyAreOnline = useIsOnline(match.user.id !== myUserId ? match.user.id : null)
@@ -66,6 +81,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
     api.messages.list(match.id)
       .then(({ messages: server }) => {
         setMessages((prev) => mergeFullList(prev, server, myUserId))
+        setHistoryLoaded(true)
         setLoadState('ready')
       })
       .catch((err: unknown) => {
@@ -146,6 +162,8 @@ export function Chat({ match, myUserId, onBack }: Props) {
   }, [messages])
 
   const sendBody = useCallback((body: string, existingId?: string, replyToMessageId?: string) => {
+    // Every way to send text (input, reply, icebreaker answer, retry) ends here.
+    if (lockedRef.current) return
     const id = existingId ?? `local-${++localSeq}`
     const optimistic: LocalMessage = {
       id,
@@ -291,6 +309,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
 
   const submit = () => {
     if (editingId) { saveEdit(); return }
+    if (locked) return // keeps the draft
     if (draft.trim() && premiumSendBlocked(match, premiumStatus)) {
       haptic.impact('light')
       setPaywallOpen(true)
@@ -311,9 +330,6 @@ export function Chat({ match, myUserId, onBack }: Props) {
   }, [byId, myUserId, match.user.name])
 
   const lastMineId = [...messages].reverse().find((m) => m.senderId === myUserId && !m.status)?.id ?? null
-
-  // Their auto-posted icebreaker doesn't count as them having said anything.
-  const counterpartSpoke = messages.some((m) => m.senderId !== myUserId && m.type !== 'icebreaker')
 
   const answeredIds = useMemo(
     () => new Set(messages.filter((m) => m.senderId === myUserId && m.replyToMessageId).map((m) => m.replyToMessageId)),
@@ -423,8 +439,8 @@ export function Chat({ match, myUserId, onBack }: Props) {
                       reply={resolveReply(item.message.replyToMessageId)}
                       counterpartName={match.user.name}
                       awaitingAnswer={!counterpartSpoke}
-                      onAnswer={item.message.type === 'icebreaker' && !answeredIds.has(item.message.id) ? beginReply : undefined}
-                      onRetry={retry}
+                      onAnswer={!locked && item.message.type === 'icebreaker' && !answeredIds.has(item.message.id) ? beginReply : undefined}
+                      onRetry={locked ? undefined : retry}
                       onLongPress={item.message.status !== 'sending' ? openActions : undefined}
                     />
                   )
@@ -452,6 +468,9 @@ export function Chat({ match, myUserId, onBack }: Props) {
             replyingToBody={replyingTo ? replySnippet(replyingTo) : null}
             onCancelReply={cancelReply}
             onGiftClick={() => setGiftOpen(true)}
+            // Editing a sent message stays possible while waiting.
+            locked={locked && !editingId}
+            notice={editingId || limit === 'none' ? null : locked ? t.chat.awaitingReply : t.chat.oneMessageNotice}
           />
         </>
       )}
@@ -460,6 +479,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
         open={giftOpen}
         onClose={() => setGiftOpen(false)}
         target={{ context: 'chat', matchId: match.id }}
+        allowNote={!locked}
         recipientName={match.user.name}
         onSent={load}
       />
@@ -510,10 +530,10 @@ export function Chat({ match, myUserId, onBack }: Props) {
           <MessageActionSheet
             message={msg}
             mine={msg.senderId === myUserId}
-            onReply={beginReply}
+            onReply={locked ? undefined : beginReply}
             onEdit={beginEdit}
             onDelete={deleteMessage}
-            onRetry={retryFromSheet}
+            onRetry={locked ? undefined : retryFromSheet}
             onClose={() => setActionId(null)}
           />
         ) : null

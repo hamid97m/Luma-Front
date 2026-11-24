@@ -12,6 +12,8 @@ interface GiftPickerSheetProps {
   target: { context: 'chat'; matchId: string } | { context: 'discovery'; targetUserId: string }
   recipientName: string
   onSent?: () => void
+  /** False hides the note — it would be a message to them. */
+  allowNote?: boolean
 }
 
 type Phase = 'idle' | 'sending' | 'refunded' | 'error'
@@ -19,7 +21,7 @@ type Phase = 'idle' | 'sending' | 'refunded' | 'error'
 const POLL_INTERVAL_MS = 1500
 const POLL_MAX_TRIES = 8
 
-export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }: GiftPickerSheetProps) {
+export function GiftPickerSheet({ open, onClose, target, recipientName, onSent, allowNote = true }: GiftPickerSheetProps) {
   const [gifts, setGifts] = useState<GiftCatalogItem[] | null>(null)
   const [selectedGiftId, setSelectedGiftId] = useState<string | null>(null)
   const [note, setNote] = useState('')
@@ -153,7 +155,7 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
       const { transactionId, invoiceLink } = await api.gifts.checkout({
         ...target,
         giftId: gift.giftId,
-        note: note.trim() || undefined,
+        note: (allowNote && note.trim()) || undefined,
       })
       if (!mountedRef.current || session !== sessionRef.current) return
 
@@ -236,15 +238,17 @@ export function GiftPickerSheet({ open, onClose, target, recipientName, onSent }
             })}
           </div>
 
-          <Textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={128}
-            placeholder={t.gifts.notePlaceholder}
-            rows={2}
-            disabled={busy}
-            className="mb-3.5"
-          />
+          {allowNote && (
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={128}
+              placeholder={t.gifts.notePlaceholder}
+              rows={2}
+              disabled={busy}
+              className="mb-3.5"
+            />
+          )}
 
           <Button onClick={handleSend} disabled={!selectedGift || busy} block size="lg">
             {busy ? (

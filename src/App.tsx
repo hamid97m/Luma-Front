@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api, onAccountPaused, type AuthUser } from './api.js'
 import { clearSessionToken, getSessionToken, isInsideTelegram, onSessionEnded, setSessionToken } from './session.js'
 import { initTelegram, shouldPromptWriteAccessOnLaunch, useBackButton } from './telegram.js'
-import { useAuthStore, usePremiumStore, useReferralStore } from './store.js'
+import { useAuthStore, usePremiumStore, useReferralStore, useRequestsStore } from './store.js'
 import { startRealtime, stopRealtime, subscribe } from './realtime.js'
 import { seedPresence } from './presence.js'
 import { cacheGender, markReturningUser } from './utils/returningUser.js'
@@ -56,6 +56,16 @@ function readDeepLinkChat(): string | null {
     return new URLSearchParams(window.location.search).get('chat')
   } catch {
     return null
+  }
+}
+
+// Deep link: the "new message request" DM opens WEB_URL?screen=matches&tab=requests.
+function readDeepLinkRequests(): boolean {
+  try {
+    const q = new URLSearchParams(window.location.search)
+    return q.get('screen') === 'matches' && q.get('tab') === 'requests'
+  } catch {
+    return false
   }
 }
 
@@ -159,6 +169,7 @@ export function App() {
   const [plansOpen, setPlansOpen] = useState(() => readDeepLinkPlans())
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0)
   const [matchesBadge, setMatchesBadge] = useState(0)
+  const requestsCount = useRequestsStore((s) => s.received.length)
   const [likesBadge, setLikesBadge] = useState(0)
   const [showNotifyPrompt, setShowNotifyPrompt] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
@@ -255,6 +266,21 @@ export function App() {
     api.matches.unreadCount().then(({ count }) => setMatchesBadge(count))
     api.likes.unreadCount().then(({ count }) => setLikesBadge(count))
   }, [screen, matchesRefreshKey, tab])
+
+  // Message requests feed the Matches badge; `request` is the live nudge.
+  useEffect(() => {
+    if (screen === 'main') useRequestsStore.getState().loadReceived()
+  }, [screen, tab])
+  useEffect(() => {
+    if (screen !== 'main') return
+    const unsubscribe = subscribe((ev) => {
+      if (ev.type === 'request' || ev.type === 'sync') useRequestsStore.getState().loadReceived()
+    })
+    return () => {
+      unsubscribe()
+      useRequestsStore.getState().reset() // never show one account's requests to the next
+    }
+  }, [screen])
 
   // Live chat stream — open only inside the main app.
   useEffect(() => {
@@ -550,7 +576,7 @@ export function App() {
           )}
           {visited.matches && (
             <div className={`h-full ${tab === 'matches' ? '' : 'hidden'}`}>
-              <Matches onOpenChat={setActiveChatMatch} onStartDiscovering={() => setTab('discovery')} refreshKey={matchesRefreshKey} activeChatId={activeChatMatch?.id ?? null} />
+              <Matches onOpenChat={setActiveChatMatch} onStartDiscovering={() => setTab('discovery')} refreshKey={matchesRefreshKey} activeChatId={activeChatMatch?.id ?? null} focusRequests={readDeepLinkRequests()} />
             </div>
           )}
           {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile onOpenSupport={() => setShowSupport(true)} /></div>}
@@ -558,7 +584,7 @@ export function App() {
         <BottomNav
           active={tab}
           onChange={setTab}
-          matchesBadge={matchesBadge}
+          matchesBadge={matchesBadge + requestsCount}
           likesBadge={likesBadge + (askEnabled ? asksAnswered : 0)}
           likesLabel={askEnabled ? t.nav.forYou : undefined}
         />

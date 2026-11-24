@@ -20,13 +20,13 @@ beforeEach(() => vi.clearAllMocks())
 describe('Discovery direct chat', () => {
   it('gate=free → tapping chat starts a chat immediately and opens it', async () => {
     vi.mocked(api.discovery.feed).mockResolvedValue({ profiles: PROFILES, exhausted: false, directChat: { gate: 'free', remaining: 3, limit: 3, resetAt: null } })
-    vi.mocked(api.directChat.start).mockResolvedValue({ created: true, match: { id: 'm1', user: { id: 'p1', name: 'Sara', telegramId: 99, username: null } } })
+    vi.mocked(api.directChat.start).mockResolvedValue({ created: true, match: { id: 'm1', matchedAt: '2026-01-05T10:00:00.000Z', user: { id: 'p1', name: 'Sara', telegramId: 99, username: null } } })
     const onOpenChat = vi.fn()
     render(<Discovery onOpenChat={onOpenChat} />)
     await waitFor(() => screen.getByText('Sara'))
     fireEvent.click(screen.getByRole('button', { name: t.aria.directChat }))
     await waitFor(() => expect(api.directChat.start).toHaveBeenCalledWith('p1'))
-    await waitFor(() => expect(onOpenChat).toHaveBeenCalledWith(expect.objectContaining({ id: 'm1' })))
+    await waitFor(() => expect(onOpenChat).toHaveBeenCalledWith(expect.objectContaining({ id: 'm1', matchedAt: '2026-01-05T10:00:00.000Z' })))
   })
 
   it('gate=paywall → tapping chat opens the sheet with the go-premium CTA', async () => {
@@ -40,14 +40,14 @@ describe('Discovery direct chat', () => {
 
   it('gate=quota remaining>0 → premium chats directly, no sheet', async () => {
     vi.mocked(api.discovery.feed).mockResolvedValue({ profiles: PROFILES, exhausted: false, directChat: { gate: 'quota', remaining: 2, limit: 3, resetAt: '2026-09-06T12:00:00.000Z' } })
-    vi.mocked(api.directChat.start).mockResolvedValue({ created: true, match: { id: 'm2', user: { id: 'p1', name: 'Sara', telegramId: 99, username: null } }, directChat: { remaining: 1, resetAt: '2026-09-06T12:00:00.000Z' } })
+    vi.mocked(api.directChat.start).mockResolvedValue({ created: true, match: { id: 'm2', matchedAt: '2026-01-05T10:00:00.000Z', user: { id: 'p1', name: 'Sara', telegramId: 99, username: null } }, directChat: { remaining: 1, resetAt: '2026-09-06T12:00:00.000Z' } })
     const onOpenChat = vi.fn()
     render(<Discovery onOpenChat={onOpenChat} />)
     await waitFor(() => screen.getByText('Sara'))
     fireEvent.click(screen.getByRole('button', { name: t.aria.directChat }))
     // No confirmation sheet — the chat opens straight away.
     await waitFor(() => expect(api.directChat.start).toHaveBeenCalledWith('p1'))
-    await waitFor(() => expect(onOpenChat).toHaveBeenCalledWith(expect.objectContaining({ id: 'm2' })))
+    await waitFor(() => expect(onOpenChat).toHaveBeenCalledWith(expect.objectContaining({ id: 'm2', matchedAt: '2026-01-05T10:00:00.000Z' })))
     expect(screen.queryByText(t.directChat.startCta)).not.toBeInTheDocument()
   })
 

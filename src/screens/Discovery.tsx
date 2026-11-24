@@ -11,13 +11,15 @@ import { SwipeLimited } from '../components/SwipeLimited.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { RewindSheet } from '../components/premium/RewindSheet.js'
 import { DirectChatSheet } from '../components/premium/DirectChatSheet.js'
-import { useAuthStore, usePremiumStore } from '../store.js'
+import { MessageRequestSheet } from '../components/requests/MessageRequestSheet.js'
+import { useAuthStore, usePremiumStore, useRequestsStore } from '../store.js'
 import { AskSheet } from '../components/ask/AskSheet.js'
 import { AskResults } from './AskResults.js'
 import { showToast, trackAsk, useAskConfigStore, useAskDecisionStore, useMyAsksStore } from '../components/ask/askUtils.js'
-import type { DiscoveryProfile, SwipeResult, Match, DirectChatStatus } from '../types.js'
+import type { DiscoveryProfile, SwipeResult, Match, DirectChatStatus, DirectChatResult } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
+const TOAST_MS = 4000
 
 // Server resetAt with a floor: a device clock ahead of the server would
 // otherwise mount SwipeLimited already-expired and refetch-loop; the floor
@@ -54,6 +56,10 @@ export function Discovery({ onOpenChat }: Props) {
   const [chatMode, setChatMode] = useState<'paywall' | 'confirm' | 'limit'>('confirm')
   const [chatPaywallOpen, setChatPaywallOpen] = useState(false)
   const [starting, setStarting] = useState(false)
+  // Writing a message request to this person (she accepts it before a chat opens).
+  const [composeTarget, setComposeTarget] = useState<DiscoveryProfile | null>(null)
+  const [composeError, setComposeError] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const askEnabled = useAskConfigStore((s) => s.enabled)
   const [askTarget, setAskTarget] = useState<DiscoveryProfile | null>(null)
   const [resultsAskId, setResultsAskId] = useState<string | null>(null)
@@ -63,6 +69,9 @@ export function Discovery({ onOpenChat }: Props) {
   const premiumStatus = usePremiumStore((s) => s.status)
   // Buying premium clears the limit instantly (server stops gating; no refetch needed).
   const isMan = useAuthStore((s) => s.user?.gender === 'man')
+  // For cards without the server's `messageRequest` flag: someone who only sees
+  // women always needs an opener; otherwise a 400 message_required says so.
+  const seeksWomenOnly = useAuthStore((s) => s.user?.looking_for === 'women')
   const premiumActive =
     !!premiumStatus?.premiumUntil && new Date(premiumStatus.premiumUntil).getTime() > Date.now()
   const limited = limitResetAt != null && !premiumActive
@@ -80,6 +89,12 @@ export function Discovery({ onOpenChat }: Props) {
   }, [])
 
   useEffect(() => { fetchBatch() }, [fetchBatch])
+
+  useEffect(() => {
+    if (!toast) return
+    const id = setTimeout(() => setToast(null), TOAST_MS)
+    return () => clearTimeout(id)
+  }, [toast])
 
   // Pass on a candidate from the results screen. The top card goes through the
   // normal swipe; anything else is recorded here so a later batch can't re-add it.
@@ -187,30 +202,57 @@ export function Discovery({ onOpenChat }: Props) {
   // Same synthesis as openMatchChat, for a match created via the direct-chat
   // route (its response carries the same minimal id + counterpart shape).
   const openDirectChat = (
-    match: { id: string; user: { id: string; name: string; telegramId: number; username: string | null } },
+    match: NonNullable<DirectChatResult['match']>,
     premium?: boolean,
   ) => {
     onOpenChat({
       id: match.id,
-      matchedAt: new Date().toISOString(),
-      user: { ...match.user, premium, photos: [], age: null, bio: null, icebreakerPrompt: null, icebreakerAnswer: null },
+      // An existing chat keeps its real date — "now" would put it under the reply limit.
+      matchedAt: match.matchedAt,
+      user: { telegramId: 0, username: null, ...match.user, premium, photos: [], age: null, bio: null, icebreakerPrompt: null, icebreakerAnswer: null },
       lastMessage: null,
       unreadCount: 0,
     })
   }
 
-  const startDirectChat = async (profile: DiscoveryProfile) => {
+  const openCompose = (profile: DiscoveryProfile) => {
+    setComposeError(null)
+    setComposeTarget(profile)
+  }
+
+  // Her answer is pending: move on. No swipe is recorded — the server keeps
+  // the profile out of the deck while the request waits.
+  const advancePast = (profile: DiscoveryProfile) => {
+    swipedIds.current.add(profile.id)
+    const rest = queue.filter((p) => p.id !== profile.id)
+    setQueue((q) => q.filter((p) => p.id !== profile.id))
+    if (rest.length <= PREFETCH_THRESHOLD && !exhausted) fetchBatch().catch(() => {})
+  }
+
+  const startDirectChat = async (profile: DiscoveryProfile, text?: string) => {
     if (starting) return
     setStarting(true)
+    setComposeError(null)
     try {
-      const { match, directChat: dc } = await api.directChat.start(profile.id)
+      const { match, request, directChat: dc } = text
+        ? await api.directChat.start(profile.id, text)
+        : await api.directChat.start(profile.id)
       setChatTarget(null)
+      setComposeTarget(null)
       // Trust the server's post-consume window (remaining + resetAt). It's only
       // present when a NEW match was created for a quota user — so re-chatting the
       // same person (existing match) never decrements, and the limit countdown
       // always has a real resetAt.
       if (dc) setDirectChat((d) => ({ ...d, remaining: dc.remaining, resetAt: dc.resetAt }))
-      openDirectChat(match, profile.premium)
+      if (match) {
+        openDirectChat(match, profile.premium)
+      } else if (request) {
+        haptic.notification('success')
+        setToast(t.requests.sentToast)
+        advancePast(profile)
+        useRequestsStore.getState().loadSent()
+        if (profile.ask) loadMyAsks()
+      }
     } catch (err) {
       const status = (err as { status?: number } | null)?.status
       const message = err instanceof Error ? err.message : ''
@@ -218,15 +260,22 @@ export function Discovery({ onOpenChat }: Props) {
         let resetAt: string | null = null
         try { resetAt = (JSON.parse(message) as { resetAt?: string }).resetAt ?? null } catch { /* not JSON */ }
         setDirectChat((d) => ({ ...d, gate: 'quota', remaining: 0, resetAt }))
+        setComposeTarget(null)
         setChatMode('limit')
         setChatTarget(profile)
       } else if (status === 403 && message.includes('premium_required')) {
+        setComposeTarget(null)
         setChatMode('paywall')
         setChatTarget(profile)
         usePremiumStore.getState().refresh()
+      } else if (status === 400 && message.includes('message_required') && !text) {
+        setChatTarget(null)
+        openCompose(profile)
       } else {
         haptic.notification('error')
         setChatTarget(null)
+        // The sheet (if it's open) stays up so the text isn't lost.
+        setComposeError(message.includes('too_many_pending') ? t.requests.tooManyPending : t.requests.sendError)
       }
     } finally {
       setStarting(false)
@@ -234,11 +283,13 @@ export function Discovery({ onOpenChat }: Props) {
   }
 
   const handleChatClick = (profile: DiscoveryProfile) => {
-    // Premium (within today's quota) and free users chat directly — no sheet.
+    // Within today's quota (or ungated): write the opener, or — for a target who
+    // needs no request — chat directly, no sheet.
     // A 403 from the server (limit hit / premium expired) still surfaces the
     // right sheet via startDirectChat's catch.
     if (directChat.gate === 'free' || (directChat.gate === 'quota' && directChat.remaining > 0)) {
-      startDirectChat(profile)
+      if (profile.messageRequest ?? seeksWomenOnly) openCompose(profile)
+      else startDirectChat(profile)
       return
     }
     // Non-premium → paywall pitch; premium who used all 3 today → limit sheet.
@@ -262,6 +313,14 @@ export function Discovery({ onOpenChat }: Props) {
     if (premiumActive) goBack()
     else { haptic.impact('medium'); setRewindSheetOpen(true) }
   }
+
+  const toastNode = toast && (
+    <div className="fixed inset-x-4 z-50 flex justify-center pointer-events-none" style={{ bottom: 'calc(96px + var(--tg-safe-bottom))' }}>
+      <p role="status" className="max-w-md bg-surface-high text-txt text-[14px] text-center rounded-m3-lg px-4 py-3 shadow-m3-1">
+        {toast}
+      </p>
+    </div>
+  )
 
   // Rendered on top of both the main card stack and the limited screen: a
   // like that lands as the 20th swipe can both match AND trip the limit, so
@@ -314,6 +373,7 @@ export function Discovery({ onOpenChat }: Props) {
     return (
       <div className="h-full bg-bg text-txt flex flex-col">
         <DiscoveryEmpty onReview={refresh} />
+        {toastNode}
         {resultsAskId && (
           <AskResults
             askId={resultsAskId}
@@ -393,6 +453,17 @@ export function Discovery({ onOpenChat }: Props) {
           }}
         />
       )}
+      {composeTarget && (
+        <MessageRequestSheet
+          key={composeTarget.id}
+          recipientName={composeTarget.name}
+          remaining={directChat.gate === 'quota' ? directChat.remaining : null}
+          sending={starting}
+          error={composeError}
+          onClose={() => setComposeTarget(null)}
+          onSend={(text) => startDirectChat(composeTarget, text)}
+        />
+      )}
       {chatTarget && (
         <DirectChatSheet
           open={!chatPaywallOpen}
@@ -433,6 +504,7 @@ export function Discovery({ onOpenChat }: Props) {
           }}
         />
       )}
+      {toastNode}
       {matchPopupNode}
     </>
   )

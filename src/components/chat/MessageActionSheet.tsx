@@ -5,10 +5,12 @@ import type { LocalMessage } from '../../types.js'
 interface MessageActionSheetProps {
   message: LocalMessage
   mine: boolean
-  onReply: (id: string) => void
+  /** Omitted while replying isn't possible. */
+  onReply?: (id: string) => void
   onEdit: (id: string) => void
   onDelete: (id: string) => void
-  onRetry: (id: string) => void
+  /** Omitted while sending isn't possible. */
+  onRetry?: (id: string) => void
   onClose: () => void
 }
 
@@ -41,10 +43,10 @@ export function MessageActionSheet({ message, mine, onReply, onEdit, onDelete, o
         </p>
         <div className="pt-1">
           {failed ? (
-            <ActionRow icon="refresh" label={t.chat.retryMessage} onClick={() => onRetry(message.id)} />
+            onRetry && <ActionRow icon="refresh" label={t.chat.retryMessage} onClick={() => onRetry(message.id)} />
           ) : (
             <>
-              <ActionRow icon="reply" label={t.chat.replyAction} onClick={() => onReply(message.id)} />
+              {onReply && <ActionRow icon="reply" label={t.chat.replyAction} onClick={() => onReply(message.id)} />}
               {mine && <ActionRow icon="pencil" label={t.chat.editAction} onClick={() => onEdit(message.id)} />}
             </>
           )}

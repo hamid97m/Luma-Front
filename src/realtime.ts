@@ -27,6 +27,8 @@ export type RealtimeEvent =
   | { type: 'typing'; matchId: string; userId: string }
   /** A counterpart came online or went offline (offline is debounced server-side). */
   | { type: 'presence'; userId: string; online: boolean }
+  /** My message requests changed — refetch them (the payload isn't used). */
+  | { type: 'request' }
 
 type Handler = (event: RealtimeEvent) => void
 
@@ -58,6 +60,7 @@ export function dispatch(event: RealtimeEvent): void {
 /** Map a raw SSE event to a RealtimeEvent; unknown/garbled events → null. */
 export function toRealtimeEvent(sse: SseEvent): RealtimeEvent | null {
   if (sse.event === 'ready' || sse.event === 'resync') return { type: 'sync' }
+  if (sse.event === 'request') return { type: 'request' }
   let data: Record<string, unknown>
   try {
     data = JSON.parse(sse.data) as Record<string, unknown>

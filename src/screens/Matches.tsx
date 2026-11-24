@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { IntrosSection } from '../components/gifts/IntrosSection.js'
+import { RequestsSection } from '../components/requests/RequestsSection.js'
+import { SentRequestsSection } from '../components/requests/SentRequestsSection.js'
 import { Avatar, Badge, Icon } from '../components/ui/index.js'
 import { MatchesEmpty } from '../components/MatchesEmpty.js'
 import { PremiumBadge } from '../components/premium/PremiumBadge.js'
 import { haptic } from '../telegram.js'
-import { useAuthStore } from '../store.js'
+import { useAuthStore, useRequestsStore } from '../store.js'
 import { subscribe, useRealtimeStore } from '../realtime.js'
 import { useTypingStore } from '../typing.js'
 import { seedPresence, useIsOnline } from '../presence.js'
@@ -43,12 +45,14 @@ interface Props {
   refreshKey: number
   /** The chat currently open on top of this list — its new messages aren't unread. */
   activeChatId?: string | null
+  /** Opened from a message-request notification: bring the requests into view. */
+  focusRequests?: boolean
 }
 
 /** Without the live stream, refresh the list this often. */
 const FALLBACK_POLL_MS = 30_000
 
-export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChatId = null }: Props) {
+export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChatId = null, focusRequests = false }: Props) {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const myUserId = useAuthStore((s) => s.user?.id)
@@ -70,6 +74,9 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
   // Silent refetch; a failure keeps the stale list.
   const refetch = useCallback(() => {
     api.matches.list().then(({ matches: m }) => applyList(m)).catch(() => {})
+    // A brand-new match may be one of my requests being accepted.
+    useRequestsStore.getState().loadReceived()
+    useRequestsStore.getState().loadSent()
   }, [applyList])
 
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -137,7 +144,8 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
   // already-loaded list (it's a brand-new match). Reuse the same
   // api.matches.list() + onOpenChat navigation the "Chat" button below uses,
   // refetching first if the match isn't found locally yet.
-  const openChatById = (matchId: string) => {
+  // `fallback` opens the chat anyway when that refetch fails or misses it.
+  const openChatById = (matchId: string, fallback?: Match) => {
     const local = matches.find((m) => m.id === matchId)
     if (local) {
       onOpenChat(local)
@@ -147,9 +155,10 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
       .then(({ matches: fresh }) => {
         applyList(fresh)
         const found = fresh.find((m) => m.id === matchId)
-        if (found) onOpenChat(found)
+        const target = found ?? fallback
+        if (target) onOpenChat(target)
       })
-      .catch(() => {})
+      .catch(() => { if (fallback) onOpenChat(fallback) })
   }
 
   if (loading) {
@@ -162,7 +171,9 @@ export function Matches({ onOpenChat, onStartDiscovering, refreshKey, activeChat
 
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt pt-6">
+      <RequestsSection onOpenChat={openChatById} refreshKey={refreshKey} focus={focusRequests} />
       <IntrosSection onOpenChat={openChatById} refreshKey={refreshKey} />
+      <SentRequestsSection refreshKey={refreshKey} />
 
       {matches.length === 0 ? (
         <MatchesEmpty onStartDiscovering={onStartDiscovering} />

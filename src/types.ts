@@ -31,6 +31,8 @@ export interface DiscoveryProfile {
   nearby?: boolean
   /** True when this person's premium is currently active. */
   premium?: boolean
+  /** A direct chat to this person needs an opener (it becomes a message request). */
+  messageRequest?: boolean
   /** Present when the viewer has an open "ask a friend" request about this candidate. */
   ask?: CandidateAsk
 }
@@ -134,6 +136,30 @@ export interface GiftIntro {
   emoji: string | null
   note: string | null
   createdAt: string
+}
+
+/** A message request waiting for my decision (GET /requests). */
+export interface MessageRequest {
+  id: string
+  body: string
+  createdAt: string
+  user: Omit<LikerProfile, 'likedAt' | 'telegramId'>
+}
+
+/** My own request, still waiting for an answer (GET /requests/sent). */
+export interface SentRequest {
+  id: string
+  body: string
+  createdAt: string
+  user: { id: string; name: string; photo: string | null }
+}
+
+/** POST /discovery/direct-chat: a chat opened right away, or a request now waits for its recipient. */
+export interface DirectChatResult {
+  created?: boolean
+  match?: { id: string; matchedAt: string; user: { id: string; name: string; telegramId?: number; username?: string | null } }
+  request?: { id: string; status: 'pending' }
+  directChat?: { remaining: number; resetAt: string | null }
 }
 
 export interface Message {

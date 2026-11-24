@@ -11,11 +11,13 @@ interface Props {
   /** User id of the person being blocked. */
   userId: string
   onClose: () => void
+  /** What blocking does here; defaults to the chat wording. */
+  body?: string
   /** Called after the block succeeds — the caller leaves the chat. */
   onBlocked: () => void
 }
 
-export function BlockSheet({ open, name, userId, onClose, onBlocked }: Props) {
+export function BlockSheet({ open, name, userId, body, onClose, onBlocked }: Props) {
   const [busy, setBusy] = useState(false)
 
   const confirm = async () => {
@@ -38,7 +40,7 @@ export function BlockSheet({ open, name, userId, onClose, onBlocked }: Props) {
           <Icon name="ban" size={26} className="text-error" />
         </div>
         <h2 className="text-[19px] font-semibold text-txt">{t.block.title(name)}</h2>
-        <p className="mt-2.5 text-[13.5px] leading-[1.9] text-txt2">{t.block.body}</p>
+        <p className="mt-2.5 text-[13.5px] leading-[1.9] text-txt2">{body ?? t.block.body}</p>
 
         <Button
           onClick={confirm}

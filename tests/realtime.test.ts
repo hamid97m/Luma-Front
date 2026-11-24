@@ -27,6 +27,9 @@ describe('toRealtimeEvent', () => {
     expect(rt.toRealtimeEvent({ event: 'message_deleted', data: '{"matchId":"m","messageId":"x"}' }))
       .toEqual({ type: 'message_deleted', matchId: 'm', messageId: 'x' })
     expect(rt.toRealtimeEvent({ event: 'message', data: 'not json' })).toBeNull()
+    // The payload of a request nudge is irrelevant — it only triggers a refetch.
+    expect(rt.toRealtimeEvent({ event: 'request', data: '{}' })).toEqual({ type: 'request' })
+    expect(rt.toRealtimeEvent({ event: 'request', data: '' })).toEqual({ type: 'request' })
     expect(rt.toRealtimeEvent({ event: 'whatever', data: '{"matchId":"m"}' })).toBeNull()
   })
 })
