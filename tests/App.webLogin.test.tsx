@@ -128,6 +128,19 @@ describe('App boot: web login vs Telegram', () => {
     expect(screen.queryByTestId('login-screen')).not.toBeInTheDocument()
   })
 
+  it('outside Telegram, a suspended session → Blocked screen with the suspension copy', async () => {
+    leaveTelegram()
+    setSessionToken('web-token')
+    vi.mocked(api.auth.me).mockRejectedValue(
+      Object.assign(new Error(JSON.stringify({ error: 'suspended', suspendedUntil: '2026-12-01T10:30:00Z', botUsername: 'LumaDatingBot' })), { status: 401 }),
+    )
+    render(<App />)
+
+    await waitFor(() => expect(screen.getByText(t.blocked.suspendedTitle)).toBeInTheDocument())
+    expect(screen.getByText(t.blocked.support)).toBeInTheDocument()
+    expect(screen.queryByText(t.blocked.title)).not.toBeInTheDocument()
+  })
+
   it('outside Telegram, network error → keeps the token, reconnect screen', async () => {
     leaveTelegram()
     setSessionToken('web-token')

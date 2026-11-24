@@ -45,7 +45,7 @@ async function request<T>(path: string, options?: RequestInit, opts?: { noAuth?:
     // Website only: the session was rejected mid-use. Sign-in calls (/auth/*)
     // report their own failures; inside Telegram nothing changes.
     if (res.status === 401 && !isInsideTelegram() && !path.startsWith('/auth/')) {
-      endSession(text.includes('account_banned') ? { kind: 'banned', error: err } : { kind: 'signedOut' })
+      endSession(text.includes('account_banned') || text.includes('"suspended"') ? { kind: 'banned', error: err } : { kind: 'signedOut' })
     }
     throw err
   }
