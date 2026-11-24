@@ -1,33 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
-import { relativeTime } from '../i18n/format.js'
+import { formatLongDate, relativeTime } from '../i18n/format.js'
 import { haptic } from '../telegram.js'
-import { usePremiumStore } from '../store.js'
+import { usePremiumStore, useReferralStore } from '../store.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { MatchPopup } from '../components/MatchPopup.js'
 import { LikerProfileSheet } from '../components/LikerProfileSheet.js'
+import { LikesQueue, LockedTile } from '../components/LikesQueue.js'
 import { Icon } from '../components/ui/index.js'
 import { PremiumBadge } from '../components/premium/PremiumBadge.js'
 import { AskWaitingList } from '../components/ask/AskWaitingList.js'
 import { useAskConfigStore, useMyAsksStore } from '../components/ask/askUtils.js'
-import type { LikerProfile, LockedLiker, Match, SwipeResult } from '../types.js'
-
-// Fallback for a locked liker with no photo — a theme-token gradient (blurred
-// behind the lock badge, same as the real-photo tiles).
-const LOCKED_GRADIENTS = [
-  'linear-gradient(135deg, var(--pc), var(--pr))',
-  'linear-gradient(150deg, var(--pr), var(--gold))',
-  'linear-gradient(120deg, var(--gold), var(--pc))',
-]
+import type { LikerProfile, LikesQueueInfo, LockedLiker, Match, SwipeResult } from '../types.js'
 
 interface LikesProps {
+  /** The tab is on screen (App keeps it mounted while hidden). Loading marks likes
+   *  as seen, so a hidden tab must not reload. */
+  active?: boolean
   onOpenChat: (m: Match) => void
   /** «منتظر نظر» card → that ask's results (rendered by App). */
   onOpenAskResults?: (askId: string) => void
 }
 
-export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
+export function Likes({ active = true, onOpenChat, onOpenAskResults }: LikesProps) {
   // Women with "ask a friend": the tab is «برای تو» with a likes / waiting-for-opinion switch.
   const askMode = useAskConfigStore((s) => s.enabled)
   const asksCount = useMyAsksStore((s) => s.asks.length)
@@ -35,6 +31,9 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
   useEffect(() => { if (askMode) useMyAsksStore.getState().load() }, [askMode])
   const [visible, setVisible] = useState<LikerProfile[]>([])
   const [locked, setLocked] = useState<LockedLiker[]>([])
+  // Women: the likes behind today's free one, or how long all of them are open.
+  const [queue, setQueue] = useState<LikesQueueInfo | null>(null)
+  const [unlockedUntil, setUnlockedUntil] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [payOpen, setPayOpen] = useState(false)
   const [openLiker, setOpenLiker] = useState<LikerProfile | null>(null)
@@ -48,11 +47,27 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
   // real true -> false transition, not on the initial mount.
   const prevPayOpenRef = useRef(false)
 
-  const load = () =>
-    api.likes
+  // A response is dropped when a newer load or a swipe happened after it was
+  // requested — otherwise it would bring back someone she just answered.
+  const loadSeq = useRef(0)
+  const swipeSeq = useRef(0)
+  const load = (): Promise<void> => {
+    const seq = ++loadSeq.current
+    const swipes = swipeSeq.current
+    return api.likes
       .list()
-      .then((r) => { setVisible(r.visible); setLocked(r.locked) })
+      .then((r) => {
+        if (seq !== loadSeq.current) return
+        // She answered someone meanwhile: ask again instead of losing this reload.
+        if (swipes !== swipeSeq.current) { void load(); return }
+        setVisible(r.visible)
+        setLocked(r.locked)
+        setQueue(r.queue && r.queue.lockedCount > 0 ? r.queue : null)
+        setUnlockedUntil(r.unlockedUntil ?? null)
+      })
+      .catch(() => { /* keep what is on screen */ })
       .finally(() => setLoading(false))
+  }
 
   useEffect(() => { load() }, [])
   // Re-fetch when the paywall closes — a purchase may have unlocked likers.
@@ -61,13 +76,44 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
     prevPayOpenRef.current = payOpen
   }, [payOpen])
 
+  // A friend may have joined: re-fetch when the invite sheet closes and when she
+  // comes back to the app.
+  const inviteOpen = useReferralStore((s) => s.sheetOpen)
+  const likesReward = useReferralStore((s) => (s.status?.enabled ? s.status.likesReward : null))
+  const prevInviteOpenRef = useRef(inviteOpen)
+  const activeRef = useRef(active)
+  const staleRef = useRef(false)
+  const reload = () => {
+    if (activeRef.current) void load()
+    else staleRef.current = true
+  }
+  useEffect(() => {
+    activeRef.current = active
+    if (active && staleRef.current) {
+      staleRef.current = false
+      void load()
+    }
+  }, [active])
+  useEffect(() => {
+    if (prevInviteOpenRef.current && !inviteOpen) reload()
+    prevInviteOpenRef.current = inviteOpen
+  }, [inviteOpen])
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') reload() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
+  const openInvite = () => { haptic.selection(); useReferralStore.getState().openSheet() }
   const openPaywall = () => { haptic.impact('medium'); setPayOpen(true) }
 
   const pass = async (l: LikerProfile) => {
     if (acting) return
     haptic.impact('light')
     setActing(true)
+    swipeSeq.current++
     try { await api.swipes.swipe(l.id, 'pass') } catch { /* optimistic — drop anyway */ }
+    swipeSeq.current++
     setVisible((v) => v.filter((x) => x.id !== l.id))
     setOpenLiker(null)
     setActing(false)
@@ -78,7 +124,9 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
     haptic.impact('medium')
     setActing(true)
     try {
+      swipeSeq.current++
       const res = await api.swipes.swipe(l.id, 'like')
+      swipeSeq.current++
       setVisible((v) => v.filter((x) => x.id !== l.id))
       setOpenLiker(null)
       // A liker liking back is by definition a mutual like → a match. Fire the
@@ -117,12 +165,12 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
   }
 
   const lockedCount = locked.length
-  const total = visible.length + lockedCount
+  const total = visible.length + lockedCount + (queue?.lockedCount ?? 0)
   const isEmpty = total === 0
   const subtitle =
     lockedCount > 0
       ? t.likes.subtitleHidden(total, lockedCount)
-      : isPremium
+      : isPremium || unlockedUntil
         ? t.likes.subtitleAllVisible(total)
         : t.likes.subtitle(total)
 
@@ -166,7 +214,27 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt">
       {segmentBar}
-      {!isEmpty && <p className={`px-5 ${askMode ? 'pt-3' : 'pt-6'} pb-1 text-[13px] text-txt2`}>{subtitle}</p>}
+      {unlockedUntil && (
+        <div
+          className={`mx-4 ${askMode ? 'mt-3' : 'mt-5'} rounded-full bg-primary-container ps-4 pe-1.5 py-1.5 flex items-center gap-2`}
+          data-testid="likes-unlocked"
+        >
+          <Icon name="heart" size={15} className="text-primary flex-none" />
+          <span className="flex-1 min-w-0 text-[12.5px] font-medium text-on-primary-container">
+            {t.likes.unlockedUntil(formatLongDate(new Date(unlockedUntil)))}
+          </span>
+          {likesReward && (
+            <button
+              type="button"
+              onClick={openInvite}
+              className="flex-none h-8 px-3 rounded-full bg-primary text-white text-[12px] font-medium"
+            >
+              {t.likes.unlockedMore(likesReward.daysPerFriend)}
+            </button>
+          )}
+        </div>
+      )}
+      {!isEmpty && !queue && <p className={`px-5 ${askMode ? 'pt-3' : 'pt-6'} pb-1 text-[13px] text-txt2`}>{subtitle}</p>}
 
       {lockedCount > 0 && (
         <button
@@ -195,7 +263,7 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
           <h2 className="text-[22px] font-medium text-txt">{t.likes.empty}</h2>
           <p className="text-txt2 text-[14px] leading-relaxed max-w-[250px]">{t.likes.emptySub}</p>
         </div>
-      ) : (
+      ) : visible.length + lockedCount > 0 && (
         <div className="grid grid-cols-2 gap-3 p-4">
           {visible.map((l) => (
             <button
@@ -226,7 +294,7 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
                   </span>
                   <span className="block text-[11px] text-white/80">{relativeTime(l.likedAt)}</span>
                 </span>
-                {!isPremium && (
+                {!isPremium && !unlockedUntil && (
                   <span
                     className="text-[9.5px] font-bold uppercase tracking-wide px-[7px] py-[3px] rounded-full text-primary flex-none"
                     style={{ background: 'rgba(255,255,255,.92)' }}
@@ -239,52 +307,27 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
           ))}
 
           {locked.map((l, i) => (
-            <button
+            // Real photo, lightly blurred client-side (the teaser). The URL is the
+            // unblurred original — see the note in backend/src/routes/likes.ts.
+            <LockedTile
               key={`locked-${i}`}
-              type="button"
+              photo={l.photo}
+              index={i}
+              ariaLabel={t.likes.premium}
+              caption={t.likes.premium}
               onClick={openPaywall}
-              aria-label={t.likes.premium}
-              className="relative aspect-[3/4] rounded-m3-lg overflow-hidden bg-surface-high"
-            >
-              {l.photo ? (
-                // Real photo, lightly blurred client-side (the teaser). The URL is
-                // the unblurred original — see the note in backend/src/routes/likes.ts.
-                <img
-                  src={l.photo}
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  style={{ filter: 'blur(8px)', transform: 'scale(1.08)' }}
-                />
-              ) : (
-                <span
-                  className="absolute inset-0"
-                  style={{
-                    background: LOCKED_GRADIENTS[i % LOCKED_GRADIENTS.length],
-                    filter: 'blur(8px) saturate(.8)',
-                    transform: 'scale(1.08)',
-                  }}
-                  aria-hidden="true"
-                />
-              )}
-              <span className="absolute inset-0" style={{ background: 'rgba(33,26,29,.28)' }} />
-              <span className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                <span
-                  className="w-[38px] h-[38px] rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,.92)', boxShadow: '0 3px 10px rgba(0,0,0,.2)' }}
-                >
-                  <Icon name="lock" size={17} className="text-primary" />
-                </span>
-                <span
-                  className="text-[11px] font-semibold uppercase tracking-wide text-white"
-                  style={{ textShadow: '0 1px 4px rgba(0,0,0,.5)' }}
-                >
-                  {t.likes.premium}
-                </span>
-              </span>
-            </button>
+            />
           ))}
         </div>
+      )}
+
+      {queue && (
+        <LikesQueue
+          queue={queue}
+          hasFreeLike={visible.length + lockedCount > 0}
+          onInvite={() => useReferralStore.getState().openSheet()}
+          onPremium={() => setPayOpen(true)}
+        />
       )}
 
       {openLiker && (

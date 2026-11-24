@@ -296,14 +296,14 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
           <Icon name="heart" size={32} filled />
         </button>
 
-        <button
+        {profile?.canDirectChat !== false && <button
           onClick={handleChatClick}
           disabled={disabled}
           className="w-14 h-14 rounded-[18px] bg-primary-container text-on-primary-container shadow-m3-1 flex items-center justify-center disabled:opacity-40 hover:bg-primary-container-high transition-colors"
           aria-label={t.aria.directChat}
         >
           <Icon name="message-dots" size={23} strokeWidth={2} />
-        </button>
+        </button>}
 
         <button
           onClick={handleBack}

@@ -77,7 +77,7 @@ export function Login({ onSignedIn, onBanned }: Props) {
       .then(
         ({ token, user }) => handlers.current.onSignedIn(token, user),
         (err: unknown) => {
-          if (errorCode(err) === 'account_banned') handlers.current.onBanned(err)
+          if (errorCode(err) === 'account_banned' || errorCode(err) === 'suspended') handlers.current.onBanned(err)
           else setError(errorMessage(err))
         },
       )

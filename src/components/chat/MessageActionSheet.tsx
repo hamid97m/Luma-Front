@@ -8,7 +8,8 @@ interface MessageActionSheetProps {
   /** Omitted while replying isn't possible. */
   onReply?: (id: string) => void
   onEdit: (id: string) => void
-  onDelete: (id: string) => void
+  /** Omitted while deleting isn't possible. */
+  onDelete?: (id: string) => void
   /** Omitted while sending isn't possible. */
   onRetry?: (id: string) => void
   onClose: () => void
@@ -50,7 +51,7 @@ export function MessageActionSheet({ message, mine, onReply, onEdit, onDelete, o
               {mine && <ActionRow icon="pencil" label={t.chat.editAction} onClick={() => onEdit(message.id)} />}
             </>
           )}
-          {mine && (
+          {mine && onDelete && (
             <ActionRow icon="trash" label={t.chat.deleteAction} onClick={() => onDelete(message.id)} tone="destructive" />
           )}
           <button role="menuitem" onClick={onClose} className={`${rowClass} text-txt2 hover:bg-surface`}>

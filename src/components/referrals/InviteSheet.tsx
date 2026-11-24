@@ -5,7 +5,8 @@ import { haptic, openTelegramLink } from '../../telegram.js'
 import { useReferralStore, usePremiumStore } from '../../store.js'
 import { fillPercent, grantedCount, newlyGranted, sheetVariant, stageNumber } from '../../utils/referral.js'
 import { Icon, Sheet } from '../ui/index.js'
-import type { ReferralMilestone, ReferralStatus } from '../../types.js'
+import { shareUrl } from '../ask/askUtils.js'
+import type { LikesReward, ReferralMilestone, ReferralStatus } from '../../types.js'
 
 const SEEN_KEY = 'luma_referral_granted_seen'
 
@@ -41,12 +42,117 @@ export function InviteSheet() {
   const closeSheet = useReferralStore((s) => s.closeSheet)
 
   useEffect(() => {
-    if (sheetOpen) useReferralStore.getState().refresh()
+    if (!sheetOpen) return
+    void useReferralStore.getState().refresh().then(() => {
+      // Nothing to show (first load failed) — don't stay "open" invisibly and
+      // pop up at some later refresh.
+      const s = useReferralStore.getState()
+      if (!s.status) s.closeSheet()
+    })
   }, [sheetOpen])
 
   if (!sheetOpen || !status) return null
 
+  if (status.likesReward) {
+    return <WomenInviteContent status={status} reward={status.likesReward} onClose={closeSheet} />
+  }
   return <InviteSheetContent status={status} onClose={closeSheet} />
+}
+
+// The invite link with a copy button.
+function LinkRow({ link }: { link: string }) {
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!copied) return
+    const id = setTimeout(() => setCopied(false), 1600)
+    return () => clearTimeout(id)
+  }, [copied])
+
+  const displayLink = link.replace(/^https?:\/\//, '')
+
+  const handleCopy = () => {
+    haptic.selection()
+    try {
+      void navigator.clipboard?.writeText(link)
+    } catch {
+      /* clipboard unavailable — ignore, the link is still visible/shareable */
+    }
+    setCopied(true)
+  }
+
+  return (
+    <div className="flex items-center gap-2 bg-field border border-outline rounded-m3-md px-3.5 py-1.5 mt-4">
+      <span dir="ltr" className="flex-1 min-w-0 truncate text-left text-[13px] text-txt2">{displayLink}</span>
+      <button
+        type="button"
+        aria-label={t.referral.copyAria}
+        onClick={handleCopy}
+        className="w-10 h-10 flex-none rounded-[12px] bg-primary-container text-primary flex items-center justify-center transition-colors"
+      >
+        {copied ? (
+          <Icon name="check" size={18} />
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+        )}
+      </button>
+    </div>
+  )
+}
+
+// Women: no milestones — each woman friend who joins opens all her likes for
+// some days, repeatable.
+function WomenInviteContent({ status, reward, onClose }: { status: ReferralStatus; reward: LikesReward; onClose: () => void }) {
+  const link = status.link ?? ''
+  const days = reward.daysPerFriend
+  const until = reward.unlockedUntil ? new Date(reward.unlockedUntil) : null
+  const active = until !== null && until.getTime() > Date.now()
+
+  const handleShare = () => {
+    haptic.impact('light')
+    if (!link) return
+    openTelegramLink(shareUrl(link, t.referral.women.shareText))
+  }
+
+  return (
+    <Sheet open onClose={onClose} title={t.referral.sheetTitle}>
+      <div className="flex flex-col pb-2">
+        <div className="flex items-center gap-3.5">
+          <div className="w-14 h-14 rounded-m3-md bg-primary-container text-primary flex items-center justify-center flex-none">
+            <Icon name="heart" size={26} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[18px] font-semibold text-txt leading-snug">{t.referral.women.headline(days)}</p>
+            <p className="text-[13px] text-txt2 mt-0.5">{t.referral.women.sub}</p>
+          </div>
+        </div>
+
+        <div className="bg-surface rounded-m3-lg p-4 mt-4 flex flex-col gap-1">
+          <span className="text-[14px] font-medium text-txt">{t.referral.women.counted(reward.friendsCounted)}</span>
+          {active && (
+            <span className="text-[12.5px] text-primary">{t.referral.women.unlockedUntil(formatFullDate(until))}</span>
+          )}
+        </div>
+
+        {link && <LinkRow link={link} />}
+
+        <button
+          type="button"
+          onClick={handleShare}
+          disabled={!link}
+          className="w-full h-[54px] mt-4 rounded-full bg-primary text-white text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors hover:bg-primary-hover disabled:opacity-40"
+        >
+          <Icon name="send" size={18} />
+          {t.referral.women.inviteCta}
+        </button>
+
+        <p className="text-center text-[11.5px] text-txt3 mt-4">{t.referral.women.footnote}</p>
+      </div>
+    </Sheet>
+  )
 }
 
 function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClose: () => void }) {
@@ -56,7 +162,6 @@ function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClo
   // note on InviteSheet above), then stays stable for as long as this
   // instance is mounted, even after markSeen() updates localStorage on close.
   const [seenGranted] = useState(() => Number(localStorage.getItem(SEEN_KEY) ?? '0'))
-  const [copied, setCopied] = useState(false)
 
   const milestone = newlyGranted(status.milestones, seenGranted)
 
@@ -67,12 +172,6 @@ function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    if (!copied) return
-    const id = setTimeout(() => setCopied(false), 1600)
-    return () => clearTimeout(id)
-  }, [copied])
-
   const variant = sheetVariant(status, seenGranted)
   const qualifiedCount = status.qualifiedCount
   // Defensive: render/derive in ascending tier order even if the API ever
@@ -80,7 +179,6 @@ function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClo
   const milestones = [...status.milestones].sort((a, b) => a.count - b.count)
   const nextMilestone = milestones.find((m) => m.count > qualifiedCount) ?? null
   const link = status.link ?? ''
-  const displayLink = link.replace(/^https?:\/\//, '')
   const premiumUntil = premiumUntilRaw ? new Date(premiumUntilRaw) : null
 
   const markSeen = () => {
@@ -95,16 +193,6 @@ function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClo
   const handleContinue = () => {
     markSeen()
     onClose()
-  }
-
-  const handleCopy = () => {
-    haptic.selection()
-    try {
-      void navigator.clipboard?.writeText(link)
-    } catch {
-      /* clipboard unavailable — ignore, the link is still visible/shareable */
-    }
-    setCopied(true)
   }
 
   const handleShare = () => {
@@ -221,25 +309,7 @@ function InviteSheetContent({ status, onClose }: { status: ReferralStatus; onClo
           </div>
         </div>
 
-        {/* Link row */}
-        <div className="flex items-center gap-2 bg-field border border-outline rounded-m3-md px-3.5 py-1.5 mt-4">
-          <span dir="ltr" className="flex-1 min-w-0 truncate text-left text-[13px] text-txt2">{displayLink}</span>
-          <button
-            type="button"
-            aria-label={t.referral.copyAria}
-            onClick={handleCopy}
-            className="w-10 h-10 flex-none rounded-[12px] bg-primary-container text-primary flex items-center justify-center transition-colors"
-          >
-            {copied ? (
-              <Icon name="check" size={18} />
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            )}
-          </button>
-        </div>
+        <LinkRow link={link} />
 
         {/* Primary CTA */}
         <button

@@ -33,6 +33,8 @@ export interface DiscoveryProfile {
   premium?: boolean
   /** A direct chat to this person needs an opener (it becomes a message request). */
   messageRequest?: boolean
+  /** False when this person can't be direct-chatted; absent = can. */
+  canDirectChat?: boolean
   /** Present when the viewer has an open "ask a friend" request about this candidate. */
   ask?: CandidateAsk
 }
@@ -85,11 +87,26 @@ export interface LockedLiker {
   photo: string | null
 }
 
+/** The rest of a woman's incoming likes, behind today's free one. Photos are
+ *  blurred on the server; no identity is sent. */
+export interface LikesQueueInfo {
+  lockedCount: number
+  /** At most 6. */
+  photos: (string | null)[]
+  inviteEnabled: boolean
+  premiumEnabled: boolean
+  daysPerFriend: number
+}
+
 export interface LikesResponse {
   visible: LikerProfile[]
   locked: LockedLiker[]
   lockedCount: number
   premiumRequired: boolean
+  /** Women only; null when all likes are unlocked or nothing is locked. */
+  queue?: LikesQueueInfo | null
+  /** Women only: all likes are open until this time (earned by inviting friends). */
+  unlockedUntil?: string | null
 }
 
 export interface PremiumPlan {
@@ -241,6 +258,14 @@ export interface ReferralStatus {
   qualifiedCount: number
   totalCount: number
   milestones: ReferralMilestone[]
+  /** Women: each woman friend opens all likes for some days (milestones are empty). */
+  likesReward?: LikesReward | null
+}
+
+export interface LikesReward {
+  daysPerFriend: number
+  friendsCounted: number
+  unlockedUntil: string | null
 }
 
 // ---------------------------------------------------------------------------

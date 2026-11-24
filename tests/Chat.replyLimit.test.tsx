@@ -62,6 +62,14 @@ describe('Chat — reply limit', () => {
     expectLocked()
   })
 
+  it('his one message cannot be deleted while locked (deleting would free another)', async () => {
+    await open([m('a', 'opener')])
+    expectLocked()
+    fireEvent.contextMenu(screen.getByText('opener'))
+    expect(await screen.findByText(t.chat.editAction)).toBeInTheDocument()
+    expect(screen.queryByText(t.chat.deleteAction)).not.toBeInTheDocument()
+  })
+
   it('a suggested opener counts as the one message', async () => {
     vi.mocked(api.messages.send).mockResolvedValue({ message: m('s1', t.chat.openers[0]) })
     await open([])

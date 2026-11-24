@@ -240,6 +240,17 @@ describe('api request: rejected website session', () => {
     expect(reload).not.toHaveBeenCalled()
   })
 
+  it('outside Telegram, a suspension mid-session is handled like a ban (keeps the token)', async () => {
+    ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
+    reply401({ error: 'suspended', suspendedUntil: '2026-12-01T10:30:00Z', botUsername: 'LumaDatingBot' })
+
+    const err = await api.profile.get().catch((e: unknown) => e)
+
+    expect(ended).toHaveBeenCalledWith({ kind: 'banned', error: err })
+    expect(getSessionToken()).toBe('web-token')
+    expect(reload).not.toHaveBeenCalled()
+  })
+
   it('outside Telegram, a 401 from a sign-in call is left to the caller', async () => {
     ;(window.Telegram!.WebApp! as { initData: string }).initData = ''
     reply401({ error: 'invalid_google_login' })
