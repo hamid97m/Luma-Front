@@ -592,6 +592,7 @@ export const fa = {
   },
   // Ask a friend (نظر دوستت رو بپرس).
   ask: {
+    entryShort: 'نظر دوست',
     entryAria: 'نظر دوستت رو بپرس',
     tooltip: (name: string) => `مطمئن نیستی؟ پروفایل رو مخفیانه به دوستت نشون بده. ${name} خبردار نمی‌شه 💛`,
     badgeWaiting: 'منتظر نظر',

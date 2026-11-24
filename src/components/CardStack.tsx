@@ -8,9 +8,6 @@ import { Icon } from './ui/index.js'
 import type { DiscoveryProfile } from '../types.js'
 import { askTooltipSeen, markAskTooltipSeen, trackAsk } from './ask/askUtils.js'
 
-// First-time "ask a friend" tooltip appears once the top card sits idle this long.
-const ASK_TOOLTIP_IDLE_MS = 5000
-
 const THRESHOLD = 110
 
 interface Props {
@@ -42,26 +39,12 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
   const profile = profiles[0]
   const nextProfile = profiles[1]
   const askEnabled = !!onAskClick
-  const [askTooltip, setAskTooltip] = useState(false)
-  // Restarted by any interaction; null once the tooltip was shown or isn't due.
-  const [idleKey, setIdleKey] = useState(0)
-
-  // F11: once per user, after the top card has been idle for 5 s.
+  // The "ask a friend" tooltip stays on every card until she taps the ask button once.
+  const [askTooltipDone, setAskTooltipDone] = useState(() => askTooltipSeen())
+  const askTooltip = askEnabled && !askTooltipDone && !!profile
   useEffect(() => {
-    if (!askEnabled || !profile || askTooltip || askTooltipSeen()) return
-    const id = setTimeout(() => {
-      if (askTooltipSeen()) return
-      markAskTooltipSeen()
-      setAskTooltip(true)
-      trackAsk({ name: 'ask_tooltip_shown' })
-    }, ASK_TOOLTIP_IDLE_MS)
-    return () => clearTimeout(id)
-  }, [askEnabled, profile?.id, idleKey, askTooltip])
-
-  const dismissAskTooltip = () => {
-    if (askTooltip) setAskTooltip(false)
-    setIdleKey((k) => k + 1)
-  }
+    if (askTooltip) trackAsk({ name: 'ask_tooltip_shown' })
+  }, [askTooltip])
 
   // Preload photos for the current + upcoming cards so swiping never shows a blank/loading image.
   useEffect(() => {
@@ -76,7 +59,6 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
   const nopeOpacity = Math.min(1, Math.max(0, -offset / THRESHOLD))
 
   const fly = (dir: 'like' | 'pass') => {
-    dismissAskTooltip()
     haptic.impact('medium')
     setFlying(dir)
     setTimeout(() => {
@@ -154,7 +136,10 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
 
   const handleAskClick = () => {
     if (disabled || flying || !profile) return
-    dismissAskTooltip()
+    if (!askTooltipDone) {
+      markAskTooltipSeen()
+      setAskTooltipDone(true)
+    }
     haptic.selection()
     onAskClick?.(profile)
   }
@@ -185,7 +170,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
   if (!profile) return null
 
   return (
-    <div className="flex flex-col h-full px-4 pt-4 pb-2 gap-3" onPointerDownCapture={askEnabled ? dismissAskTooltip : undefined}>
+    <div className="flex flex-col h-full px-4 pt-4 pb-2 gap-3">
       {/* Card area */}
       <div className="relative flex-1">
         {/* Peek card behind */}
@@ -235,6 +220,8 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
             onReport={() => !disabled && !flying && setReportUserId(profile.id)}
             onGiftClick={handleGiftClick}
             onAskBadgeClick={() => !disabled && !flying && onAskBadgeClick?.(profile)}
+            onAskClick={askEnabled ? handleAskClick : undefined}
+            askTooltip={askTooltip}
           />
         </div>
       </div>
@@ -246,16 +233,6 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
 
       {/* Action buttons */}
       <div className={`relative flex items-center justify-center pb-2 ${askEnabled ? 'gap-3' : 'gap-[18px]'}`}>
-        {askTooltip && (
-          <div
-            role="tooltip"
-            data-testid="ask-tooltip"
-            onClick={dismissAskTooltip}
-            className="absolute bottom-full mb-2 inset-x-2 mx-auto max-w-[260px] px-3 py-2.5 rounded-m3-md bg-bg text-txt text-[13px] leading-normal shadow-m3-1 z-30 animate-fade-up"
-          >
-            {t.ask.tooltip(profile.name)}
-          </div>
-        )}
         <button
           onClick={() => !disabled && !flying && fly('pass')}
           disabled={disabled}

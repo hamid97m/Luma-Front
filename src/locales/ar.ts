@@ -616,6 +616,7 @@ export const ar = {
   },
   // Ask a friend.
   ask: {
+    entryShort: 'رأي صديقة',
     entryAria: 'اسألي صديقتك',
     tooltip: (name: string) => `لستِ متأكدة؟ أري الملف الشخصي لصديقتك سرًا. ${name} لن يعرف أبدًا 💛`,
     badgeWaiting: 'بانتظار الرأي',

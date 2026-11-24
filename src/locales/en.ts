@@ -592,6 +592,7 @@ export const en = {
   },
   // Ask a friend.
   ask: {
+    entryShort: 'Ask a friend',
     entryAria: 'Ask a friend',
     tooltip: (name: string) => `Not sure? Show this profile to a friend in secret. ${name} will never know 💛`,
     badgeWaiting: 'Waiting for friends',

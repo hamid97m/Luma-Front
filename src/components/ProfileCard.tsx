@@ -11,11 +11,15 @@ interface Props {
   onGiftClick: () => void
   /** Tapping the "ask a friend" badge (shown when profile.ask is set). */
   onAskBadgeClick?: () => void
+  /** Ask-a-friend entry pill on the card (only when the feature is on for her). */
+  onAskClick?: () => void
+  /** Show the "ask a friend" hint bubble under the pill. */
+  askTooltip?: boolean
 }
 
 // Purely presentational — photo cycling and viewer-opening taps are handled
 // by CardStack on the draggable wrapper (see handleTap there).
-export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onAskBadgeClick }: Props) {
+export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onAskBadgeClick, onAskClick, askTooltip }: Props) {
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
   const ask = profile.ask
 
@@ -71,29 +75,60 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onAskBad
         )}
       </div>
 
-      {/* Report trigger */}
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onReport() }}
-        onPointerDown={(e) => e.stopPropagation()}
-        aria-label={t.report.title}
-        className="absolute top-8 end-3.5 w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
-        style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
-      >
-        <Icon name="flag" size={15} />
-      </button>
+      {/* Top-end overlay actions: gift · report · ask a friend (outermost) */}
+      <div className="absolute top-8 end-3.5 z-10 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onGiftClick() }}
+          onPointerDown={(e) => e.stopPropagation()}
+          aria-label={t.gifts.openButton}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
+          style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
+        >
+          <Icon name="gift" size={15} />
+        </button>
 
-      {/* Send-a-gift trigger */}
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onGiftClick() }}
-        onPointerDown={(e) => e.stopPropagation()}
-        aria-label={t.gifts.openButton}
-        className="absolute top-8 end-[56px] w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
-        style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
-      >
-        <Icon name="gift" size={15} />
-      </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onReport() }}
+          onPointerDown={(e) => e.stopPropagation()}
+          aria-label={t.report.title}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
+          style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
+        >
+          <Icon name="flag" size={15} />
+        </button>
+
+        {onAskClick && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onAskClick() }}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label={t.ask.entryAria}
+            data-testid="ask-card-pill"
+            className="h-9 px-3 rounded-full flex items-center gap-1.5 text-white text-[12px] font-medium pointer-events-auto"
+            style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
+          >
+            <Icon name="users" size={16} strokeWidth={2} />
+            {t.ask.entryShort}
+          </button>
+        )}
+      </div>
+
+      {/* First-time hint under the ask pill — stays until she taps "ask a friend" */}
+      {onAskClick && askTooltip && (
+        <button
+          type="button"
+          role="tooltip"
+          data-testid="ask-tooltip"
+          onClick={(e) => { e.stopPropagation(); onAskClick() }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute top-[78px] end-3.5 z-10 max-w-[230px] px-3 py-2.5 rounded-m3-md bg-bg text-txt text-[13px] leading-normal text-start shadow-m3-1 pointer-events-auto animate-fade-up"
+        >
+          <span aria-hidden="true" className="absolute -top-1.5 end-6 w-3 h-3 bg-bg rotate-45" />
+          <span className="relative">{t.ask.tooltip(profile.name)}</span>
+        </button>
+      )}
 
       {/* Dark overlay gradient */}
       <div
