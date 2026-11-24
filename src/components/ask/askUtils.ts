@@ -97,6 +97,24 @@ export function markAskTooltipSeen(): void {
   } catch { /* not persisted */ }
 }
 
+// Men's gift hint on the Discovery card — stays until he taps the gift button once.
+const GIFT_TOOLTIP_KEY = 'luma_gift_tooltip_seen'
+const giftTooltipKey = () => `${GIFT_TOOLTIP_KEY}:${window.Telegram?.WebApp?.initDataUnsafe?.user?.id ?? 'web'}`
+
+export function giftTooltipSeen(): boolean {
+  try {
+    return localStorage.getItem(giftTooltipKey()) === '1'
+  } catch {
+    return true
+  }
+}
+
+export function markGiftTooltipSeen(): void {
+  try {
+    localStorage.setItem(giftTooltipKey(), '1')
+  } catch { /* not persisted */ }
+}
+
 /** Copy to clipboard; resolves true on success. */
 export async function copyText(text: string): Promise<boolean> {
   try {

@@ -6,7 +6,7 @@ import { haptic } from '../telegram.js'
 import { t } from '../i18n.js'
 import { Icon } from './ui/index.js'
 import type { DiscoveryProfile } from '../types.js'
-import { askTooltipSeen, markAskTooltipSeen, trackAsk } from './ask/askUtils.js'
+import { askTooltipSeen, giftTooltipSeen, markAskTooltipSeen, markGiftTooltipSeen, trackAsk } from './ask/askUtils.js'
 
 const THRESHOLD = 110
 
@@ -26,11 +26,13 @@ interface Props {
   onAskClick?: (profile: DiscoveryProfile) => void
   /** The card's ask badge → results. */
   onAskBadgeClick?: (profile: DiscoveryProfile) => void
+  /** Show the gift hint (men) until the gift button is tapped once. */
+  giftHint?: boolean
   /** Rendered above the card (e.g. the "my asks" chip). */
   topSlot?: ReactNode
 }
 
-export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBack, backLocked, onGiftClick, onChatClick, onAskClick, onAskBadgeClick, topSlot }: Props) {
+export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBack, backLocked, onGiftClick, onChatClick, onAskClick, onAskBadgeClick, giftHint, topSlot }: Props) {
   const dragRef = useRef({ active: false, startX: 0, startY: 0, moved: false })
   const [offset, setOffset] = useState(0)
   const [flying, setFlying] = useState<'like' | 'pass' | null>(null)
@@ -47,6 +49,10 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
   useEffect(() => {
     if (askTooltip) trackAsk({ name: 'ask_tooltip_shown' })
   }, [askTooltip])
+
+  // The gift tooltip (men) stays on every card until he taps the gift button once.
+  const [giftTooltipDone, setGiftTooltipDone] = useState(() => giftTooltipSeen())
+  const giftTooltip = !!giftHint && !askEnabled && !giftTooltipDone && !!profile
 
   // Preload photos for the current + upcoming cards so swiping never shows a blank/loading image.
   useEffect(() => {
@@ -132,6 +138,10 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
 
   const handleGiftClick = () => {
     if (disabled || flying || !profile) return
+    if (!giftTooltipDone) {
+      markGiftTooltipSeen()
+      setGiftTooltipDone(true)
+    }
     haptic.selection()
     onGiftClick?.(profile)
   }
@@ -225,6 +235,7 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
             onAskBadgeClick={() => !disabled && !flying && onAskBadgeClick?.(profile)}
             onAskClick={askEnabled ? handleAskClick : undefined}
             askTooltip={askTooltip}
+            giftTooltip={giftTooltip}
           />
         </div>
       </div>

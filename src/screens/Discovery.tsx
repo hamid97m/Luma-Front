@@ -11,7 +11,7 @@ import { SwipeLimited } from '../components/SwipeLimited.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { RewindSheet } from '../components/premium/RewindSheet.js'
 import { DirectChatSheet } from '../components/premium/DirectChatSheet.js'
-import { usePremiumStore } from '../store.js'
+import { useAuthStore, usePremiumStore } from '../store.js'
 import { AskSheet } from '../components/ask/AskSheet.js'
 import { AskResults } from './AskResults.js'
 import { showToast, trackAsk, useAskConfigStore, useAskDecisionStore, useMyAsksStore } from '../components/ask/askUtils.js'
@@ -62,6 +62,7 @@ export function Discovery({ onOpenChat }: Props) {
   const loadMyAsks = useMyAsksStore((s) => s.load)
   const premiumStatus = usePremiumStore((s) => s.status)
   // Buying premium clears the limit instantly (server stops gating; no refetch needed).
+  const isMan = useAuthStore((s) => s.user?.gender === 'man')
   const premiumActive =
     !!premiumStatus?.premiumUntil && new Date(premiumStatus.premiumUntil).getTime() > Date.now()
   const limited = limitResetAt != null && !premiumActive
@@ -343,6 +344,7 @@ export function Discovery({ onOpenChat }: Props) {
         onBack={handleBack}
         canGoBack={history.length > 0}
         backLocked={!premiumActive}
+        giftHint={isMan}
         onGiftClick={(profile) => setGiftTarget({ id: profile.id, name: profile.name })}
         onChatClick={handleChatClick}
         onAskClick={askEnabled ? (profile) => {

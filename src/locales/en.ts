@@ -185,6 +185,7 @@ export const en = {
     error: "Upload didn't go through. Please try again.",
   },
   gifts: {
+    tooltip: 'A small gift raises your chances 🎁',
     title: (name: string) => `Send a gift to ${name}`,
     close: 'Close',
     unavailable: "Gifts aren't available right now",

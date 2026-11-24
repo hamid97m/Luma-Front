@@ -201,6 +201,7 @@ export const ar = {
     error: 'فشل الرفع. يرجى المحاولة مجددًا.',
   },
   gifts: {
+    tooltip: 'هدية صغيرة ترفع فرصتك 🎁',
     title: (name: string) => `إرسال هدية إلى ${name}`,
     close: 'إغلاق',
     unavailable: 'الهدايا غير متاحة حاليًا',
