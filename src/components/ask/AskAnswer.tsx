@@ -144,7 +144,9 @@ export function AskAnswer({ view, recipientKind, onSubmit, onBack, thanksFooter,
     return (
       <div className="h-full flex flex-col bg-bg text-txt" style={{ paddingTop: 'var(--tg-safe-top)' }}>
         {header}
-        <AskStateMessage icon="clock" title={t.ask.closed} />
+        <AskStateMessage icon="clock" title={t.ask.closed}>
+          {thanksFooter}
+        </AskStateMessage>
       </div>
     )
   }

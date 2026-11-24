@@ -155,4 +155,24 @@ describe('Discovery — ask a friend entry', () => {
     await screen.findByText('Amir')
     expect(screen.queryByTestId('ask-tooltip')).not.toBeInTheDocument()
   })
+
+  it('asking about the last card keeps the share step; closing with unsent links needs a second tap', async () => {
+    const ASK = { id: 'a1', targetId: 'p1', targetName: 'Amir', targetPhotoUrl: null, question: 'reply', status: 'open', createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 86_400_000).toISOString(), total: 2, answered: 0, yes: 0, unsure: 0, no: 0 }
+    vi.mocked(api.discovery.feed).mockResolvedValue({ profiles: [SARA], exhausted: true } as never)
+    window.Telegram!.WebApp!.openTelegramLink = vi.fn()
+    vi.mocked(api.asks.create).mockResolvedValue({ ask: ASK, links: ['https://t.me/b?startapp=ask_x', 'https://t.me/b?startapp=ask_y'] } as never)
+    render(<Discovery onOpenChat={vi.fn()} />)
+    await screen.findByText('Amir')
+    fireEvent.click(screen.getByTestId('ask-card-pill'))
+    fireEvent.click(await screen.findByTestId('ask-add-link'))
+    fireEvent.click(screen.getByTestId('ask-add-link'))
+    fireEvent.click(screen.getByRole('button', { name: t.ask.submit(2) }))
+    // Deck is now empty, but the share step is still there.
+    expect(await screen.findByTestId('ask-share-step')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: t.ask.done }))
+    expect(await screen.findByText(t.ask.unsentWarning)).toBeInTheDocument()
+    expect(screen.getByTestId('ask-share-step')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: t.ask.done }))
+    await waitFor(() => expect(screen.queryByTestId('ask-share-step')).not.toBeInTheDocument())
+  })
 })

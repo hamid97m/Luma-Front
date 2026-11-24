@@ -324,7 +324,7 @@ export function App() {
   const askEnabled = useAskConfigStore((s) => s.enabled)
   const asksAnswered = useMyAsksStore((s) => s.asks.filter((a) => a.answered > 0).length)
   useEffect(() => {
-    if (screen === 'main' && askEnabled) useMyAsksStore.getState().load()
+    if (screen === 'main' && askEnabled && (tab === 'likes' || tab === 'discovery')) useMyAsksStore.getState().load()
   }, [screen, askEnabled, tab])
 
   // Referral status (enabled flag + milestones) — drives the My Profile entry
@@ -519,8 +519,9 @@ export function App() {
             closeAskDeepLink()
           }}
           onPass={(detail) => {
+            // Discovery records the pass; she stays where she was (e.g. the waiting list).
+            useMyAsksStore.getState().remove(detail.id)
             useAskDecisionStore.getState().request({ targetId: detail.target?.id ?? detail.targetId, decision: 'pass' })
-            setTab('discovery')
             closeAskDeepLink()
           }}
         />

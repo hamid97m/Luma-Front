@@ -180,6 +180,9 @@ interface MyAsksState {
   load: () => Promise<void>
   upsert: (a: import('../../types.js').AskSummary) => void
   remove: (askId: string) => void
+  /** Targets she liked/passed from the waiting list (Discovery drops them from its deck). */
+  decided: string[]
+  markDecided: (targetId: string) => void
 }
 
 export const useMyAsksStore = create<MyAsksState>((set) => ({
@@ -193,4 +196,6 @@ export const useMyAsksStore = create<MyAsksState>((set) => ({
   },
   upsert: (a) => set((s) => ({ asks: [a, ...s.asks.filter((x) => x.id !== a.id)] })),
   remove: (askId) => set((s) => ({ asks: s.asks.filter((x) => x.id !== askId) })),
+  decided: [],
+  markDecided: (targetId) => set((s) => ({ decided: [...s.decided, targetId] })),
 }))

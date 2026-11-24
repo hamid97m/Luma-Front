@@ -28,7 +28,8 @@ const VERDICT_TONE: Record<AskVerdict, string> = {
 
 export function AskResults({ askId, onClose, onReply, onPass }: Props) {
   const [detail, setDetail] = useState<AskDetail | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<false | 'gone' | 'error'>(false)
+  const [attempt, setAttempt] = useState(0)
   const [reminded, setReminded] = useState<Set<string>>(new Set())
   const [reminding, setReminding] = useState<string | null>(null)
   const viewed = useRef(false)
@@ -45,12 +46,13 @@ export function AskResults({ askId, onClose, onReply, onPass }: Props) {
           viewed.current = true
           trackAsk({ name: 'ask_result_viewed', requestId: d.id, props: { answers_count: d.answered } })
         }
-      } catch {
-        if (alive) setFailed(true)
+      } catch (err) {
+        // Only a 404 means the ask is gone; anything else (network, 5xx) can be retried.
+        if (alive) setFailed(errorBody(err).status === 404 ? 'gone' : 'error')
       }
     })()
     return () => { alive = false }
-  }, [askId])
+  }, [askId, attempt])
 
   const remind = async (r: AskRecipient) => {
     if (reminding) return
@@ -89,7 +91,10 @@ export function AskResults({ askId, onClose, onReply, onPass }: Props) {
     return wrap(
       <>
         {header('')}
-        <AskStateMessage icon="clock" title={t.ask.closed}>
+        <AskStateMessage icon={failed === 'gone' ? 'clock' : 'alert-triangle'} title={failed === 'gone' ? t.ask.closed : t.errors.generic}>
+          {failed === 'error' && (
+            <Button onClick={() => { setFailed(false); setAttempt((n) => n + 1) }}>{t.errors.retry}</Button>
+          )}
           <Button variant="tonal" onClick={onClose}>{t.ask.close}</Button>
         </AskStateMessage>
       </>,
