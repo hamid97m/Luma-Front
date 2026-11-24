@@ -362,6 +362,12 @@ export const fa = {
     pickInterests: 'علایقت را انتخاب کن',
     tagCount: (n: number) => `${n}/5 انتخاب‌شده · حداقل 3 مورد`,
     interestsMin: 'حداقل 3 مورد انتخاب کن تا ادامه بدهی.',
+    // Gender is locked after signup (backend 403 gender_locked) — confirm it.
+    genderLockHint: 'بعداً قابل تغییر نیست',
+    genderConfirmTitle: 'مطمئنی؟',
+    genderConfirmBody: (gender: string) => `جنسیتت رو «${gender}» انتخاب کردی. بعد از ثبت‌نام دیگه قابل تغییر نیست.`,
+    genderConfirmYes: 'بله، درسته',
+    genderConfirmChange: 'تغییر می‌دم',
     photoBio: 'عکس و بیو اضافه کن',
     resizing: 'در حال تغییر اندازه…',
     savingPhoto: 'در حال ذخیره…',
@@ -426,6 +432,18 @@ export const fa = {
     setPrimary: 'انتخاب به‌عنوان عکس اصلی',
     deletePhotoAction: 'حذف عکس',
     lastPhotoHint: 'باید حداقل یک عکس داشته باشی',
+  },
+  // Shown when the server's AI/regex review rejects a profile text (HTTP 422
+  // profile_text_rejected) or the per-user check cap is hit (429).
+  profileText: {
+    fields: { name: 'اسم', bio: 'بیو', icebreaker_answer: 'جواب سؤال' },
+    contact_info: (field: string) => `آیدی، شماره تلفن یا لینک در ${field} مجاز نیست. لطفاً حذفش کن.`,
+    fake_name: (_field: string) => 'این اسم واقعی به نظر نمی‌رسه. لطفاً اسم واقعی خودت رو بنویس.',
+    offensive: (field: string) => `${field} شامل کلمات توهین‌آمیز است. لطفاً ویرایشش کن.`,
+    sexual: (field: string) => `${field} شامل محتوای نامناسب است. لطفاً ویرایشش کن.`,
+    ad_or_spam: (field: string) => `تبلیغات در ${field} مجاز نیست. لطفاً ویرایشش کن.`,
+    other: (field: string) => `${field} قابل قبول نیست. لطفاً ویرایشش کن.`,
+    limit: 'تلاش‌های زیادی انجام دادی. کمی بعد دوباره امتحان کن.',
   },
   settings: {
     title: 'تنظیمات',

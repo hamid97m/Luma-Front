@@ -18,15 +18,17 @@ import { Onboarding } from '../src/screens/Onboarding.js'
 
 const clickContinue = () => fireEvent.click(screen.getByRole('button', { name: 'ادامه' }))
 
-function goToPhotoStep() {
+async function goToPhotoStep() {
   fireEvent.change(screen.getByPlaceholderText('تینا'), { target: { value: 'Ali' } })
   clickContinue()
+  await screen.findByPlaceholderText('تهران') // name step waits for the server name check
   fireEvent.change(screen.getByPlaceholderText('تهران'), { target: { value: 'شیراز' } })
   clickContinue()
   fireEvent.change(screen.getByPlaceholderText('25'), { target: { value: '25' } })
   clickContinue()
   fireEvent.click(screen.getByText('زن'))
   clickContinue()
+  fireEvent.click(screen.getByRole('button', { name: 'بله، درسته' })) // gender lock confirmation
   fireEvent.click(screen.getByText('همه'))
   clickContinue()
   fireEvent.click(screen.getByText('☕ قهوه'))
@@ -48,9 +50,9 @@ describe('Onboarding signup tracking', () => {
     URL.revokeObjectURL = vi.fn()
   })
 
-  it('reports a step_view for every step, in order', () => {
+  it('reports a step_view for every step, in order', async () => {
     render(<Onboarding onComplete={vi.fn()} />)
-    goToPhotoStep()
+    await goToPhotoStep()
     const steps = vi.mocked(track).mock.calls.filter(([n]) => n === 'step_view').map(([, o]) => o?.step)
     expect(steps).toEqual(['name', 'city', 'age', 'gender', 'pref', 'interests', 'photo'])
   })
@@ -58,7 +60,7 @@ describe('Onboarding signup tracking', () => {
   it('reports the pick and a failed upload by status, without the error text', async () => {
     vi.mocked(api.photos.upload).mockRejectedValue(Object.assign(new Error('Ali too big'), { status: 413 }))
     const { container } = render(<Onboarding onComplete={vi.fn()} />)
-    goToPhotoStep()
+    await goToPhotoStep()
     pickAndConfirm(container)
     await waitFor(() => expect(track).toHaveBeenCalledWith('photo_failed', { step: 'photo', detail: 'file:413' }))
     expect(track).toHaveBeenCalledWith('photo_pick', { step: 'photo' })
@@ -68,7 +70,7 @@ describe('Onboarding signup tracking', () => {
     vi.mocked(api.photos.upload).mockResolvedValue({ id: 'p1', url: 'u', position: 0 } as never)
     vi.mocked(api.profile.update).mockRejectedValue(Object.assign(new Error('invalid_age'), { status: 400 }))
     const { container } = render(<Onboarding onComplete={vi.fn()} />)
-    goToPhotoStep()
+    await goToPhotoStep()
     pickAndConfirm(container)
     fireEvent.click(await screen.findByRole('button', { name: 'ورود به لوما' }))
     await waitFor(() => expect(track).toHaveBeenCalledWith('submit_failed', { step: 'photo', detail: '400' }))

@@ -3,13 +3,14 @@ import { describe, it, expect, vi } from 'vitest'
 import { Onboarding } from '../src/screens/Onboarding.js'
 
 describe('Onboarding city step', () => {
-  it('asks for a city after the name and blocks continue until it is valid', () => {
+  it('asks for a city after the name and blocks continue until it is valid', async () => {
     render(<Onboarding onComplete={vi.fn()} />)
 
     fireEvent.change(screen.getByPlaceholderText('تینا'), { target: { value: 'Ali' } })
     fireEvent.click(screen.getByRole('button', { name: 'ادامه' }))
 
-    expect(screen.getByRole('heading', { name: 'کدوم شهر زندگی می‌کنی؟' })).toBeTruthy()
+    // The name is reviewed by the server (checkText) before moving on.
+    expect(await screen.findByRole('heading', { name: 'کدوم شهر زندگی می‌کنی؟' })).toBeTruthy()
     const city = screen.getByPlaceholderText('تهران')
     const cont = screen.getByRole('button', { name: 'ادامه' })
     expect(cont).toBeDisabled()
