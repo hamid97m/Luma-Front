@@ -133,6 +133,17 @@ export const en = {
     likedYou: (when: string) => `Liked you ${when}`,
     likeBack: 'Like back',
     paywallSubtitle: 'Go Premium to see everyone who liked you and like them back.',
+    queueTitle: (n: number) => (n === 1 ? '1 person liked you' : `${n} people liked you`),
+    queueTitleMore: (n: number) => (n === 1 ? '1 more person liked you' : `${n} more people liked you`),
+    queueTileAria: 'Locked like',
+    queueInviteSub: (d: number) =>
+      `Invite a woman friend. When she joins, you see all your likes for ${d === 1 ? '1 day' : `${d} days`}.`,
+    queueInviteCta: (d: number) => `Invite a friend — ${d === 1 ? '1 day' : `${d} days`} free`,
+    queuePremiumSub: 'Go Premium to see everyone who liked you.',
+    queuePremiumCta: 'Get Premium',
+    freeLikeUsed: "You've seen today's free like. You'll get another one tomorrow.",
+    unlockedUntil: (date: string) => `All likes are open until ${date}`,
+    unlockedMore: (d: number) => (d === 1 ? '+1 day' : `+${d} days`),
   },
   errors: {
     generic: 'Something went wrong',
@@ -596,6 +607,19 @@ export const en = {
     copyAria: 'Copy link',
     footnote: 'An invite counts once your friend signs up and adds a profile photo.',
     paywallPromo: 'or invite 3 friends and get 3 days free',
+    // Women: every woman friend opens all likes for some days.
+    women: {
+      entryTitle: 'Invite a friend, see who liked you',
+      entrySub: (d: number) => `Each woman friend = ${d === 1 ? '1 day' : `${d} days`} of all your likes`,
+      headline: (d: number) => `Every woman friend who joins = ${d === 1 ? '1 day' : `${d} days`} of all your likes`,
+      sub: 'Send your link to friends. The more who join, the more days you get.',
+      counted: (n: number) => (n === 0 ? 'No friends have joined yet' : n === 1 ? '1 friend joined' : `${n} friends joined`),
+      unlockedUntil: (date: string) => `All likes are open until ${date}`,
+      inviteCta: 'Invite a friend',
+      shareText: 'Join me on Luma, a safe place to meet new people 💛',
+      footnote: 'An invite counts once your woman friend signs up and adds a profile photo.',
+      paywallPromo: (d: number) => `or invite a woman friend and see all your likes free for ${d === 1 ? '1 day' : `${d} days`}`,
+    },
   },
   // Ask a friend.
   ask: {

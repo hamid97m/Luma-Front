@@ -67,6 +67,7 @@ function FieldLabel({ children, className = '' }: { children: React.ReactNode; c
 export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
   const { user: storeUser, setUser } = useAuthStore()
   const referralEnabled = useReferralStore((s) => s.status?.enabled) === true
+  const likesReward = useReferralStore((s) => s.status?.likesReward)
   const [profile, setProfile] = useState<UserProfile | null>(storeUser)
 
   // Editable field states
@@ -318,8 +319,8 @@ export function MyProfile({ onOpenSupport }: { onOpenSupport: () => void }) {
               <Icon name="gift" size={20} />
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-[15px] font-semibold text-on-primary-container">{t.referral.entryTitle}</span>
-              <span className="block text-[12px] text-on-primary-container/70">{t.referral.entrySub}</span>
+              <span className="block text-[15px] font-semibold text-on-primary-container">{likesReward ? t.referral.women.entryTitle : t.referral.entryTitle}</span>
+              <span className="block text-[12px] text-on-primary-container/70">{likesReward ? t.referral.women.entrySub(likesReward.daysPerFriend) : t.referral.entrySub}</span>
             </span>
             <Icon name="chevron-right" size={18} className="rtl:-scale-x-100 text-primary flex-none" />
           </button>

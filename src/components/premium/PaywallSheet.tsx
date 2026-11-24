@@ -25,6 +25,7 @@ const POLL_MAX_TRIES = 8
 export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
   const status = usePremiumStore((s) => s.status)
   const referralEnabled = useReferralStore((s) => s.status?.enabled)
+  const likesReward = useReferralStore((s) => s.status?.likesReward)
   const locale = useLocaleStore((s) => s.locale)
   const dir = LOCALE_META[locale].dir
   // The "how to buy Stars" guide is Iran-specific (rial resellers) — fa only,
@@ -460,7 +461,7 @@ export function PaywallSheet({ open, onClose, subtitle }: PaywallSheetProps) {
               <Icon name="gift" size={16} className="text-primary" />
             </span>
             <span className="flex-1 min-w-0 text-[13px] font-medium text-txt2">
-              {t.referral.paywallPromo}
+              {likesReward ? t.referral.women.paywallPromo(likesReward.daysPerFriend) : t.referral.paywallPromo}
             </span>
             <Icon name={dir === 'rtl' ? 'chevron-left' : 'chevron-right'} size={15} className="text-txt3 flex-none" />
           </button>

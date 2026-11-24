@@ -149,6 +149,17 @@ export const ar = {
     likedYou: (when: string) => `أُعجب بك ${when}`,
     likeBack: 'بادل الإعجاب',
     paywallSubtitle: 'اشترك في بريميوم لترى كل من أُعجب بك وتبادلهم الإعجاب.',
+    queueTitle: (n: number) => likedYouCount(n),
+    queueTitleMore: (n: number) =>
+      count(n, 'شخص آخر أُعجب بكِ', 'شخصان آخران أُعجبا بكِ', 'أشخاص آخرين أُعجبوا بكِ', 'شخصًا آخر أُعجبوا بكِ'),
+    queueTileAria: 'إعجاب مقفل',
+    queueInviteSub: (d: number) => `ادعي صديقة؛ عندما تنضم ترين كل إعجاباتك لمدة: ${days(d)}.`,
+    queueInviteCta: (d: number) => `ادعي صديقة — ${days(d)} مجانًا`,
+    queuePremiumSub: 'اشتركي في بريميوم لتري كل من أُعجب بكِ.',
+    queuePremiumCta: 'اشتركي في بريميوم',
+    freeLikeUsed: 'رأيتِ إعجابك المجاني لهذا اليوم؛ غدًا ترين إعجابًا آخر.',
+    unlockedUntil: (date: string) => `كل الإعجابات مفتوحة لكِ حتى ${date}`,
+    unlockedMore: (d: number) => `+${days(d)}`,
   },
   errors: {
     generic: 'حدث خطأ ما',
@@ -620,6 +631,20 @@ export const ar = {
     copyAria: 'نسخ الرابط',
     footnote: 'تُحتسب الدعوة عندما يسجّل صديقك ويضيف صورة ملف شخصي.',
     paywallPromo: 'أو ادعُ 3 أصدقاء واحصل على 3 أيام مجانًا',
+    // Women: every woman friend opens all likes for some days.
+    women: {
+      entryTitle: 'ادعي صديقتك واعرفي من أُعجب بكِ',
+      entrySub: (d: number) => `كل صديقة = ${days(d)} لرؤية كل الإعجابات`,
+      headline: (d: number) => `كل صديقة تنضم = ${days(d)} لرؤية كل الإعجابات`,
+      sub: 'أرسلي رابطك لصديقاتك. كلما انضم عدد أكبر زادت أيامك.',
+      counted: (n: number) =>
+        n === 0 ? 'لم تنضم أي صديقة بعد' : `الصديقات المنضمّات: ${n}`,
+      unlockedUntil: (date: string) => `كل الإعجابات مفتوحة لكِ حتى ${date}`,
+      inviteCta: 'ادعي صديقة',
+      shareText: 'انضمي إلى لوما، مكان آمن للتعرف على أشخاص جدد 💛',
+      footnote: 'تُحتسب الدعوة عندما تسجّل صديقتك وتضيف صورة ملفها الشخصي.',
+      paywallPromo: (d: number) => `أو ادعي صديقة وشاهدي كل إعجاباتك مجانًا لمدة: ${days(d)}`,
+    },
   },
   // Ask a friend.
   ask: {

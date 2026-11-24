@@ -131,6 +131,16 @@ export const fa = {
     likedYou: (when: string) => `${when} لایکت کرد`,
     likeBack: 'لایک متقابل',
     paywallSubtitle: 'برای دیدن همه کسانی که لایکت کرده‌اند و لایک متقابل، پرمیوم شو.',
+    queueTitle: (n: number) => `${n} نفر لایکت کردن`,
+    queueTitleMore: (n: number) => `${n} نفر دیگه لایکت کردن`,
+    queueTileAria: 'لایک قفل‌شده',
+    queueInviteSub: (d: number) => `یه دوست دختر رو دعوت کن؛ وقتی عضو بشه، ${d} روز همه‌ی لایک‌هات رو می‌بینی.`,
+    queueInviteCta: (d: number) => `دعوت یه دوست — ${d} روز رایگان`,
+    queuePremiumSub: 'با پرمیوم همه‌ی کسایی که لایکت کردن رو ببین.',
+    queuePremiumCta: 'خرید پرمیوم',
+    freeLikeUsed: 'لایک رایگان امروزت رو دیدی؛ فردا یکی دیگه می‌بینی.',
+    unlockedUntil: (date: string) => `همه‌ی لایک‌ها تا ${date} برات بازه`,
+    unlockedMore: (d: number) => `+${d} روز`,
   },
   errors: {
     generic: 'مشکلی پیش آمد',
@@ -596,6 +606,19 @@ export const fa = {
     copyAria: 'کپی لینک',
     footnote: 'دعوت وقتی شمرده می‌شود که دوستت ثبت‌نام کند و عکس پروفایل بگذارد.',
     paywallPromo: 'یا با دعوت 3 دوست، 3 روز رایگان بگیر',
+    // Women: every woman friend opens all likes for some days.
+    women: {
+      entryTitle: 'دوستت رو دعوت کن، ببین کی لایکت کرده',
+      entrySub: (d: number) => `هر دوست دختر = ${d} روز دیدن همه‌ی لایک‌ها`,
+      headline: (d: number) => `هر دوست دختر که عضو بشه = ${d} روز دیدن همه‌ی لایک‌ها`,
+      sub: 'لینکت رو برای دوستات بفرست. هر چندتا بیان، روزهات بیشتر می‌شه.',
+      counted: (n: number) => (n === 0 ? 'هنوز دوستی عضو نشده' : `${n} دوست عضو شده`),
+      unlockedUntil: (date: string) => `همه‌ی لایک‌ها تا ${date} برات بازه`,
+      inviteCta: 'دعوت یه دوست',
+      shareText: 'بیا لوما، یه جای امن برای آشنا شدن با آدمای جدید 💛',
+      footnote: 'دعوت وقتی حساب می‌شه که دوست دخترت ثبت‌نام کنه و عکس پروفایلش رو بذاره.',
+      paywallPromo: (d: number) => `یا یه دوست دختر دعوت کن و ${d} روز همه‌ی لایک‌ها رو رایگان ببین`,
+    },
   },
   // Ask a friend (نظر دوستت رو بپرس).
   ask: {
