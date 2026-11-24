@@ -183,6 +183,7 @@ export const fa = {
     error: 'بارگذاری نشد. لطفاً دوباره تلاش کن.',
   },
   gifts: {
+    tooltip: 'یه هدیه کوچیک شانستو میبره بالاتر 🎁',
     title: (name: string) => `ارسال هدیه به ${name}`,
     close: 'بستن',
     unavailable: 'هدیه‌ها فعلاً در دسترس نیستند',

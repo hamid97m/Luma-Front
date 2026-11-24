@@ -15,11 +15,13 @@ interface Props {
   onAskClick?: () => void
   /** Show the "ask a friend" hint bubble under the pill. */
   askTooltip?: boolean
+  /** Show the "a small gift raises your chance" hint under the gift button. */
+  giftTooltip?: boolean
 }
 
 // Purely presentational — photo cycling and viewer-opening taps are handled
 // by CardStack on the draggable wrapper (see handleTap there).
-export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onAskBadgeClick, onAskClick, askTooltip }: Props) {
+export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onAskBadgeClick, onAskClick, askTooltip, giftTooltip }: Props) {
   const photo = profile.photos[photoIdx] ?? profile.photos[0]
   const ask = profile.ask
 
@@ -130,6 +132,21 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onAskBad
         >
           <span aria-hidden="true" className="absolute -top-1.5 end-6 w-3 h-3 bg-bg rotate-45" />
           <span className="relative">{t.ask.tooltip(profile.name)}</span>
+        </button>
+      )}
+
+      {/* First-time hint under the gift button (men) — stays until he taps the gift */}
+      {!onAskClick && giftTooltip && (
+        <button
+          type="button"
+          role="tooltip"
+          data-testid="gift-tooltip"
+          onClick={(e) => { e.stopPropagation(); onGiftClick() }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute top-[78px] end-3.5 z-10 max-w-[230px] px-3 py-2.5 rounded-m3-md bg-bg text-txt text-[13px] leading-normal text-start shadow-m3-1 pointer-events-auto animate-fade-up"
+        >
+          <span aria-hidden="true" className="absolute -top-1.5 end-[56px] w-3 h-3 bg-bg rotate-45" />
+          <span className="relative">{t.gifts.tooltip}</span>
         </button>
       )}
 
