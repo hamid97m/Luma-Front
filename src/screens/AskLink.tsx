@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { t } from '../i18n.js'
-import { closeMiniApp, haptic } from '../telegram.js'
+import { closeMiniApp, haptic, useBackButton } from '../telegram.js'
 import { isReturningUser } from '../utils/returningUser.js'
 import { Button, Icon } from '../components/ui/index.js'
 import { AskAnswer, AskStateMessage } from '../components/ask/AskAnswer.js'
@@ -25,13 +25,18 @@ type Phase = { kind: 'loading' } | { kind: 'error' } | AskLinkState
 export function AskLink({ token, skipLanding = false, onExit }: Props) {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [busy, setBusy] = useState(false)
+  // Telegram back leaves the ask and continues into the app.
+  useBackButton(true, onExit)
   // A member (this Telegram account finished sign-up here before) skips the
   // anonymous landing and resolves straight away.
   // Only decides whether to skip the landing; the final button uses view.isMember.
   const member = useRef(isReturningUser())
   const direct = useRef(skipLanding || member.current)
+  // Last auth mode used, so Retry after sign-in doesn't fall back to the landing.
+  const lastAuth = useRef(direct.current)
 
   const resolve = async (auth: boolean) => {
+    lastAuth.current = auth
     try {
       const res = await api.asks.link(token, auth)
       setPhase(res)
@@ -96,7 +101,7 @@ export function AskLink({ token, skipLanding = false, onExit }: Props) {
   if ('kind' in phase) {
     return shell(
       <AskStateMessage icon="alert-triangle" title={t.errors.generic}>
-        <Button variant="tonal" onClick={() => { setPhase({ kind: 'loading' }); resolve(direct.current) }}>{t.errors.retry}</Button>
+        <Button variant="tonal" onClick={() => { setPhase({ kind: 'loading' }); resolve(lastAuth.current) }}>{t.errors.retry}</Button>
       </AskStateMessage>,
     )
   }
@@ -115,17 +120,18 @@ export function AskLink({ token, skipLanding = false, onExit }: Props) {
         </div>,
       )
     case 'not_for_you':
-      return shell(<Terminal icon="lock" title={t.ask.notForYou} />)
+      return shell(<Terminal icon="lock" title={t.ask.notForYou} onOpenApp={onExit} />)
     case 'taken':
-      return shell(<Terminal icon="lock" title={t.ask.taken} />)
+      return shell(<Terminal icon="lock" title={t.ask.taken} onOpenApp={onExit} />)
     case 'closed':
     case 'invalid':
-      return shell(<Terminal icon="clock" title={t.ask.closed} />)
+      return shell(<Terminal icon="clock" title={t.ask.closed} onOpenApp={onExit} />)
     case 'ready':
       return (
         <AskAnswer
           view={phase.view}
           recipientKind="link"
+          onBack={onExit}
           onSubmit={async (verdict, note) => { await api.asks.linkAnswer(token, verdict, note) }}
           thanksFooter={
             <Button block variant={phase.view.isMember ? 'tonal' : 'filled'} size="lg" onClick={onExit}>
@@ -137,9 +143,10 @@ export function AskLink({ token, skipLanding = false, onExit }: Props) {
   }
 }
 
-function Terminal({ icon, title }: { icon: 'lock' | 'clock'; title: string }) {
+function Terminal({ icon, title, onOpenApp }: { icon: 'lock' | 'clock'; title: string; onOpenApp: () => void }) {
   return (
     <AskStateMessage icon={icon} title={title}>
+      <Button onClick={onOpenApp}>{t.ask.openLuma}</Button>
       <Button variant="tonal" onClick={() => closeMiniApp()}>{t.ask.close}</Button>
     </AskStateMessage>
   )

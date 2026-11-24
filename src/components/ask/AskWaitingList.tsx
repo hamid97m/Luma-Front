@@ -25,10 +25,9 @@ export function AskWaitingList({ onOpenResults, onMatch }: Props) {
   const [busy, setBusy] = useState<string | null>(null)
   const [reminded, setReminded] = useState<Set<string>>(new Set())
 
-  useEffect(() => { useMyAsksStore.getState().load() }, [])
-
   // Recipients/notes per ask (at most a handful are open at once).
-  const idsKey = asks.map((a) => a.id).join(',')
+  // Re-fetch when an ask is added/removed or gets a new answer.
+  const idsKey = asks.map((a) => `${a.id}:${a.answered}`).join(',')
   useEffect(() => {
     let alive = true
     Promise.all(asks.map((a) => api.asks.get(a.id).catch(() => null))).then((list) => {
@@ -48,6 +47,7 @@ export function AskWaitingList({ onOpenResults, onMatch }: Props) {
     try {
       const res = await api.swipes.swipe(a.targetId, direction)
       useMyAsksStore.getState().remove(a.id)
+      useMyAsksStore.getState().markDecided(a.targetId)
       if (res.matched && res.match) onMatch(res.match)
     } catch {
       haptic.notification('error')
@@ -78,7 +78,7 @@ export function AskWaitingList({ onOpenResults, onMatch }: Props) {
   return (
     <div className="flex flex-col gap-3 px-4 pb-4" data-testid="ask-waiting-list">
       <p className="text-[12px] text-txt2 px-1">{t.ask.waitingSub}</p>
-      {asks.map((a) => {
+      {asks.filter((a) => Date.parse(a.expiresAt) > Date.now()).map((a) => {
         const d = details[a.id]
         const recipients = d?.recipients ?? []
         const answered = recipients
@@ -124,7 +124,7 @@ export function AskWaitingList({ onOpenResults, onMatch }: Props) {
               )}
               <span className="flex-1 min-w-0 flex flex-col gap-1">
                 <span className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                  <span className="text-[16px] font-medium truncate">{age ? `${a.targetName}، ${age}` : a.targetName}</span>
+                  <span className="text-[16px] font-medium truncate">{age ? t.ask.nameAge(a.targetName, age) : a.targetName}</span>
                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${chip.cls}`}>{chip.text}</span>
                 </span>
                 <span className="text-[12px] text-txt2 truncate">{subtitle}</span>

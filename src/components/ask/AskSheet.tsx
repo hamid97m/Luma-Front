@@ -33,6 +33,10 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
   const [links, setLinks] = useState<string[] | null>(null)
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const [created, setCreated] = useState<AskSummary | null>(null)
+  // Links already handed off (shared or copied). Unsent ones can't be recovered
+  // later (only their hash is stored), so closing asks for a second tap.
+  const [sentIdx, setSentIdx] = useState<Set<number>>(new Set())
+  const [closeWarned, setCloseWarned] = useState(false)
 
   // Fresh state on every open.
   useEffect(() => {
@@ -42,6 +46,8 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
     setLinkCount(0)
     setLinks(null)
     setCreated(null)
+    setSentIdx(new Set())
+    setCloseWarned(false)
     setBusy(false)
     let alive = true
     ;(async () => {
@@ -82,7 +88,20 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
     setLinkCount((n) => Math.max(0, n - 1))
   }
 
-  const share = (link: string, ask?: AskSummary) => {
+  const markSent = (idx: number) => setSentIdx((s) => new Set(s).add(idx))
+
+  const closeShareStep = () => {
+    const unsent = (links ?? []).some((_, i) => !sentIdx.has(i))
+    if (unsent && !closeWarned) {
+      haptic.notification('warning')
+      setCloseWarned(true)
+      return
+    }
+    onClose()
+  }
+
+  const share = (link: string, ask?: AskSummary, idx?: number) => {
+    if (idx !== undefined) markSent(idx)
     haptic.impact('light')
     openTelegramLink(shareUrl(link, text))
     trackAsk({ name: 'ask_share_opened', requestId: ask?.id, recipientKind: 'link', props: { method: 'telegram' } })
@@ -91,6 +110,7 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
   const copy = async (link: string, idx: number) => {
     haptic.selection()
     await copyText(link)
+    markSent(idx)
     setCopiedIdx(idx)
     trackAsk({ name: 'ask_share_opened', requestId: created?.id, recipientKind: 'link', props: { method: 'copy' } })
   }
@@ -112,7 +132,7 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
       }
       setLinks(got)
       // Open Telegram's share sheet for the first link straight away.
-      share(got[0], res.ask)
+      share(got[0], res.ask, 0)
     } catch (err) {
       const body = errorBody(err)
       haptic.notification('error')
@@ -122,7 +142,7 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
         if (askId) onExists?.(askId)
         return
       }
-      if (body.status === 429) showToast(t.ask.limitReached)
+      if (body.status === 429) showToast(body.reason === 'target' ? t.ask.limitTarget : t.ask.limitReached)
       else showToast(t.errors.generic)
     } finally {
       setBusy(false)
@@ -131,7 +151,7 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
 
   if (links) {
     return (
-      <Sheet open={open} onClose={onClose}>
+      <Sheet open={open} onClose={closeShareStep}>
         <div className="flex flex-col gap-4 pb-2" data-testid="ask-share-step">
           <div className="flex flex-col gap-1">
             <h2 className="text-[18px] font-medium leading-tight text-txt">{t.ask.shareTitle}</h2>
@@ -144,7 +164,7 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
                   <Icon name="link" size={18} />
                 </span>
                 <span className="flex-1 text-[14px] text-txt">{links.length > 1 ? t.ask.shareLinkN(i + 1) : t.ask.linkRowTitle}</span>
-                <Button size="sm" variant="tonal" onClick={() => share(link, created ?? undefined)} icon="send">
+                <Button size="sm" variant="tonal" onClick={() => share(link, created ?? undefined, i)} icon="send">
                   {t.ask.shareButton}
                 </Button>
                 <button
@@ -159,7 +179,10 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
               </div>
             ))}
           </div>
-          <Button block size="lg" onClick={onClose}>{t.ask.done}</Button>
+          {closeWarned && (links ?? []).some((_, i) => !sentIdx.has(i)) && (
+            <p className="text-[13px] text-error text-center" role="alert">{t.ask.unsentWarning}</p>
+          )}
+          <Button block size="lg" onClick={closeShareStep}>{t.ask.done}</Button>
         </div>
       </Sheet>
     )
