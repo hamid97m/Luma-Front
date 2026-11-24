@@ -47,11 +47,11 @@ describe('language flag on the friend-side ask screens', () => {
   it('English landing shows the Iran flag; a tap switches to Persian and back; no profile call without an account', async () => {
     render(<Link token="t1" />)
     expect(await screen.findByText(en.ask.loginCta)).toBeInTheDocument()
-    expect(toggle()).toHaveTextContent('🇮🇷')
+    expect(toggle().querySelector('[data-flag="fa"]')).not.toBeNull()
     fireEvent.click(toggle())
     expect(await screen.findByText(fa.ask.loginCta)).toBeInTheDocument()
     expect(document.documentElement).toHaveAttribute('dir', 'rtl')
-    expect(toggle()).toHaveTextContent('🇬🇧')
+    expect(toggle().querySelector('[data-flag="en"]')).not.toBeNull()
     expect(api.profile.setLocale).not.toHaveBeenCalled()
     expect(isLocalePending()).toBe(true)
     expect(isLocaleChosenHere()).toBe(true)
@@ -64,7 +64,7 @@ describe('language flag on the friend-side ask screens', () => {
     useLocaleStore.getState().setLocale('ar')
     render(<Link token="t2" />)
     await screen.findByText(messagesFor('ar').ask.loginCta)
-    expect(toggle()).toHaveTextContent('🇮🇷')
+    expect(toggle().querySelector('[data-flag="fa"]')).not.toBeNull()
   })
 
   it('switching on the gender step stays on the gender step', async () => {

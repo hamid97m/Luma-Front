@@ -15,12 +15,15 @@ import { useAskConfigStore, useMyAsksStore } from '../components/ask/askUtils.js
 import type { LikerProfile, LikesQueueInfo, LockedLiker, Match, SwipeResult } from '../types.js'
 
 interface LikesProps {
+  /** The tab is on screen (App keeps it mounted while hidden). Loading marks likes
+   *  as seen, so a hidden tab must not reload. */
+  active?: boolean
   onOpenChat: (m: Match) => void
   /** «منتظر نظر» card → that ask's results (rendered by App). */
   onOpenAskResults?: (askId: string) => void
 }
 
-export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
+export function Likes({ active = true, onOpenChat, onOpenAskResults }: LikesProps) {
   // Women with "ask a friend": the tab is «برای تو» with a likes / waiting-for-opinion switch.
   const askMode = useAskConfigStore((s) => s.enabled)
   const asksCount = useMyAsksStore((s) => s.asks.length)
@@ -47,12 +50,16 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
   // A response is dropped when a newer load or a swipe happened after it was
   // requested — otherwise it would bring back someone she just answered.
   const loadSeq = useRef(0)
-  const load = () => {
+  const swipeSeq = useRef(0)
+  const load = (): Promise<void> => {
     const seq = ++loadSeq.current
+    const swipes = swipeSeq.current
     return api.likes
       .list()
       .then((r) => {
         if (seq !== loadSeq.current) return
+        // She answered someone meanwhile: ask again instead of losing this reload.
+        if (swipes !== swipeSeq.current) { void load(); return }
         setVisible(r.visible)
         setLocked(r.locked)
         setQueue(r.queue && r.queue.lockedCount > 0 ? r.queue : null)
@@ -74,12 +81,25 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
   const inviteOpen = useReferralStore((s) => s.sheetOpen)
   const likesReward = useReferralStore((s) => (s.status?.enabled ? s.status.likesReward : null))
   const prevInviteOpenRef = useRef(inviteOpen)
+  const activeRef = useRef(active)
+  const staleRef = useRef(false)
+  const reload = () => {
+    if (activeRef.current) void load()
+    else staleRef.current = true
+  }
   useEffect(() => {
-    if (prevInviteOpenRef.current && !inviteOpen) load()
+    activeRef.current = active
+    if (active && staleRef.current) {
+      staleRef.current = false
+      void load()
+    }
+  }, [active])
+  useEffect(() => {
+    if (prevInviteOpenRef.current && !inviteOpen) reload()
     prevInviteOpenRef.current = inviteOpen
   }, [inviteOpen])
   useEffect(() => {
-    const onVisible = () => { if (document.visibilityState === 'visible') load() }
+    const onVisible = () => { if (document.visibilityState === 'visible') reload() }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
@@ -91,9 +111,9 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
     if (acting) return
     haptic.impact('light')
     setActing(true)
-    loadSeq.current++
+    swipeSeq.current++
     try { await api.swipes.swipe(l.id, 'pass') } catch { /* optimistic — drop anyway */ }
-    loadSeq.current++
+    swipeSeq.current++
     setVisible((v) => v.filter((x) => x.id !== l.id))
     setOpenLiker(null)
     setActing(false)
@@ -104,9 +124,9 @@ export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
     haptic.impact('medium')
     setActing(true)
     try {
-      loadSeq.current++
+      swipeSeq.current++
       const res = await api.swipes.swipe(l.id, 'like')
-      loadSeq.current++
+      swipeSeq.current++
       setVisible((v) => v.filter((x) => x.id !== l.id))
       setOpenLiker(null)
       // A liker liking back is by definition a mutual like → a match. Fire the

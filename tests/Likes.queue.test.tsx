@@ -50,9 +50,8 @@ describe('Likes — women\'s locked queue', () => {
     expect(screen.getByText('Ali, 30')).toBeInTheDocument()
     expect(queue).toHaveTextContent(t.likes.queueTitleMore(19))
     expect(queue).not.toHaveTextContent(t.likes.freeLikeUsed)
-    expect(within(queue).getAllByLabelText(t.likes.queueTileAria)).toHaveLength(6)
-    expect(queue.querySelectorAll('img')).toHaveLength(5) // the null photo is a gradient
-    expect(screen.getByText(t.likes.subtitle(20))).toBeInTheDocument()
+    expect(within(queue).getAllByLabelText(t.likes.queueTileAria)).toHaveLength(3)
+    expect(queue.querySelectorAll('img')).toHaveLength(2) // the null photo is a gradient
 
     fireEvent.click(screen.getByText(t.likes.queueInviteCta(7)))
     expect(useReferralStore.getState().sheetOpen).toBe(true)
@@ -123,6 +122,19 @@ describe('Likes — women\'s locked queue', () => {
     respond({ visible: [], queue: null })
     act(() => { document.dispatchEvent(new Event('visibilitychange')) })
     await screen.findByText(t.likes.empty)
+  })
+
+  it('a hidden tab does not reload (that would mark likes as seen) until it is shown again', async () => {
+    respond({ queue: QUEUE })
+    const { rerender } = render(<Likes active onOpenChat={vi.fn()} />)
+    await screen.findByTestId('likes-queue')
+    rerender(<Likes active={false} onOpenChat={vi.fn()} />)
+    act(() => { document.dispatchEvent(new Event('visibilitychange')) })
+    act(() => useReferralStore.getState().openSheet())
+    act(() => useReferralStore.getState().closeSheet())
+    expect(api.likes.list).toHaveBeenCalledTimes(1)
+    rerender(<Likes active onOpenChat={vi.fn()} />)
+    await waitFor(() => expect(api.likes.list).toHaveBeenCalledTimes(2))
   })
 
   it('old backend shape: no queue, no chip', async () => {

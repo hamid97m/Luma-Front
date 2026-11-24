@@ -18,7 +18,8 @@ import { BlockSheet } from '../components/BlockSheet.js'
 import { GiftPickerSheet } from '../components/gifts/GiftPickerSheet.js'
 import { PaywallSheet } from '../components/premium/PaywallSheet.js'
 import { PremiumBadge } from '../components/premium/PremiumBadge.js'
-import { usePremiumStore } from '../store.js'
+import { useAuthStore, usePremiumStore } from '../store.js'
+import { markReportTooltipSeen, reportTooltipSeen } from '../utils/reportTooltip.js'
 import { premiumSendBlocked } from '../utils/premium.js'
 import { Avatar, Button, Icon, IconButton } from '../components/ui/index.js'
 import { t } from '../i18n.js'
@@ -50,6 +51,17 @@ export function Chat({ match, myUserId, onBack }: Props) {
   const [giftOpen, setGiftOpen] = useState(false)
   const [paywallOpen, setPaywallOpen] = useState(false)
   const premiumStatus = usePremiumStore((s) => s.status)
+  // Women see a hint under the report flag on every chat until they tap it once.
+  const isWoman = useAuthStore((s) => s.user?.gender === 'woman')
+  const [reportTooltipDone, setReportTooltipDone] = useState(() => reportTooltipSeen())
+  const reportTooltip = isWoman && !reportTooltipDone
+  const openReport = () => {
+    if (!reportTooltipDone) {
+      markReportTooltipSeen()
+      setReportTooltipDone(true)
+    }
+    setShowReport(true)
+  }
   const stashedDraft = useRef('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -332,7 +344,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
 
   return (
     <div className="flex flex-col h-full bg-bg text-txt" style={{ paddingTop: 'var(--tg-safe-top)' }}>
-      <div className="flex items-center gap-2 px-3 pt-3 pb-2 bg-surface w-full flex-none">
+      <div className="relative z-20 flex items-center gap-2 px-3 pt-3 pb-2 bg-surface w-full flex-none">
         {/* Telegram draws its own back arrow; on the website we need one. */}
         {needsInPageBack() && (
           <IconButton
@@ -377,7 +389,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
           tone="ghost"
           iconSize={16}
           aria-label={t.report.title}
-          onClick={() => setShowReport(true)}
+          onClick={openReport}
         />
         <IconButton
           icon="ban"
@@ -387,6 +399,21 @@ export function Chat({ match, myUserId, onBack }: Props) {
           aria-label={t.block.action}
           onClick={() => setShowBlock(true)}
         />
+        {/* First-time hint under the report flag (women) — stays until she taps it.
+            Flag sits one 44px button + 8px gap in from the end padding (12px),
+            so its centre is 12 + 44 + 8 + 22 = 86px from the end edge. */}
+        {reportTooltip && (
+          <button
+            type="button"
+            role="tooltip"
+            data-testid="report-tooltip"
+            onClick={openReport}
+            className="absolute top-full end-3 mt-1 z-20 max-w-[240px] px-3 py-2.5 rounded-m3-md bg-bg text-txt text-[13px] leading-normal text-start shadow-m3-1 animate-fade-up"
+          >
+            <span aria-hidden="true" className="absolute -top-1.5 end-[68px] w-3 h-3 bg-bg rotate-45" />
+            <span className="relative">{t.chat.reportTooltip}</span>
+          </button>
+        )}
       </div>
 
       {loadState === 'unavailable' ? (
@@ -472,7 +499,7 @@ export function Chat({ match, myUserId, onBack }: Props) {
           onClose={() => setPeeking(false)}
           onReport={() => {
             setPeeking(false)
-            setShowReport(true)
+            openReport()
           }}
         />
       )}
