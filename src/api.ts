@@ -366,6 +366,7 @@ export const api = {
   asks: {
     config: () => request<{ enabled: boolean }>('/asks/config'),
     friends: () => request<{ friends: AskFriend[] }>('/asks/friends'),
+    removeFriend: (id: string) => request<{ ok: true }>(`/asks/friends/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     create: (input: { targetId: string; question: AskQuestion; memberIds: string[]; linkCount: number }) =>
       request<{ ask: AskSummary; links: string[] }>('/asks', { method: 'POST', body: JSON.stringify(input) }),
     list: () => request<{ asks: AskSummary[] }>('/asks'),

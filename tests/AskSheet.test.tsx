@@ -5,6 +5,7 @@ vi.mock('../src/api.js', () => ({
   api: {
     asks: {
       friends: vi.fn(),
+      removeFriend: vi.fn(() => Promise.resolve({ ok: true })),
       create: vi.fn(),
       event: vi.fn(() => Promise.resolve()),
     },
@@ -144,5 +145,38 @@ describe('AskSheet', () => {
     fireEvent.click(screen.getByTestId('ask-add-link'))
     fireEvent.click(screen.getByRole('button', { name: t.ask.submit(1) }))
     await waitFor(() => expect(window.Telegram!.WebApp!.showAlert).toHaveBeenCalledWith(t.ask.limitReached))
+  })
+
+  it('edit mode removes a friend after a confirm and drops her from the selection', async () => {
+    vi.mocked(api.asks.friends).mockResolvedValue({ friends: FRIENDS })
+    renderSheet()
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Negar' }))
+    expect(screen.getByRole('button', { name: t.ask.submit(1) })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: t.ask.editFriends }))
+    fireEvent.click(screen.getByRole('button', { name: t.ask.removeFriendAria('Negar') }))
+    expect(screen.getByText(t.ask.removeFriendConfirm('Negar'))).toBeInTheDocument()
+    // "No" keeps her.
+    fireEvent.click(screen.getByRole('button', { name: t.ask.removeFriendNo }))
+    expect(api.asks.removeFriend).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: t.ask.removeFriendAria('Negar') }))
+    fireEvent.click(screen.getByRole('button', { name: t.ask.removeFriendYes }))
+    await waitFor(() => expect(screen.queryByText('Negar')).not.toBeInTheDocument())
+    expect(api.asks.removeFriend).toHaveBeenCalledWith('f1')
+    expect(screen.getByRole('button', { name: t.ask.submitEmpty })).toBeDisabled()
+    // Back to picking.
+    fireEvent.click(screen.getByRole('button', { name: t.ask.done }))
+    expect(screen.getByRole('checkbox', { name: 'Maryam' })).toBeInTheDocument()
+  })
+
+  it('a failed removal keeps the friend', async () => {
+    vi.mocked(api.asks.friends).mockResolvedValue({ friends: FRIENDS })
+    vi.mocked(api.asks.removeFriend).mockRejectedValueOnce(Object.assign(new Error('{"error":"x"}'), { status: 500 }))
+    renderSheet()
+    await screen.findByText('Negar')
+    fireEvent.click(screen.getByRole('button', { name: t.ask.editFriends }))
+    fireEvent.click(screen.getByRole('button', { name: t.ask.removeFriendAria('Negar') }))
+    fireEvent.click(screen.getByRole('button', { name: t.ask.removeFriendYes }))
+    await waitFor(() => expect(window.Telegram!.WebApp!.showAlert).toHaveBeenCalled())
+    expect(screen.getByText(t.ask.removeFriendConfirm('Negar'))).toBeInTheDocument()
   })
 })

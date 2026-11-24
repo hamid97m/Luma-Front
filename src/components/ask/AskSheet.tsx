@@ -37,6 +37,10 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
   // later (only their hash is stored), so closing asks for a second tap.
   const [sentIdx, setSentIdx] = useState<Set<number>>(new Set())
   const [closeWarned, setCloseWarned] = useState(false)
+  // Friends list edit mode: rows offer "remove" (with an inline confirm) instead of a checkbox.
+  const [editing, setEditing] = useState(false)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [removing, setRemoving] = useState(false)
 
   // Fresh state on every open.
   useEffect(() => {
@@ -48,6 +52,8 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
     setCreated(null)
     setSentIdx(new Set())
     setCloseWarned(false)
+    setEditing(false)
+    setConfirmId(null)
     setBusy(false)
     let alive = true
     ;(async () => {
@@ -75,6 +81,34 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
   const toggleFriend = (id: string) => {
     haptic.selection()
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : s.length + linkCount >= ASK_MAX_RECIPIENTS ? s : [...s, id]))
+  }
+
+  const toggleEditing = () => {
+    haptic.selection()
+    setConfirmId(null)
+    setEditing((e) => !e)
+  }
+
+  const removeFriend = async (id: string) => {
+    if (removing) return
+    setRemoving(true)
+    try {
+      await api.asks.removeFriend(id)
+    } catch (err) {
+      // 404 = already not a friend (removed from the other side) — same outcome.
+      if (errorBody(err).status !== 404) {
+        haptic.notification('error')
+        showToast(t.errors.generic)
+        setRemoving(false)
+        return
+      }
+    }
+    haptic.notification('success')
+    setSelected((s) => s.filter((x) => x !== id))
+    setFriends((list) => list.filter((f) => f.id !== id))
+    if (friends.length <= 1) setEditing(false)
+    setConfirmId(null)
+    setRemoving(false)
   }
 
   const addLink = () => {
@@ -216,10 +250,48 @@ export function AskSheet({ open, target, onClose, onCreated, onExists }: Props) 
 
         {friends.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="text-[12px] text-txt2">{t.ask.friendsLabel}</div>
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-txt2">{t.ask.friendsLabel}</span>
+              <button type="button" onClick={toggleEditing} className="h-8 px-2 text-[13px] font-medium text-primary">
+                {editing ? t.ask.done : t.ask.editFriends}
+              </button>
+            </div>
             <div className="flex flex-col rounded-m3-md bg-surface overflow-hidden">
               {friends.map((f) => {
                 const checked = selected.includes(f.id)
+                if (editing) {
+                  return (
+                    <div key={f.id} className="flex items-center gap-3 px-3.5 py-2.5 min-h-[52px] border-b border-outline last:border-b-0">
+                      <Avatar src={f.photoUrl} size={36} alt={f.name} />
+                      {confirmId === f.id ? (
+                        <>
+                          <span className="flex-1 min-w-0 text-[13px] text-txt">{t.ask.removeFriendConfirm(f.name)}</span>
+                          <Button size="sm" variant="text" disabled={removing} onClick={() => setConfirmId(null)}>{t.ask.removeFriendNo}</Button>
+                          <button
+                            type="button"
+                            disabled={removing}
+                            onClick={() => removeFriend(f.id)}
+                            className="h-9 px-3 rounded-full bg-error-container text-error text-[13px] font-medium flex-none disabled:opacity-40"
+                          >
+                            {t.ask.removeFriendYes}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex-1 min-w-0 text-[14px] text-txt truncate">{f.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => { haptic.selection(); setConfirmId(f.id) }}
+                            aria-label={t.ask.removeFriendAria(f.name)}
+                            className="w-9 h-9 rounded-full text-error flex items-center justify-center flex-none"
+                          >
+                            <Icon name="trash" size={18} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )
+                }
                 return (
                   <label
                     key={f.id}
