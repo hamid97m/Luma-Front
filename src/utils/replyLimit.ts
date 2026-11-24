@@ -1,7 +1,7 @@
 import type { LocalMessage, UserProfile } from '../types.js'
 
 /** Matches created before this keep working without the limit. */
-export const REPLY_LIMIT_SINCE = '2026-11-25T00:00:00Z'
+export const REPLY_LIMIT_SINCE = '2026-11-24T19:15:00Z'
 
 /** `notice`: he may send his one message. `locked`: sent, now waiting for a reply. */
 export type ReplyLimit = 'none' | 'notice' | 'locked'
