@@ -9,6 +9,7 @@ import { closeMiniApp, haptic, useBackButton } from '../telegram.js'
 import { isReturningUser } from '../utils/returningUser.js'
 import { Button, Icon } from '../components/ui/index.js'
 import { AskAnswer, AskStateMessage } from '../components/ask/AskAnswer.js'
+import { AskLangToggle } from '../components/ask/AskLangToggle.js'
 import { questionLabel, showToast, trackAskLink } from '../components/ask/askUtils.js'
 import type { AskLinkState, AskQuestion } from '../types.js'
 
@@ -19,6 +20,10 @@ interface Props {
   /** Leave the ask flow and continue into the normal app (sign-up / main). */
   onExit: () => void
 }
+
+// A language switch remounts the app: keep her past the sign-in step (per token)
+// and don't record the landing twice.
+const resumed = new Map<string, { auth: boolean }>()
 
 type Phase = { kind: 'loading' } | { kind: 'error' } | AskLinkState
 
@@ -31,7 +36,8 @@ export function AskLink({ token, skipLanding = false, onExit }: Props) {
   // anonymous landing and resolves straight away.
   // Only decides whether to skip the landing; the final button uses view.isMember.
   const member = useRef(isReturningUser())
-  const direct = useRef(skipLanding || member.current)
+  const [resume] = useState(() => resumed.get(token) ?? null)
+  const direct = useRef(resume ? resume.auth : skipLanding || member.current)
   // Last auth mode used, so Retry after sign-in doesn't fall back to the landing.
   const lastAuth = useRef(direct.current)
 
@@ -52,6 +58,8 @@ export function AskLink({ token, skipLanding = false, onExit }: Props) {
     ;(async () => {
       const res = await resolve(direct.current)
       if (!alive || !res) return
+      resumed.delete(token)
+      if (resume) return
       const tokenState = res.state === 'invalid' ? 'invalid' : res.state === 'closed' ? 'closed' : 'valid'
       trackAskLink(token, { name: 'ask_link_landed', recipientKind: 'link', props: { token_state: tokenState } })
       if (direct.current && res.state !== 'invalid' && res.state !== 'closed') {
@@ -84,8 +92,15 @@ export function AskLink({ token, skipLanding = false, onExit }: Props) {
     }
   }
 
+  const rememberStep = () => { resumed.set(token, { auth: lastAuth.current }) }
+
   const shell = (children: React.ReactNode) => (
-    <div className="h-full flex flex-col bg-bg text-txt" style={{ paddingTop: 'var(--tg-safe-top)', paddingBottom: 'var(--tg-safe-bottom)' }}>
+    <div className="relative h-full flex flex-col bg-bg text-txt" style={{ paddingTop: 'var(--tg-safe-top)', paddingBottom: 'var(--tg-safe-bottom)' }}>
+      {!('kind' in phase && phase.kind === 'loading') && (
+        <div className="absolute end-3 z-10" style={{ top: 'calc(var(--tg-safe-top) + 8px)' }}>
+          <AskLangToggle onBeforeSwitch={rememberStep} />
+        </div>
+      )}
       {children}
     </div>
   )
@@ -132,6 +147,7 @@ export function AskLink({ token, skipLanding = false, onExit }: Props) {
           view={phase.view}
           recipientKind="link"
           onBack={onExit}
+          onBeforeLangSwitch={rememberStep}
           onSubmit={async (verdict, note) => { await api.asks.linkAnswer(token, verdict, note) }}
           thanksFooter={
             <Button block variant={phase.view.isMember ? 'tonal' : 'filled'} size="lg" onClick={onExit}>

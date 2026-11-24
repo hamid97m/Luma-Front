@@ -8,6 +8,7 @@ import { haptic, needsInPageBack } from '../../telegram.js'
 import { Avatar, Button, Icon, IconButton, Textarea } from '../ui/index.js'
 import type { IconName } from '../ui/index.js'
 import type { AskRecipientView, AskVerdict } from '../../types.js'
+import { AskLangToggle } from './AskLangToggle.js'
 import { ASK_NOTE_MAX, ASK_VERDICTS, errorBody, questionLabel, showToast, verdictLabel } from './askUtils.js'
 
 const VERDICT_ICON: Record<AskVerdict, IconName> = { yes: 'check', unsure: 'help-circle', no: 'x' }
@@ -22,7 +23,11 @@ interface Props {
   thanksFooter?: ReactNode
   /** Analytics hook — fired once the answer is accepted. */
   onAnswered?: (verdict: AskVerdict, hasNote: boolean) => void
+  onBeforeLangSwitch?: () => void
 }
+
+// A language switch remounts the app — carries the unsent answer across it.
+const drafts = new Map<string, { verdict: AskVerdict | null; note: string; editing: boolean }>()
 
 /** Faint repeated per-recipient code drawn over photos (screenshot deterrent). */
 export function Watermark({ code }: { code: string }) {
@@ -80,11 +85,13 @@ function PhotoCarousel({ photos, alt, watermark }: { photos: string[]; alt: stri
   )
 }
 
-export function AskAnswer({ view, recipientKind, onSubmit, onBack, thanksFooter, onAnswered }: Props) {
+export function AskAnswer({ view, recipientKind, onSubmit, onBack, thanksFooter, onAnswered, onBeforeLangSwitch }: Props) {
+  const [draft] = useState(() => drafts.get(view.recipientId) ?? null)
+  useEffect(() => { drafts.delete(view.recipientId) }, [view.recipientId])
   const [answer, setAnswer] = useState(view.myAnswer)
-  const [editing, setEditing] = useState(!view.myAnswer)
-  const [verdict, setVerdict] = useState<AskVerdict | null>(view.myAnswer?.verdict ?? null)
-  const [note, setNote] = useState(view.myAnswer?.note ?? '')
+  const [editing, setEditing] = useState(draft?.editing ?? !view.myAnswer)
+  const [verdict, setVerdict] = useState<AskVerdict | null>(draft ? draft.verdict : view.myAnswer?.verdict ?? null)
+  const [note, setNote] = useState(draft ? draft.note : view.myAnswer?.note ?? '')
   const [busy, setBusy] = useState(false)
   const [closed, setClosed] = useState(view.status !== 'open')
   const [locked, setLocked] = useState(false)
@@ -137,6 +144,14 @@ export function AskAnswer({ view, recipientKind, onSubmit, onBack, thanksFooter,
         <IconButton icon="arrow-left" tone="ghost" iconSize={20} className="rtl:-scale-x-100" aria-label={t.aria.back} onClick={onBack} />
       )}
       <span className="text-[18px] font-medium text-txt px-2">{t.ask.answerHeader}</span>
+      <AskLangToggle
+        className="ms-auto"
+        saveNow={recipientKind === 'member'}
+        onBeforeSwitch={() => {
+          drafts.set(view.recipientId, { verdict, note, editing })
+          onBeforeLangSwitch?.()
+        }}
+      />
     </div>
   )
 

@@ -5,6 +5,7 @@ import { t } from '../i18n.js'
 import { useBackButton } from '../telegram.js'
 import { Button } from '../components/ui/index.js'
 import { AskAnswer, AskStateMessage } from '../components/ask/AskAnswer.js'
+import { AskLangToggle } from '../components/ask/AskLangToggle.js'
 import { errorBody } from '../components/ask/askUtils.js'
 import type { AskRecipientView } from '../types.js'
 
@@ -42,9 +43,14 @@ export function AskMember({ recipientId, onClose }: Props) {
 
   if (failed) {
     return wrap(
-      <AskStateMessage icon="clock" title={failed === 'closed' ? t.ask.closed : t.errors.generic}>
-        <Button variant="tonal" onClick={onClose}>{t.ask.backToLuma}</Button>
-      </AskStateMessage>,
+      <>
+        <div className="flex justify-end px-3 pt-2" style={{ marginTop: 'var(--tg-safe-top)' }}>
+          <AskLangToggle saveNow />
+        </div>
+        <AskStateMessage icon="clock" title={failed === 'closed' ? t.ask.closed : t.errors.generic}>
+          <Button variant="tonal" onClick={onClose}>{t.ask.backToLuma}</Button>
+        </AskStateMessage>
+      </>,
     )
   }
 
