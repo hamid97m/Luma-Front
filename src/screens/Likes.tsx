@@ -9,6 +9,8 @@ import { MatchPopup } from '../components/MatchPopup.js'
 import { LikerProfileSheet } from '../components/LikerProfileSheet.js'
 import { Icon } from '../components/ui/index.js'
 import { PremiumBadge } from '../components/premium/PremiumBadge.js'
+import { AskWaitingList } from '../components/ask/AskWaitingList.js'
+import { useAskConfigStore, useMyAsksStore } from '../components/ask/askUtils.js'
 import type { LikerProfile, LockedLiker, Match, SwipeResult } from '../types.js'
 
 // Fallback for a locked liker with no photo — a theme-token gradient (blurred
@@ -19,7 +21,18 @@ const LOCKED_GRADIENTS = [
   'linear-gradient(120deg, var(--gold), var(--pc))',
 ]
 
-export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
+interface LikesProps {
+  onOpenChat: (m: Match) => void
+  /** «منتظر نظر» card → that ask's results (rendered by App). */
+  onOpenAskResults?: (askId: string) => void
+}
+
+export function Likes({ onOpenChat, onOpenAskResults }: LikesProps) {
+  // Women with "ask a friend": the tab is «برای تو» with a likes / waiting-for-opinion switch.
+  const askMode = useAskConfigStore((s) => s.enabled)
+  const asksCount = useMyAsksStore((s) => s.asks.length)
+  const [segment, setSegment] = useState<'likes' | 'asks'>('likes')
+  useEffect(() => { if (askMode) useMyAsksStore.getState().load() }, [askMode])
   const [visible, setVisible] = useState<LikerProfile[]>([])
   const [locked, setLocked] = useState<LockedLiker[]>([])
   const [loading, setLoading] = useState(true)
@@ -113,9 +126,47 @@ export function Likes({ onOpenChat }: { onOpenChat: (m: Match) => void }) {
         ? t.likes.subtitleAllVisible(total)
         : t.likes.subtitle(total)
 
+  const segmentBar = askMode && (
+    <div className="flex p-1 mx-4 mt-4 mb-1 rounded-full bg-surface gap-1 flex-none" role="tablist">
+      {([
+        ['likes', t.likes.segmentLikes(total)],
+        ['asks', t.likes.segmentAsks(asksCount)],
+      ] as const).map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          role="tab"
+          aria-selected={segment === id}
+          onClick={() => { if (segment !== id) haptic.selection(); setSegment(id) }}
+          className={`flex-1 h-10 rounded-full text-[14px] font-medium transition-colors ${
+            segment === id ? 'bg-primary-container text-on-primary-container' : 'text-txt2'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+
+  if (askMode && segment === 'asks') {
+    return (
+      <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt gap-3">
+        {segmentBar}
+        <AskWaitingList
+          onOpenResults={(id) => onOpenAskResults?.(id)}
+          onMatch={(m) => setMatchPopup(m)}
+        />
+        {matchPopup && (
+          <MatchPopup match={matchPopup} onClose={() => setMatchPopup(null)} onMessage={openMatchChat} />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-bg text-txt">
-      {!isEmpty && <p className="px-5 pt-6 pb-1 text-[13px] text-txt2">{subtitle}</p>}
+      {segmentBar}
+      {!isEmpty && <p className={`px-5 ${askMode ? 'pt-3' : 'pt-6'} pb-1 text-[13px] text-txt2`}>{subtitle}</p>}
 
       {lockedCount > 0 && (
         <button

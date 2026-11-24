@@ -153,3 +153,26 @@ export const useAskDecisionStore = create<AskDecisionState>((set) => ({
   request: (pending) => set({ pending }),
   clear: () => set({ pending: null }),
 }))
+
+/** Her open asks — profiles set aside from Discovery while friends weigh in
+ *  (the «منتظر نظر» list under the Likes tab, and its badge). */
+interface MyAsksState {
+  asks: import('../../types.js').AskSummary[]
+  loaded: boolean
+  load: () => Promise<void>
+  upsert: (a: import('../../types.js').AskSummary) => void
+  remove: (askId: string) => void
+}
+
+export const useMyAsksStore = create<MyAsksState>((set) => ({
+  asks: [],
+  loaded: false,
+  load: async () => {
+    try {
+      const { asks } = await api.asks.list()
+      set({ asks: asks.filter((a) => a.status === 'open' && Date.parse(a.expiresAt) > Date.now()), loaded: true })
+    } catch { /* keep what we have */ }
+  },
+  upsert: (a) => set((s) => ({ asks: [a, ...s.asks.filter((x) => x.id !== a.id)] })),
+  remove: (askId) => set((s) => ({ asks: s.asks.filter((x) => x.id !== askId) })),
+}))

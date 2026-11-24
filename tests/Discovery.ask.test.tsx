@@ -21,7 +21,7 @@ vi.mock('../src/api.js', () => ({
 import { api } from '../src/api.js'
 import { t } from '../src/i18n.js'
 import { Discovery } from '../src/screens/Discovery.js'
-import { useAskConfigStore, useAskDecisionStore } from '../src/components/ask/askUtils.js'
+import { useAskConfigStore, useAskDecisionStore, useMyAsksStore } from '../src/components/ask/askUtils.js'
 
 const SARA = { id: 'p1', name: 'Amir', age: 28, bio: null, telegramId: 9, photos: ['https://img1'], interests: [], location: null }
 
@@ -35,6 +35,7 @@ describe('Discovery — ask a friend entry', () => {
     localStorage.setItem('luma.locale', 'fa')
     useAskConfigStore.setState({ enabled: true })
     useAskDecisionStore.setState({ pending: null })
+    useMyAsksStore.setState({ asks: [], loaded: false })
   })
   afterEach(() => vi.useRealTimers())
 
@@ -44,6 +45,8 @@ describe('Discovery — ask a friend entry', () => {
     render(<Discovery onOpenChat={vi.fn()} />)
     await screen.findByText('Amir')
     expect(screen.queryByRole('button', { name: t.ask.entryAria })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: t.aria.directChat })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: t.aria.rewind })).toBeInTheDocument()
   })
 
   it('entry button opens the sheet for the top card', async () => {
@@ -53,9 +56,12 @@ describe('Discovery — ask a friend entry', () => {
     fireEvent.click(screen.getByTestId('ask-card-pill'))
     expect(await screen.findByText(t.ask.sheetTitle('Amir'))).toBeInTheDocument()
     expect(api.asks.event).toHaveBeenCalledWith(expect.objectContaining({ name: 'ask_entry_tap', props: { source: 'discovery' } }))
+    // Her row is pass · ask · like only (design); men keep chat + rewind.
+    expect(screen.queryByRole('button', { name: t.aria.directChat })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: t.aria.rewind })).not.toBeInTheDocument()
   })
 
-  it('after creating an ask she moves on; the profile waits in "my asks" and she can go back to it', async () => {
+  it('after creating an ask she moves on; the profile waits in «منتظر نظر» and she can go back to it', async () => {
     const ASK = { id: 'a1', targetId: 'p1', targetName: 'Amir', targetPhotoUrl: null, question: 'reply', status: 'open', createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 86_400_000).toISOString(), total: 1, answered: 0, yes: 0, unsure: 0, no: 0 }
     feed([SARA, { ...SARA, id: 'p2', name: 'Reza' }])
     vi.mocked(api.asks.create).mockResolvedValue({ ask: ASK, links: [] } as never)
@@ -72,13 +78,11 @@ describe('Discovery — ask a friend entry', () => {
     expect(await screen.findByText('Reza')).toBeInTheDocument()
     expect(screen.queryByText('Amir')).not.toBeInTheDocument()
     expect(api.swipes.swipe).not.toHaveBeenCalled()
-    // Come back from the list → results → "back to Amir's profile".
-    fireEvent.click(await screen.findByTestId('ask-list-chip'))
-    fireEvent.click(await screen.findByText('Amir'))
-    fireEvent.click(await screen.findByRole('button', { name: t.ask.replyCta('Amir') }))
+    // It waits in «منتظر نظر» (Likes tab); going back is the results → decision path.
+    await waitFor(() => expect(useMyAsksStore.getState().asks.map((x) => x.id)).toEqual(['a1']))
+    act(() => useAskDecisionStore.getState().request({ targetId: 'p1', decision: 'reply', askId: 'a1' }))
     await waitFor(() => expect(api.asks.profile).toHaveBeenCalledWith('a1'))
     expect(await screen.findByTestId('ask-card-badge')).toHaveTextContent(t.ask.badgeWaiting)
-    expect(screen.getByText('Amir')).toBeInTheDocument()
   })
 
   it('a candidate with answers shows the tally badge, which opens results', async () => {

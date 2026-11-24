@@ -13,7 +13,7 @@ import { PhotoRequired } from './screens/PhotoRequired.js'
 import { Onboarding } from './screens/Onboarding.js'
 import { LanguagePicker } from './screens/LanguagePicker.js'
 import { Login } from './screens/Login.js'
-import { useLocaleStore } from './i18n.js'
+import { t, useLocaleStore } from './i18n.js'
 import { stopSignupTracking, track, trackAppOpen, trackAuthFailed, trackAuthResolved, trackLoginView, trackSubmitOk } from './signupTrack.js'
 import { decisiveTelegramLocale, isLocale, isLocaleChosenHere, isLocalePending, markLocaleChosen, setLocalePending, type Locale } from './i18n/locale.js'
 import { prefetchGeoCountry } from './i18n/geo.js'
@@ -30,7 +30,7 @@ import { NotifyPrompt } from './components/NotifyPrompt.js'
 import { AskLink } from './screens/AskLink.js'
 import { AskMember } from './screens/AskMember.js'
 import { AskResults } from './screens/AskResults.js'
-import { readAskLaunch, useAskConfigStore, useAskDecisionStore } from './components/ask/askUtils.js'
+import { readAskLaunch, useAskConfigStore, useAskDecisionStore, useMyAsksStore } from './components/ask/askUtils.js'
 import type { Match, UserProfile } from './types.js'
 
 type Screen = 'splash' | 'login' | 'onboarding' | 'main' | 'reconnect' | 'blocked' | 'photoRequired'
@@ -320,6 +320,12 @@ export function App() {
   useEffect(() => {
     if (screen === 'main') useAskConfigStore.getState().refresh()
   }, [screen])
+  // Women with "ask a friend": «برای تو» tab + its badge counts asks with answers.
+  const askEnabled = useAskConfigStore((s) => s.enabled)
+  const asksAnswered = useMyAsksStore((s) => s.asks.filter((a) => a.answered > 0).length)
+  useEffect(() => {
+    if (screen === 'main' && askEnabled) useMyAsksStore.getState().load()
+  }, [screen, askEnabled, tab])
 
   // Referral status (enabled flag + milestones) — drives the My Profile entry
   // card and the invite sheet's stepper.
@@ -539,7 +545,7 @@ export function App() {
           )}
           {visited.likes && (
             <div className={`h-full ${tab === 'likes' ? '' : 'hidden'}`}>
-              <Likes onOpenChat={openChat} />
+              <Likes onOpenChat={openChat} onOpenAskResults={(askId) => setAskDeepLink({ kind: 'result', askId })} />
             </div>
           )}
           {visited.matches && (
@@ -549,7 +555,13 @@ export function App() {
           )}
           {visited.profile && <div className={`h-full ${tab === 'profile' ? '' : 'hidden'}`}><MyProfile onOpenSupport={() => setShowSupport(true)} /></div>}
         </div>
-        <BottomNav active={tab} onChange={setTab} matchesBadge={matchesBadge} likesBadge={likesBadge} />
+        <BottomNav
+          active={tab}
+          onChange={setTab}
+          matchesBadge={matchesBadge}
+          likesBadge={likesBadge + (askEnabled ? asksAnswered : 0)}
+          likesLabel={askEnabled ? t.nav.forYou : undefined}
+        />
         {showNotifyPrompt && <NotifyPrompt onDone={() => setShowNotifyPrompt(false)} />}
       </div>
     </>

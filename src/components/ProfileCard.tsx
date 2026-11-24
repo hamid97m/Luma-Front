@@ -75,18 +75,21 @@ export function ProfileCard({ profile, photoIdx, onReport, onGiftClick, onAskBad
         )}
       </div>
 
-      {/* Top-end overlay actions: gift · report · ask a friend (outermost) */}
+      {/* Top-end overlay actions: gift · report, or report · ask a friend (outermost) */}
       <div className="absolute top-8 end-3.5 z-10 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onGiftClick() }}
-          onPointerDown={(e) => e.stopPropagation()}
-          aria-label={t.gifts.openButton}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
-          style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
-        >
-          <Icon name="gift" size={15} />
-        </button>
+        {/* Gift entry — not on the "ask a friend" layout (report + ask only, per design). */}
+        {!onAskClick && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onGiftClick() }}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label={t.gifts.openButton}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white pointer-events-auto"
+            style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(8px)' }}
+          >
+            <Icon name="gift" size={15} />
+          </button>
+        )}
 
         <button
           type="button"

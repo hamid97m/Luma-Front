@@ -14,10 +14,8 @@ import { DirectChatSheet } from '../components/premium/DirectChatSheet.js'
 import { usePremiumStore } from '../store.js'
 import { AskSheet } from '../components/ask/AskSheet.js'
 import { AskResults } from './AskResults.js'
-import { AskListSheet } from '../components/ask/AskListSheet.js'
-import { showToast, trackAsk, useAskConfigStore, useAskDecisionStore } from '../components/ask/askUtils.js'
-import { Icon } from '../components/ui/index.js'
-import type { DiscoveryProfile, SwipeResult, Match, DirectChatStatus, AskSummary } from '../types.js'
+import { showToast, trackAsk, useAskConfigStore, useAskDecisionStore, useMyAsksStore } from '../components/ask/askUtils.js'
+import type { DiscoveryProfile, SwipeResult, Match, DirectChatStatus } from '../types.js'
 
 const PREFETCH_THRESHOLD = 2
 
@@ -60,15 +58,8 @@ export function Discovery({ onOpenChat }: Props) {
   const [askTarget, setAskTarget] = useState<DiscoveryProfile | null>(null)
   const [resultsAskId, setResultsAskId] = useState<string | null>(null)
   const askDecision = useAskDecisionStore((s) => s.pending)
-  // Her open asks — profiles set aside while friends weigh in ("my asks" chip + list).
-  const [myAsks, setMyAsks] = useState<AskSummary[]>([])
-  const [askListOpen, setAskListOpen] = useState(false)
-  const loadMyAsks = useCallback(() => {
-    api.asks.list()
-      .then(({ asks }) => setMyAsks(asks.filter((a) => a.status === 'open' && Date.parse(a.expiresAt) > Date.now())))
-      .catch(() => {})
-  }, [])
-  useEffect(() => { if (askEnabled) loadMyAsks() }, [askEnabled, loadMyAsks])
+  // Her open asks live in the Likes tab («منتظر نظر»); Discovery only keeps it fresh.
+  const loadMyAsks = useMyAsksStore((s) => s.load)
   const premiumStatus = usePremiumStore((s) => s.status)
   // Buying premium clears the limit instantly (server stops gating; no refetch needed).
   const premiumActive =
@@ -292,32 +283,6 @@ export function Discovery({ onOpenChat }: Props) {
     </>
   )
 
-  // "My asks" chip above the card: her set-aside profiles, with a dot once a friend answered.
-  const answeredCount = myAsks.filter((a) => a.answered > 0).length
-  const askChip = askEnabled && myAsks.length > 0 ? (
-    <button
-      type="button"
-      data-testid="ask-list-chip"
-      onClick={() => { haptic.selection(); loadMyAsks(); setAskListOpen(true) }}
-      className="self-center flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-primary-container text-on-primary-container text-[13px] font-medium"
-    >
-      <Icon name="users" size={16} strokeWidth={2} />
-      {t.ask.listChip(myAsks.length)}
-      {answeredCount > 0 && <span className="w-2 h-2 rounded-full bg-primary" aria-label={t.ask.listNewAnswers} />}
-    </button>
-  ) : null
-
-  const askListNodes = (
-    <>
-      <AskListSheet
-        open={askListOpen && !resultsAskId}
-        asks={myAsks}
-        onClose={() => setAskListOpen(false)}
-        onOpen={(a) => setResultsAskId(a.id)}
-      />
-    </>
-  )
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-bg text-txt">
@@ -347,22 +312,19 @@ export function Discovery({ onOpenChat }: Props) {
   if (exhausted && queue.length === 0) {
     return (
       <div className="h-full bg-bg text-txt flex flex-col">
-        {askChip && <div className="flex justify-center pt-4">{askChip}</div>}
         <DiscoveryEmpty onReview={refresh} />
-        {askListNodes}
         {resultsAskId && (
           <AskResults
             askId={resultsAskId}
             onClose={() => setResultsAskId(null)}
             onReply={(detail) => {
               setResultsAskId(null)
-              setAskListOpen(false)
               bringBack(detail.target?.id ?? detail.targetId, detail.id)
             }}
             onPass={(detail) => {
               setResultsAskId(null)
               passFromResults(detail.target?.id ?? detail.targetId)
-              setMyAsks((list) => list.filter((a) => a.id !== detail.id))
+              useMyAsksStore.getState().remove(detail.id)
               loadMyAsks()
             }}
           />
@@ -390,9 +352,7 @@ export function Discovery({ onOpenChat }: Props) {
           else setAskTarget(profile)
         } : undefined}
         onAskBadgeClick={(profile) => profile.ask && setResultsAskId(profile.ask.id)}
-        topSlot={askChip}
       />
-      {askListNodes}
       {askTarget && (
         <AskSheet
           open
@@ -409,7 +369,7 @@ export function Discovery({ onOpenChat }: Props) {
               if (rest.length <= PREFETCH_THRESHOLD && !exhausted) fetchBatch()
               return rest
             })
-            setMyAsks((list) => [ask, ...list.filter((a) => a.id !== ask.id)])
+            useMyAsksStore.getState().upsert(ask)
             loadMyAsks()
           }}
           onExists={(askId) => setResultsAskId(askId)}
@@ -421,13 +381,12 @@ export function Discovery({ onOpenChat }: Props) {
           onClose={() => setResultsAskId(null)}
           onReply={(detail) => {
             setResultsAskId(null)
-            setAskListOpen(false)
             bringBack(detail.target?.id ?? detail.targetId, detail.id)
           }}
           onPass={(detail) => {
             setResultsAskId(null)
             passFromResults(detail.target?.id ?? detail.targetId)
-            setMyAsks((list) => list.filter((a) => a.id !== detail.id))
+            useMyAsksStore.getState().remove(detail.id)
             loadMyAsks()
           }}
         />

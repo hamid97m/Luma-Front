@@ -9,6 +9,8 @@ interface Props {
   onChange: (tab: Tab) => void
   matchesBadge?: number
   likesBadge?: number
+  /** Override for the Likes tab label («برای تو» for women with "ask a friend"). */
+  likesLabel?: string
 }
 
 const TABS: Array<{ id: Tab; icon: IconName; label: keyof typeof t.nav }> = [
@@ -18,7 +20,7 @@ const TABS: Array<{ id: Tab; icon: IconName; label: keyof typeof t.nav }> = [
   { id: 'profile',   icon: 'user',    label: 'profile'   },
 ]
 
-export function BottomNav({ active, onChange, matchesBadge, likesBadge }: Props) {
+export function BottomNav({ active, onChange, matchesBadge, likesBadge, likesLabel }: Props) {
   // Resolve labels at render time: module scope runs in the launch locale,
   // before /auth/verify may switch the store to the user's saved language.
   const nav = t.nav
@@ -80,7 +82,7 @@ export function BottomNav({ active, onChange, matchesBadge, likesBadge }: Props)
                 )}
               </span>
             </span>
-            <span className="text-[12px] font-medium">{nav[tab.label]}</span>
+            <span className="text-[12px] font-medium">{tab.id === 'likes' && likesLabel ? likesLabel : nav[tab.label]}</span>
           </button>
         )
       })}

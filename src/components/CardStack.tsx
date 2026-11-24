@@ -229,23 +229,17 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
         </div>
       </div>
 
-      {/* Hint */}
-      <p className="text-center text-[11px] text-txt3 select-none">
-        {t.discovery.swipeHint}
-      </p>
-
-      {/* Action buttons */}
-      <div className={`relative flex items-center justify-center pb-2 ${askEnabled ? 'gap-3' : 'gap-[18px]'}`}>
-        <button
-          onClick={() => !disabled && !flying && fly('pass')}
-          disabled={disabled}
-          className="w-14 h-14 rounded-[18px] bg-surface text-txt2 shadow-m3-1 flex items-center justify-center disabled:opacity-40 hover:bg-surface-high transition-colors"
-          aria-label={t.aria.pass}
-        >
-          <Icon name="x" size={24} strokeWidth={2.5} />
-        </button>
-
-        {askEnabled && (
+      {askEnabled ? (
+        /* Women with "ask a friend": pass · ask · like (Luma "Ask a friend" design). */
+        <div className="flex items-center justify-center gap-5 h-[88px] flex-none">
+          <button
+            onClick={() => !disabled && !flying && fly('pass')}
+            disabled={disabled}
+            className="w-14 h-14 rounded-full border border-outline bg-bg text-txt2 flex items-center justify-center disabled:opacity-40 hover:bg-surface transition-colors"
+            aria-label={t.aria.pass}
+          >
+            <Icon name="x" size={24} strokeWidth={2} />
+          </button>
           <button
             onClick={handleAskClick}
             disabled={disabled}
@@ -254,7 +248,33 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
           >
             <Icon name="users" size={22} strokeWidth={2} />
           </button>
-        )}
+          <button
+            onClick={() => !disabled && !flying && fly('like')}
+            disabled={disabled}
+            className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-40 hover:bg-primary-hover transition-colors"
+            style={{ boxShadow: '0 6px 18px rgba(176,41,92,.35)' }}
+            aria-label={t.aria.like}
+          >
+            <Icon name="heart" size={28} filled />
+          </button>
+        </div>
+      ) : (
+      <>
+      {/* Hint */}
+      <p className="text-center text-[11px] text-txt3 select-none">
+        {t.discovery.swipeHint}
+      </p>
+
+      {/* Action buttons */}
+      <div className="relative flex items-center justify-center pb-2 gap-[18px]">
+        <button
+          onClick={() => !disabled && !flying && fly('pass')}
+          disabled={disabled}
+          className="w-14 h-14 rounded-[18px] bg-surface text-txt2 shadow-m3-1 flex items-center justify-center disabled:opacity-40 hover:bg-surface-high transition-colors"
+          aria-label={t.aria.pass}
+        >
+          <Icon name="x" size={24} strokeWidth={2.5} />
+        </button>
 
         <button
           onClick={() => !disabled && !flying && fly('like')}
@@ -284,6 +304,8 @@ export function CardStack({ profiles, onLike, onPass, disabled, onBack, canGoBac
           <Icon name="arrow-left" size={22} strokeWidth={2} />
         </button>
       </div>
+      </>
+      )}
 
       {viewerOpen && (
         <PhotoViewer
