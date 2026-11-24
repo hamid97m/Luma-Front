@@ -36,6 +36,20 @@ const TOTAL_STEPS = 7
 // Funnel name of each step, indexed by STEP_*.
 const STEP_NAMES: readonly SignupStep[] = ['name', 'city', 'age', 'gender', 'pref', 'interests', 'photo']
 
+/** No HTTP answer at all: offline, dropped, or the upload stalled. */
+function isConnectionError(err: unknown): boolean {
+  const e = err as { status?: unknown; code?: unknown } | null | undefined
+  if (typeof e?.status === 'number' && e.status > 0) return false
+  return e?.code !== 'compress'
+}
+
+/** What the alert says. The server answers with bare codes
+ *  (`{"error":"photo_confirm_failed"}`), which used to be shown as-is. */
+function photoUploadErrorMessage(err: unknown): string {
+  if ((err as { code?: unknown } | null | undefined)?.code === 'compress') return t.photoEditor.error
+  return t.photoGrid.uploadFailed
+}
+
 function cityMessage(city: string): string | null {
   const err = cityError(city)
   if (err === 'digits') return t.onboarding.cityNoDigits
@@ -197,18 +211,27 @@ export function Onboarding({ onComplete }: Props) {
     const preview = URL.createObjectURL(file)
     setPhotoPreview(preview)
     setUploadPhase({ phase: 'processing', progress: 0 })
+    const upload = () => api.photos.upload(file, (progress, phase = 'uploading') => setUploadPhase({
+      phase: phase === 'finalizing' || progress >= 100 ? 'finalizing' : 'uploading',
+      progress,
+    }))
     try {
-      await api.photos.upload(file, (progress, phase = 'uploading') => setUploadPhase({
-        phase: phase === 'finalizing' || progress >= 100 ? 'finalizing' : 'uploading',
-        progress,
-      }))
+      try {
+        await upload()
+      } catch (err) {
+        // A dropped or stalled connection (no HTTP answer): one quiet retry
+        // before bothering the user — signup's last step, worth keeping.
+        if (!isConnectionError(err)) throw err
+        track('photo_failed', { step: 'photo', detail: signupErrorDetail(err, 'file') })
+        setUploadPhase({ phase: 'processing', progress: 0 })
+        await upload()
+      }
       setPhotoUploaded(true)
       track('photo_ok', { step: 'photo', detail: 'file' })
     } catch (err) {
       track('photo_failed', { step: 'photo', detail: signupErrorDetail(err, 'file') })
       setPhotoPreview(null)
-      const msg = err instanceof Error ? err.message : t.photoGrid.uploadFailed
-      window.Telegram?.WebApp?.showAlert?.(msg)
+      window.Telegram?.WebApp?.showAlert?.(photoUploadErrorMessage(err))
     } finally {
       setUploadPhase(null)
     }
@@ -539,7 +562,11 @@ export function Onboarding({ onComplete }: Props) {
       {editingFile && (
         <PhotoEditor
           file={editingFile}
-          onCancel={() => setEditingFile(null)}
+          onCancel={() => {
+            track('photo_failed', { step: 'photo', detail: 'editor:cancel' })
+            setEditingFile(null)
+          }}
+          onError={(reason) => track('photo_failed', { step: 'photo', detail: `editor:${reason}` })}
           onConfirm={async (edited) => {
             setEditingFile(null)
             await handlePhotoFile(edited)

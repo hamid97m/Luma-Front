@@ -257,3 +257,13 @@ describe('signupTrack', () => {
     })
   })
 })
+
+describe('signupErrorDetail codes', () => {
+  it('names a stalled upload and a compression failure, and ignores unknown codes', async () => {
+    const { signupErrorDetail } = await import('../src/signupTrack.js')
+    expect(signupErrorDetail(Object.assign(new Error('x'), { code: 'timeout' }), 'file')).toBe('file:timeout')
+    expect(signupErrorDetail(Object.assign(new Error('x'), { code: 'compress' }), 'file')).toBe('file:compress')
+    expect(signupErrorDetail(Object.assign(new Error('x'), { code: 'Ali' }), 'file')).toBe('file:network')
+    expect(signupErrorDetail(Object.assign(new Error('x'), { status: 413, code: 'timeout' }), 'file')).toBe('file:413')
+  })
+})

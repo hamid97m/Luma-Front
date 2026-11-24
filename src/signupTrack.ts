@@ -61,11 +61,17 @@ export function getSignupSessionId(): string {
   return sessionId
 }
 
-/** Short failure code from an error: `401`, `network`, `file:401`, `file:network`.
- *  Reads only the numeric status — never the error's text. */
+const ERROR_CODES = new Set(['timeout', 'compress'])
+
+/** Short failure code from an error: `401`, `network`, `file:401`, `file:network`,
+ *  `file:timeout`, `file:compress`. Reads only the numeric status or a known
+ *  `code` — never the error's text. */
 export function signupErrorDetail(err: unknown, prefix?: string): string {
-  const status = (err as { status?: unknown } | null | undefined)?.status
-  const code = typeof status === 'number' && status > 0 ? String(status) : 'network'
+  const e = err as { status?: unknown; code?: unknown } | null | undefined
+  const status = e?.status
+  const code = typeof status === 'number' && status > 0
+    ? String(status)
+    : typeof e?.code === 'string' && ERROR_CODES.has(e.code) ? e.code : 'network'
   return prefix ? `${prefix}:${code}` : code
 }
 

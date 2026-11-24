@@ -497,6 +497,9 @@ export const en = {
     use: 'Use photo',
     saving: 'Saving…',
     error: "Couldn't process this photo. Please try again.",
+    preparing: 'Preparing your photo…',
+    loadFailed: "This photo couldn't be opened. Pick another one (JPG or PNG), or take a screenshot of it and use that.",
+    pickAnother: 'Pick another photo',
   },
   photoGrid: {
     onlyImages: 'Only image files are allowed',

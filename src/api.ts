@@ -63,21 +63,48 @@ function reportUploadProgress(
   else onProgress?.(pct, 'uploading')
 }
 
+/** No upload progress for this long → give up (`code: 'timeout'`). On a bad
+ *  connection the XHR can otherwise hang forever behind a spinner. */
+export const UPLOAD_STALL_MS = 45_000
+
 function putWithProgress(url: string, blob: Blob, onProgress?: (pct: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
+    let stall: ReturnType<typeof setTimeout> | undefined
+    const armStall = () => {
+      clearTimeout(stall)
+      stall = setTimeout(() => {
+        xhr.abort()
+        reject(Object.assign(new Error('upload_timeout'), { code: 'timeout' }))
+      }, UPLOAD_STALL_MS)
+    }
     xhr.open('PUT', url)
     xhr.setRequestHeader('Content-Type', 'image/jpeg')
     xhr.upload.onprogress = (e) => {
+      armStall()
       if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100))
     }
     xhr.onload = () => {
+      clearTimeout(stall)
       if (xhr.status >= 200 && xhr.status < 300) resolve()
       else reject(Object.assign(new Error(`storage_put_failed: ${xhr.status}`), { status: xhr.status }))
     }
-    xhr.onerror = () => reject(new Error('storage_put_failed'))
+    xhr.onerror = () => {
+      clearTimeout(stall)
+      reject(new Error('storage_put_failed'))
+    }
+    armStall()
     xhr.send(blob)
   })
+}
+
+/** compressImage failing is a file problem, not the network. */
+async function compressForUpload(file: File): Promise<Blob> {
+  try {
+    return await compressImage(file)
+  } catch {
+    throw Object.assign(new Error('compression_failed'), { code: 'compress' })
+  }
 }
 
 /** The `user` every sign-in endpoint answers with (same shape as /auth/verify). */
@@ -190,7 +217,7 @@ export const api = {
       file: File,
       onProgress?: (pct: number, phase?: 'uploading' | 'finalizing') => void
     ): Promise<{ id: string; url: string; position: number }> => {
-      const blob = await compressImage(file)
+      const blob = await compressForUpload(file)
       const { uploadUrl, photoId } = await api.photos.getUploadUrl('image/jpeg')
       // Cap the byte transfer at 99. Confirm still runs after the bytes land, and
       // a frozen "100%" reads as a stuck upload.
@@ -205,7 +232,7 @@ export const api = {
       file: File,
       onProgress?: (pct: number, phase?: 'uploading' | 'finalizing') => void
     ): Promise<{ id: string; url: string; position: number }> => {
-      const blob = await compressImage(file)
+      const blob = await compressForUpload(file)
       const { uploadUrl, photoId: newPhotoId } = await api.photos.getUploadUrl('image/jpeg', oldPhotoId)
       await putWithProgress(uploadUrl, blob, (pct) => reportUploadProgress(onProgress, pct))
       onProgress?.(100, 'finalizing')
